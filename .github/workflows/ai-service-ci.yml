@@ -1,0 +1,49 @@
+name: AI Service CI (non-blocking)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ai-service/**"
+      - ".github/workflows/ai-service-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "ai-service/**"
+      - ".github/workflows/ai-service-ci.yml"
+
+concurrency:
+  group: ai-service-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    name: Lint & Test (Python AI Service)
+    runs-on: ubuntu-latest
+    # Advisory only while agent implementations are still evolving.
+    # Once agent code + tests stabilise, remove continue-on-error to make
+    # this a required check too.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: ai-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: ai-service/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check .
+
+      - name: Run tests
+        run: pytest -v

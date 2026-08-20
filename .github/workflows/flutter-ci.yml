@@ -1,0 +1,48 @@
+name: Flutter CI (non-blocking)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "flutter-app/**"
+      - ".github/workflows/flutter-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "flutter-app/**"
+      - ".github/workflows/flutter-ci.yml"
+
+concurrency:
+  group: flutter-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-and-test:
+    name: Analyze & Test (Flutter)
+    runs-on: ubuntu-latest
+    # This job is intentionally advisory, not a required check - Flutter's
+    # SDK download + native build steps are slower and more prone to
+    # transient CI issues than the backend/frontend jobs. See docs/CI-CD.md.
+    continue-on-error: true
+    defaults:
+      run:
+        working-directory: flutter-app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.x"
+          channel: "stable"
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
