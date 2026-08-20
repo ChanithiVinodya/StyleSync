@@ -8,9 +8,24 @@ don't break.
 """
 from __future__ import annotations
 
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
+
+
+class PlanStep(BaseModel):
+    step_name: str
+    assigned_agent: str
+    status: str = "PENDING"  # PENDING | IN_PROGRESS | COMPLETED | FAILED
+    result: Optional[str] = None
+
+
+class ToolCallRecord(BaseModel):
+    tool_name: str
+    inputs: dict[str, Any] = Field(default_factory=dict)
+    outputs: Optional[Any] = None
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
 
 
 class StyleProfile(BaseModel):
@@ -56,8 +71,18 @@ class WorkflowState(BaseModel):
     budget_min: float
     budget_max: float
 
+    # Structured multi-step execution plan
+    plan: list[PlanStep] = Field(default_factory=list)
+
+    # Domain outputs from specialist agents
     style_profile: Optional[StyleProfile] = None
     designer_shortlist: list[DesignerMatch] = Field(default_factory=list)
     project_scope: Optional[ProjectScope] = None
     validation_result: Optional[ValidationResult] = None
     approval_status: str = "Pending"
+
+    # Execution logs & observability
+    tool_calls: list[ToolCallRecord] = Field(default_factory=list)
+    errors: list[str] = Field(default_factory=list)
+    retries: int = 0
+
