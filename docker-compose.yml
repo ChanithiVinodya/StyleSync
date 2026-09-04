@@ -1,0 +1,21 @@
+# Local development services
+# NOTE: The application services (ASP.NET Core API, React, Flutter, AI service)
+# are run locally on the host machine using their native dev tools.
+# This compose file ONLY runs the local PostgreSQL database dependency.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: stylesync-db
+    environment:
+      POSTGRES_DB: stylesync_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

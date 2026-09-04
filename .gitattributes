@@ -1,0 +1,21 @@
+# Normalize line endings so Windows/Mac/Linux team members don't get
+# noisy diffs or broken shell scripts from CRLF vs LF mismatches.
+# This matters especially on Windows, where Git's default autocrlf
+# behaviour can silently convert LF -> CRLF on checkout.
+
+* text=auto eol=lf
+
+# Shell scripts MUST stay LF, even on Windows, or they fail to run
+# in Git Bash / WSL with a "bad interpreter" error.
+*.sh text eol=lf
+
+# Windows-native scripts should stay CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Don't touch binary files.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
