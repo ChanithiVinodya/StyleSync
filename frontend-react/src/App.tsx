@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { ThemeProvider } from './context/ThemeContext'
+import LandingPage from './pages/LandingPage'
 import DesignersPage from './modules/designers/DesignersPage'
 import ProjectRequestsPage from './modules/project-requests/ProjectRequestsPage'
 import QuotesContractsPage from './modules/quotes-contracts/QuotesContractsPage'
@@ -6,17 +8,10 @@ import ProjectExecutionPage from './modules/project-execution/ProjectExecutionPa
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <nav style={{ display: 'flex', gap: '1rem', padding: '1rem', borderBottom: '1px solid #ddd' }}>
-        <Link to="/designers">Designers</Link>
-        <Link to="/project-requests">Project Requests</Link>
-        <Link to="/quotes-contracts">Quotes & Contracts</Link>
-        <Link to="/project-execution">Project Execution</Link>
-      </nav>
-
-      <main style={{ padding: '1.5rem' }}>
+    <ThemeProvider>
+      <BrowserRouter>
         <Routes>
-          <Route path="/" element={<h1>StyleSync</h1>} />
+          <Route path="/" element={<LandingPage />} />
           {/* Student 1 owns this route */}
           <Route path="/designers" element={<DesignersPage />} />
           {/* Student 2 owns this route */}
@@ -26,7 +21,7 @@ export default function App() {
           {/* Student 4 owns this route */}
           <Route path="/project-execution" element={<ProjectExecutionPage />} />
         </Routes>
-      </main>
-    </BrowserRouter>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
