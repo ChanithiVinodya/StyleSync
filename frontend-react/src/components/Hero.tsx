@@ -10,6 +10,7 @@ interface HeroProps {
 interface DesignPillar {
   id: string;
   style: string;
+  sublabel: string;
   room: string;
   designer: string;
   image: string;
@@ -21,45 +22,49 @@ interface DesignPillar {
 
 const DESIGN_PILLARS: DesignPillar[] = [
   {
-    id: 'millwork-living',
-    style: 'Warm Minimalist',
-    room: 'Living & Millwork',
+    id: 'japandi-living',
+    style: 'Japandi',
+    sublabel: 'Japandi Calm',
+    room: 'Living Room',
     designer: 'Studio Kanso',
-    image: '/assets/hero-warm-minimalist.webp',
-    alt: 'Warm minimalist living space featuring curved bouclé sofa, sculptural wavy floor lamp, potted olive tree, and round oak coffee table',
-    objectPosition: 'center 45%',
+    image: '/assets/Japandi Living Room_.jpg',
+    alt: 'Serene Japandi living room with warm minimalist low-profile furniture, natural wood tones, organic textures, and peaceful diffused sunlight',
+    objectPosition: 'center 50%',
     offsetClass: 'mt-10 sm:mt-14',
     heightClass: 'h-[290px] sm:h-[400px] lg:h-[440px] xl:h-[470px]',
   },
   {
-    id: 'organic-sanctuary',
-    style: 'Organic Sanctuary',
-    room: 'Great Room',
+    id: 'industrial-kitchen',
+    style: 'Industrial',
+    sublabel: 'Industrial Loft',
+    room: 'Kitchen & Island',
     designer: 'Aura Architects',
-    image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=85',
-    alt: 'High-ceiling organic sanctuary with curved linen sofa, travertine fireplace, and architectural lighting',
+    image: '/assets/industrial Kitchen & Island.jpg',
+    alt: 'Contemporary industrial loft kitchen featuring dark metal fixtures, custom island cabinetry, architectural pendant lighting, and exposed masonry elements',
     objectPosition: 'center 50%',
     offsetClass: 'mt-0',
     heightClass: 'h-[340px] sm:h-[470px] lg:h-[515px] xl:h-[545px]',
   },
   {
-    id: 'crafted-kitchen',
-    style: 'Warm Timber Loft',
-    room: 'Kitchen & Island',
+    id: 'mid-century-modern',
+    style: 'Mid-Century Modern',
+    sublabel: 'Mid-Century Modern',
+    room: 'Home Office / Study',
     designer: 'Vanguard Atelier',
-    image: 'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=85',
-    alt: 'Custom waterfall marble kitchen island with bespoke oak cabinetry and architectural pendant lighting',
+    image: '/assets/mid-century-modern.png',
+    alt: 'Warm mid-century modern home office study showcasing rich wood desk craftsmanship, tailored accent chair, built-in library shelving, and warm natural illumination',
     objectPosition: 'center 42%',
     offsetClass: 'mt-12 sm:mt-16',
     heightClass: 'h-[300px] sm:h-[415px] lg:h-[455px] xl:h-[485px]',
   },
   {
-    id: 'sculptural-dining',
-    style: 'Contemporary Gallery',
-    room: 'Dining Alcove',
+    id: 'coastal-bedroom',
+    style: 'Coastal',
+    sublabel: 'Coastal Light',
+    room: 'Bedroom',
     designer: 'Maison Forma',
-    image: 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=800&q=85',
-    alt: 'Curated dining space featuring fluted oak table, upholstered chairs, and sculptural pendant chandelier',
+    image: '/assets/Coastal-bedroom.jpg',
+    alt: 'Airy coastal bedroom retreat with light linen bedding, soothing neutral color palette, natural woven decor accents, and soft morning sunlight',
     objectPosition: 'center 50%',
     offsetClass: 'mt-4 sm:mt-6',
     heightClass: 'h-[320px] sm:h-[435px] lg:h-[475px] xl:h-[505px]',
@@ -74,10 +79,10 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMobileModal, onOpenGetStarted 
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-          
+
           {/* Left Column: Editorial Value Proposition & Actions */}
           <div className="lg:col-span-7 xl:col-span-6 space-y-6 sm:space-y-6.5 text-left">
-            
+
             {/* Tagline Badge */}
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#F4F0E8] dark:bg-[#1E1B18] border border-[#E7E1D7] dark:border-[#2E2824] text-xs font-medium text-[#78716C] dark:text-[#A8A29E] shadow-2xs transition-colors duration-500">
               <span className="w-2 h-2 rounded-full bg-[#C48A36] animate-pulse" />
@@ -210,13 +215,13 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMobileModal, onOpenGetStarted 
           <div className="lg:col-span-5 xl:col-span-6 relative">
             {/* Gallery Container */}
             <div className="relative mx-auto max-w-xl lg:max-w-none pt-2 pb-4 px-1 sm:px-2">
-              
+
               {/* Decorative Subtle Underlay Warm Glow - removed white gradient in dark mode */}
               <div className="absolute -inset-4 bg-gradient-to-tr from-[#C48A36]/12 via-[#F4F0E8]/60 to-transparent dark:from-[#C48A36]/8 dark:via-transparent dark:to-transparent rounded-[50px] blur-2xl pointer-events-none" />
 
               {/* 4 Ellipse Pillars Grid */}
               <div className="relative grid grid-cols-4 gap-2 sm:gap-3.5 lg:gap-3 xl:gap-4 items-start">
-                
+
                 {DESIGN_PILLARS.map((pillar, index) => {
                   const isSecond = index === 1;
 
@@ -254,10 +259,10 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMobileModal, onOpenGetStarted 
                         {/* Subtle darkening gradient at bottom for style badge contrast */}
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1C1917]/75 via-transparent to-transparent opacity-40 group-hover:opacity-80 transition-opacity duration-500 pointer-events-none" />
 
-                        {/* Floating style label on hover */}
-                        <div className="absolute bottom-4 sm:bottom-6 inset-x-1 sm:inset-x-2 flex justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 pointer-events-none">
-                          <span className="text-[9px] sm:text-[10px] font-semibold text-[#FAF8F5] bg-[#1C1917]/90 backdrop-blur-xs px-2.5 py-0.5 sm:py-1 rounded-full text-center leading-tight shadow-md border border-[#FAF8F5]/20 max-w-[92%] truncate">
-                            {pillar.room} • {pillar.style}
+                        {/* Floating style sublabel card on hover */}
+                        <div className="absolute bottom-3.5 sm:bottom-5 inset-x-1.5 sm:inset-x-2 flex justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 pointer-events-none">
+                          <span className="text-[10px] sm:text-[11px] font-semibold text-[#FAF8F5] bg-[#1C1917]/90 dark:bg-[#FAF8F5]/95 dark:text-[#1C1917] backdrop-blur-md px-2.5 py-1 rounded-full text-center leading-tight shadow-lg border border-[#FAF8F5]/20 dark:border-[#1C1917]/20 max-w-[94%] truncate">
+                            {pillar.sublabel}
                           </span>
                         </div>
                       </div>

@@ -35,23 +35,21 @@ export const InteractiveTriangleTiles: React.FC = () => {
     let height = 0;
     let dpr = 1;
 
-    // Viewport mouse coordinates
+    // Viewport mouse coordinates with smooth organic damping
     const mouse = {
       x: -2000,
       y: -2000,
+      targetX: -2000,
+      targetY: -2000,
       active: false,
     };
-
-    // Smooth scroll position tracking
-    let targetScrollY = typeof window !== 'undefined' ? window.scrollY : 0;
-    let currentScrollY = targetScrollY;
 
     // Refined architectural geometry
     const SIDE = 62; // Equilateral triangle side length
     const TRI_HEIGHT = SIDE * (Math.sqrt(3) / 2); // ~53.69px
-    const INFLUENCE_RADIUS = 165; // Proximity field around cursor
-    const MAX_PULL = 6.5; // Delicate, organic follow pull (subtle & natural)
-    const ELEVATION_SCALE = 0.024; // Subtle 2.4% elevation lift
+    const INFLUENCE_RADIUS = 180; // Gentle proximity field around cursor
+    const MAX_PULL = 7.0; // Natural magnetic follow
+    const ELEVATION_SCALE = 0.025; // Delicate elevation lift
 
     // Active state map for excited tiles (pruned automatically when tiles settle)
     const activeTiles = new Map<string, ActiveTileState>();
@@ -70,38 +68,40 @@ export const InteractiveTriangleTiles: React.FC = () => {
     handleResize();
     window.addEventListener('resize', handleResize);
 
-    // Scroll listener for seamless parallax & tile alignment
-    const handleScroll = () => {
-      targetScrollY = window.scrollY;
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Track mouse position
+    // Track mouse position with smooth transitions
     const handleMouseMove = (e: MouseEvent) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
+      mouse.targetX = e.clientX;
+      mouse.targetY = e.clientY;
+      if (!mouse.active) {
+        mouse.x = e.clientX;
+        mouse.y = e.clientY;
+      }
       mouse.active = true;
     };
 
     const handleMouseLeave = () => {
       mouse.active = false;
-      mouse.x = -2000;
-      mouse.y = -2000;
+      mouse.targetX = -2000;
+      mouse.targetY = -2000;
     };
 
     // Touch support for mobile devices
     const handleTouchMove = (e: TouchEvent) => {
       if (e.touches.length > 0) {
-        mouse.x = e.touches[0].clientX;
-        mouse.y = e.touches[0].clientY;
+        mouse.targetX = e.touches[0].clientX;
+        mouse.targetY = e.touches[0].clientY;
+        if (!mouse.active) {
+          mouse.x = e.touches[0].clientX;
+          mouse.y = e.touches[0].clientY;
+        }
         mouse.active = true;
       }
     };
 
     const handleTouchEnd = () => {
       mouse.active = false;
-      mouse.x = -2000;
-      mouse.y = -2000;
+      mouse.targetX = -2000;
+      mouse.targetY = -2000;
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
@@ -116,11 +116,17 @@ export const InteractiveTriangleTiles: React.FC = () => {
       const dt = Math.min((now - lastTime) / 1000, 0.064);
       lastTime = now;
 
-      // Smooth scroll interpolation (eases any browser scroll jumps)
-      const scrollLerp = Math.min(1, 10 * dt);
-      currentScrollY += (targetScrollY - currentScrollY) * scrollLerp;
-      if (Math.abs(targetScrollY - currentScrollY) < 0.1) {
-        currentScrollY = targetScrollY;
+      // Direct synchronous scroll tracking to eliminate any parallax lag or scroll stutter
+      const currentScrollY = window.scrollY || window.pageYOffset || 0;
+
+      // Organic mouse position interpolation for fluid tracking
+      if (mouse.active) {
+        const mouseSpeed = Math.min(1, 22 * dt);
+        mouse.x += (mouse.targetX - mouse.x) * mouseSpeed;
+        mouse.y += (mouse.targetY - mouse.y) * mouseSpeed;
+      } else {
+        mouse.x = -2000;
+        mouse.y = -2000;
       }
 
       ctx.clearRect(0, 0, width, height);
@@ -128,9 +134,9 @@ export const InteractiveTriangleTiles: React.FC = () => {
       const isDark = themeRef.current === 'dark';
       const halfSide = SIDE / 2;
 
-      // Calibrated subtle alpha baseline
-      const baseAlpha = isDark ? 0.028 : 0.022;
-      const hoverAlphaLift = isDark ? 0.085 : 0.07;
+      // Calibrated subtle alpha baseline - lighter and delicate
+      const baseAlpha = isDark ? 0.024 : 0.034;
+      const hoverAlphaLift = isDark ? 0.080 : 0.095;
 
       // Determine visible rows in world-space
       const startRow = Math.floor((currentScrollY - TRI_HEIGHT * 2) / TRI_HEIGHT) - 1;
@@ -161,9 +167,9 @@ export const InteractiveTriangleTiles: React.FC = () => {
             : 9999;
 
           if (distToMouse < INFLUENCE_RADIUS) {
-            const raw = 1 - distToMouse / INFLUENCE_RADIUS;
-            // Smooth natural cubic easing curve
-            const factor = raw * raw * (3 - 2 * raw);
+            const normDist = distToMouse / INFLUENCE_RADIUS;
+            // Smooth cosine bell curve for natural, organic falloff
+            const factor = Math.cos(normDist * Math.PI * 0.5) ** 2;
 
             const angle = Math.atan2(mouse.y - screenCy, mouse.x - baseCx);
             const targetDx = Math.cos(angle) * (factor * MAX_PULL);
@@ -195,7 +201,7 @@ export const InteractiveTriangleTiles: React.FC = () => {
               state.targetWarmth = targetWarmth;
             }
           } else if (activeTiles.has(key)) {
-            // Returning to rest
+            // Returning gracefully to rest
             const state = activeTiles.get(key)!;
             state.targetDx = 0;
             state.targetDy = 0;
@@ -207,10 +213,13 @@ export const InteractiveTriangleTiles: React.FC = () => {
       }
 
       // 2. Interpolate active tiles and prune settled ones
-      const lerpSpeed = Math.min(1, 8.5 * dt);
       const keysToDelete: string[] = [];
 
       activeTiles.forEach((state, key) => {
+        // Dynamic spring lerp: faster follow when attracted, gentle settle when leaving
+        const isAttracted = state.targetWarmth > 0;
+        const lerpSpeed = Math.min(1, (isAttracted ? 12 : 6.5) * dt);
+
         state.currentDx += (state.targetDx - state.currentDx) * lerpSpeed;
         state.currentDy += (state.targetDy - state.currentDy) * lerpSpeed;
         state.currentScale += (state.targetScale - state.currentScale) * lerpSpeed;
@@ -219,8 +228,8 @@ export const InteractiveTriangleTiles: React.FC = () => {
 
         if (
           state.targetWarmth === 0 &&
-          Math.abs(state.currentDx) < 0.03 &&
-          Math.abs(state.currentDy) < 0.03 &&
+          Math.abs(state.currentDx) < 0.02 &&
+          Math.abs(state.currentDy) < 0.02 &&
           state.currentWarmth < 0.01 &&
           Math.abs(state.currentAlpha - baseAlpha) < 0.002
         ) {
@@ -278,7 +287,7 @@ export const InteractiveTriangleTiles: React.FC = () => {
           }
           ctx.closePath();
 
-          // Delicate travertine fill
+          // Delicate travertine fill - soft, luminous & lighter
           if (isDark) {
             if (warmth > 0.02) {
               const goldR = Math.round(205 + (224 - 205) * warmth);
@@ -286,16 +295,16 @@ export const InteractiveTriangleTiles: React.FC = () => {
               const goldB = Math.round(110 + (56 - 110) * warmth);
               ctx.fillStyle = `rgba(${goldR}, ${goldG}, ${goldB}, ${alpha * 1.15})`;
             } else {
-              ctx.fillStyle = `rgba(165, 150, 135, ${alpha * 0.45})`;
+              ctx.fillStyle = `rgba(165, 150, 135, ${alpha * 0.40})`;
             }
           } else {
             if (warmth > 0.02) {
-              const goldR = Math.round(198 + (192 - 198) * warmth);
-              const goldG = Math.round(175 + (134 - 175) * warmth);
-              const goldB = Math.round(138 + (50 - 138) * warmth);
-              ctx.fillStyle = `rgba(${goldR}, ${goldG}, ${goldB}, ${alpha * 0.9})`;
+              const goldR = Math.round(202 + (192 - 202) * warmth);
+              const goldG = Math.round(170 + (134 - 170) * warmth);
+              const goldB = Math.round(128 + (50 - 128) * warmth);
+              ctx.fillStyle = `rgba(${goldR}, ${goldG}, ${goldB}, ${alpha * 0.95})`;
             } else {
-              ctx.fillStyle = `rgba(195, 185, 170, ${alpha})`;
+              ctx.fillStyle = `rgba(200, 192, 180, ${alpha * 0.55})`;
             }
           }
           ctx.fill();
@@ -306,15 +315,15 @@ export const InteractiveTriangleTiles: React.FC = () => {
               ctx.strokeStyle = `rgba(229, 168, 62, ${Math.min(0.26, alpha * 2.2)})`;
               ctx.lineWidth = 0.75;
             } else {
-              ctx.strokeStyle = `rgba(145, 130, 115, ${Math.min(0.08, alpha * 1.5)})`;
+              ctx.strokeStyle = `rgba(145, 130, 115, ${Math.min(0.07, alpha * 1.4)})`;
               ctx.lineWidth = 0.55;
             }
           } else {
             if (warmth > 0.05) {
-              ctx.strokeStyle = `rgba(196, 138, 54, ${Math.min(0.22, alpha * 2.0)})`;
-              ctx.lineWidth = 0.7;
+              ctx.strokeStyle = `rgba(196, 138, 54, ${Math.min(0.32, alpha * 2.2)})`;
+              ctx.lineWidth = 0.75;
             } else {
-              ctx.strokeStyle = `rgba(195, 185, 172, ${Math.min(0.10, alpha * 1.8)})`;
+              ctx.strokeStyle = `rgba(182, 172, 156, ${Math.min(0.12, alpha * 1.8)})`;
               ctx.lineWidth = 0.55;
             }
           }
@@ -332,7 +341,6 @@ export const InteractiveTriangleTiles: React.FC = () => {
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseleave', handleMouseLeave);
       window.removeEventListener('touchmove', handleTouchMove);
@@ -347,7 +355,7 @@ export const InteractiveTriangleTiles: React.FC = () => {
     >
       <canvas
         ref={canvasRef}
-        className="w-full h-full block opacity-90 transition-opacity duration-700"
+        className="w-full h-full block opacity-100 transition-opacity duration-700"
       />
     </div>
   );
