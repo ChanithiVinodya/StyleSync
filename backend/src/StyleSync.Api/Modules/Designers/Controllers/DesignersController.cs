@@ -11,10 +11,53 @@ namespace StyleSync.Api.Modules.Designers.Controllers;
 public class DesignersController : ControllerBase
 {
     private readonly IDesignerService _designerService;
+    private readonly IMatchScoreEngine _matchScoreEngine;
 
-    public DesignersController(IDesignerService designerService)
+    public DesignersController(IDesignerService designerService, IMatchScoreEngine matchScoreEngine)
     {
         _designerService = designerService;
+        _matchScoreEngine = matchScoreEngine;
+    }
+
+    /// <summary>
+    /// AI Matching Agent Contract & Search Tool: searches and ranks published candidate designers using deterministic match scoring.
+    /// Capacity-excluded designers (IsUnderCapacity = false) and unpublished listings are strictly filtered out.
+    /// </summary>
+    /// <param name="request">Search parameters including style tags and client budget range.</param>
+    /// <returns>Ranked array of candidate designers ordered descending by MatchScore.</returns>
+    [HttpPost("search")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<DesignerSearchResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> SearchDesigners([FromBody] DesignerSearchRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var results = await _matchScoreEngine.SearchDesignersAsync(request);
+        return Ok(results);
+    }
+
+    /// <summary>
+    /// GET version of search_designers() tool contract for query-string based searches.
+    /// </summary>
+    [HttpGet("search")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(List<DesignerSearchResult>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchDesignersGet(
+        [FromQuery] string[]? styleTags, 
+        [FromQuery] decimal budgetMin = 0, 
+        [FromQuery] decimal budgetMax = 0)
+    {
+        var request = new DesignerSearchRequest
+        {
+            StyleTags = styleTags?.ToList() ?? new List<string>(),
+            BudgetMin = budgetMin,
+            BudgetMax = budgetMax
+        };
+
+        var results = await _matchScoreEngine.SearchDesignersAsync(request);
+        return Ok(results);
     }
 
     /// <summary>
