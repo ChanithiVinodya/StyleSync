@@ -1,4 +1,5 @@
 using StyleSync.Api.Common.Persistence;
+using StyleSync.Api.Modules.Designers.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,8 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddScoped<IDesignerService, DesignerService>();
 
 builder.Services.AddCors(options =>
 {
