@@ -8,10 +8,12 @@ namespace StyleSync.Api.Modules.Designers.Services;
 public class DesignerService : IDesignerService
 {
     private readonly AppDbContext _context;
+    private readonly ICapacityGuardService _capacityGuard;
 
-    public DesignerService(AppDbContext context)
+    public DesignerService(AppDbContext context, ICapacityGuardService capacityGuard)
     {
         _context = context;
+        _capacityGuard = capacityGuard;
     }
 
     public async Task<DesignerProfileResponse?> GetProfileByIdAsync(int id, bool includeUnpublished = false)
@@ -26,10 +28,9 @@ public class DesignerService : IDesignerService
         if (!includeUnpublished && profile.ListingStatus != ListingStatus.Published)
             return null;
 
-        var activeProjects = await _context.Contracts
-            .CountAsync(c => c.DesignerId == profile.Id && c.Status == ContractStatus.Active);
+        var activeProjects = await _capacityGuard.GetActiveProjectCountAsync(profile.Id);
 
-        return MapToResponse(profile, activeProjects, includeUnpublished);
+        return MapToResponse(profile, activeProjects, _capacityGuard.IsUnderCapacity(profile, activeProjects), includeUnpublished);
     }
 
     public async Task<DesignerProfileResponse> CreateProfileAsync(int currentUserId, bool isAdmin, CreateDesignerProfileRequest request)
@@ -73,7 +74,7 @@ public class DesignerService : IDesignerService
         await _context.DesignerProfiles.AddAsync(profile);
         await _context.SaveChangesAsync();
 
-        return MapToResponse(profile, 0, includeUnpublished: true);
+        return MapToResponse(profile, 0, isUnderCapacity: true, includeUnpublished: true);
     }
 
     public async Task<DesignerProfileResponse> UpdateProfileAsync(int id, int currentUserId, bool isAdmin, UpdateDesignerProfileRequest request)
@@ -141,10 +142,9 @@ public class DesignerService : IDesignerService
 
         await _context.SaveChangesAsync();
 
-        var activeProjects = await _context.Contracts
-            .CountAsync(c => c.DesignerId == profile.Id && c.Status == ContractStatus.Active);
+        var activeProjects = await _capacityGuard.GetActiveProjectCountAsync(profile.Id);
 
-        return MapToResponse(profile, activeProjects, includeUnpublished: true);
+        return MapToResponse(profile, activeProjects, _capacityGuard.IsUnderCapacity(profile, activeProjects), includeUnpublished: true);
     }
 
     public async Task<bool> ArchiveProfileAsync(int id, bool isAdmin)
@@ -237,7 +237,7 @@ public class DesignerService : IDesignerService
         return true;
     }
 
-    private static DesignerProfileResponse MapToResponse(DesignerProfile profile, int activeProjects, bool includeUnpublished)
+    private static DesignerProfileResponse MapToResponse(DesignerProfile profile, int activeProjects, bool isUnderCapacity, bool includeUnpublished)
     {
         var portfolioItems = profile.PortfolioItems
             .Where(p => includeUnpublished || p.CompletionStatusBadge == ListingStatus.Published)
@@ -262,7 +262,8 @@ public class DesignerService : IDesignerService
             MaxConcurrentProjects = profile.MaxConcurrentProjects,
             ActiveProjectCount = activeProjects,
             RemainingCapacity = remainingCapacity,
-            IsAtCapacity = activeProjects >= profile.MaxConcurrentProjects,
+            IsUnderCapacity = isUnderCapacity,
+            IsAtCapacity = !isUnderCapacity,
             AverageRating = profile.AverageRating,
             ListingStatus = profile.ListingStatus,
             CreatedAtUtc = profile.CreatedAtUtc,

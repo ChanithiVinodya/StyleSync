@@ -23,6 +23,12 @@ public class DesignerCrudTests
         return new AppDbContext(options);
     }
 
+    private DesignerService CreateDesignerService(AppDbContext context)
+    {
+        var guard = new CapacityGuardService(context);
+        return new DesignerService(context, guard);
+    }
+
     private static ClaimsPrincipal CreateClaimsPrincipal(int userId, string role)
     {
         var claims = new List<Claim>
@@ -38,7 +44,7 @@ public class DesignerCrudTests
     public async Task CreateProfile_ValidRequest_CreatesProfileAsDraft()
     {
         using var context = CreateInMemoryDbContext();
-        var service = new DesignerService(context);
+        var service = CreateDesignerService(context);
 
         var request = new CreateDesignerProfileRequest
         {
@@ -64,7 +70,7 @@ public class DesignerCrudTests
     public async Task CreateProfile_PriceMinGreaterThanPriceMax_ThrowsArgumentException()
     {
         using var context = CreateInMemoryDbContext();
-        var service = new DesignerService(context);
+        var service = CreateDesignerService(context);
 
         var request = new CreateDesignerProfileRequest
         {
@@ -82,7 +88,7 @@ public class DesignerCrudTests
     public async Task UpdateProfile_DesignerEditsOwnProfile_Succeeds()
     {
         using var context = CreateInMemoryDbContext();
-        var service = new DesignerService(context);
+        var service = CreateDesignerService(context);
 
         var profile = new DesignerProfile
         {
@@ -119,7 +125,7 @@ public class DesignerCrudTests
     public async Task UpdateProfile_DesignerEditsOtherProfile_ThrowsUnauthorizedAccessException()
     {
         using var context = CreateInMemoryDbContext();
-        var service = new DesignerService(context);
+        var service = CreateDesignerService(context);
 
         var profile = new DesignerProfile
         {
@@ -150,7 +156,7 @@ public class DesignerCrudTests
     public async Task UpdateProfile_AdminOverridesCapacityAndStatus_Succeeds()
     {
         using var context = CreateInMemoryDbContext();
-        var service = new DesignerService(context);
+        var service = CreateDesignerService(context);
 
         var profile = new DesignerProfile
         {
@@ -187,7 +193,7 @@ public class DesignerCrudTests
     public async Task ArchiveProfile_AdminSoftDeletes_SetsStatusToArchived()
     {
         using var context = CreateInMemoryDbContext();
-        var service = new DesignerService(context);
+        var service = CreateDesignerService(context);
 
         var profile = new DesignerProfile
         {
@@ -211,7 +217,7 @@ public class DesignerCrudTests
     public async Task PortfolioCRUD_AddAndRemoveItems_EnforcesOwnership()
     {
         using var context = CreateInMemoryDbContext();
-        var service = new DesignerService(context);
+        var service = CreateDesignerService(context);
 
         var profile = new DesignerProfile
         {

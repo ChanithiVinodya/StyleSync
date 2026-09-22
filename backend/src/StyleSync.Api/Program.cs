@@ -12,6 +12,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddScoped<ICapacityGuardService, CapacityGuardService>();
 builder.Services.AddScoped<IDesignerService, DesignerService>();
 
 builder.Services.AddCors(options =>

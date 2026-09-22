@@ -72,6 +72,7 @@ public class DesignerProfileResponse
     public int MaxConcurrentProjects { get; set; }
     public int ActiveProjectCount { get; set; }
     public int RemainingCapacity { get; set; }
+    public bool IsUnderCapacity { get; set; }
     public bool IsAtCapacity { get; set; }
     public decimal? AverageRating { get; set; }
     public ListingStatus ListingStatus { get; set; }
