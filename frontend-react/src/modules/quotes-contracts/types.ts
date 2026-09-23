@@ -1,0 +1,45 @@
+export type StatusLike = string | { value?: string; name?: string } | undefined | null;
+
+export interface QuoteItem {
+  id?: string;
+  description: string;
+  category: string;
+  quantity: number;
+  unitCost: number;
+  totalCost?: number;
+}
+
+export interface Quote {
+  id: string;
+  projectRequestId: string;
+  designerId: string;
+  scopeSummary: string;
+  notes?: string;
+  isAiGenerated: boolean;
+  status: StatusLike;
+  totalCost: number;
+  items: QuoteItem[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Contract {
+  id: string;
+  quoteId?: string;
+  projectRequestId?: string;
+  designerId?: string;
+  clientId?: string;
+  status: string;
+  totalAmount: number;
+  terms?: string;
+  signedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}

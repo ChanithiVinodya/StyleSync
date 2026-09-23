@@ -32,8 +32,9 @@ public class AppDbContext : DbContext
     // public DbSet<ProjectRequest> ProjectRequests => Set<ProjectRequest>();
 
     // ---- Module: Quotes & Contracts (Student 3) ----
-    // TODO: add your first DbSet here, e.g.
-    // public DbSet<Quote> Quotes => Set<Quote>();
+    public DbSet<StyleSync.Api.Models.Quote> Quotes => Set<StyleSync.Api.Models.Quote>();
+    public DbSet<StyleSync.Api.Models.QuoteItem> QuoteItems => Set<StyleSync.Api.Models.QuoteItem>();
+    public DbSet<StyleSync.Api.Models.Contract> Contracts => Set<StyleSync.Api.Models.Contract>();
 
     // ---- Module: Project Execution (Student 4) ----
     // TODO: add your first DbSet here, e.g.

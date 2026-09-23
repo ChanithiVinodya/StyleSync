@@ -14,6 +14,7 @@ export default function App() {
         <Link to="/project-execution">Project Execution</Link>
       </nav>
 
+<<<<<<< Updated upstream
       <main style={{ padding: '1.5rem' }}>
         <Routes>
           <Route path="/" element={<h1>StyleSync</h1>} />
@@ -29,4 +30,59 @@ export default function App() {
       </main>
     </BrowserRouter>
   )
+=======
+            {/* Admin-only Routes */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Designer-only Routes */}
+            <Route
+              path="/designer"
+              element={
+                <ProtectedRoute allowedRoles={['Designer']}>
+                  <DesignerDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Client-only Routes */}
+            <Route
+              path="/client"
+              element={
+                <ProtectedRoute allowedRoles={['Client']}>
+                  <ClientDashboard />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Feature Modules */}
+            <Route path="/designers" element={<DesignersPage />} />
+            <Route path="/project-requests" element={<ProjectRequestsPage />} />
+            <Route path="/quotes-contracts/*" element={<QuotesContractsPage />} />
+            <Route path="/quotes" element={<Navigate to="/quotes-contracts" replace />} />
+            <Route path="/contracts" element={<Navigate to="/quotes-contracts" replace />} />
+            <Route path="/project-execution" element={<ProjectExecutionPage />} />
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+>>>>>>> Stashed changes
 }
