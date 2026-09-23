@@ -1,16 +1,42 @@
-using StyleSync.Api.Common.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace StyleSync.Api.Common.Persistence.Configurations;
+namespace StyleSync.Api.Common.Identity;
 
 public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 {
     public void Configure(EntityTypeBuilder<AppUser> builder)
     {
         builder.ToTable("Users");
-        builder.HasIndex(u => u.Email).IsUnique();
-        builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
-        builder.Property(u => u.FullName).IsRequired().HasMaxLength(200);
+
+        builder.HasKey(u => u.Id);
+
+        builder.HasIndex(u => u.Email)
+            .IsUnique();
+
+        builder.Property(u => u.Name)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        builder.Property(u => u.Email)
+            .IsRequired()
+            .HasMaxLength(256);
+
+        builder.Property(u => u.PasswordHash)
+            .IsRequired();
+
+        builder.Property(u => u.Role)
+            .IsRequired()
+            .HasConversion<string>();
+
+        builder.Property(u => u.IsActive)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        builder.Property(u => u.CreatedAt)
+            .IsRequired();
+
+        builder.Property(u => u.UpdatedAt)
+            .IsRequired();
     }
 }
