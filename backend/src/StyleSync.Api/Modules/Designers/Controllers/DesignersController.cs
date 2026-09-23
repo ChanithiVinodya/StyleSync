@@ -20,6 +20,21 @@ public class DesignersController : ControllerBase
     }
 
     /// <summary>
+    /// Public human-facing designer directory browsing, filtering, sorting, and pagination.
+    /// Only returns Published listings.
+    /// </summary>
+    /// <param name="query">Filter parameters (style, budgetMin, budgetMax, available, sort, page, pageSize).</param>
+    /// <returns>Paginated list of published designer listings.</returns>
+    [HttpGet]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(PagedResult<DesignerListingItemResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetListings([FromQuery] DesignerQueryParameters query)
+    {
+        var result = await _designerService.GetPublicListingsAsync(query);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// AI Matching Agent Contract & Search Tool: searches and ranks published candidate designers using deterministic match scoring.
     /// Capacity-excluded designers (IsUnderCapacity = false) and unpublished listings are strictly filtered out.
     /// </summary>

@@ -4,6 +4,7 @@ namespace StyleSync.Api.Modules.Designers.Services;
 
 public interface IDesignerService
 {
+    Task<PagedResult<DesignerListingItemResponse>> GetPublicListingsAsync(DesignerQueryParameters query, CancellationToken cancellationToken = default);
     Task<DesignerProfileResponse?> GetProfileByIdAsync(int id, bool includeUnpublished = false);
     Task<DesignerProfileResponse> CreateProfileAsync(int currentUserId, bool isAdmin, CreateDesignerProfileRequest request);
     Task<DesignerProfileResponse> UpdateProfileAsync(int id, int currentUserId, bool isAdmin, UpdateDesignerProfileRequest request);

@@ -16,6 +16,123 @@ public class DesignerService : IDesignerService
         _capacityGuard = capacityGuard;
     }
 
+    public async Task<PagedResult<DesignerListingItemResponse>> GetPublicListingsAsync(
+        DesignerQueryParameters query, 
+        CancellationToken cancellationToken = default)
+    {
+        var baseQuery = _context.DesignerProfiles
+            .AsNoTracking()
+            .Include(d => d.PortfolioItems)
+            .Where(d => d.ListingStatus == ListingStatus.Published);
+
+        // Budget min/max overlap filter
+        if (query.BudgetMin.HasValue && query.BudgetMin.Value > 0)
+        {
+            baseQuery = baseQuery.Where(d => d.PriceRangeMax >= query.BudgetMin.Value);
+        }
+
+        if (query.BudgetMax.HasValue && query.BudgetMax.Value > 0)
+        {
+            baseQuery = baseQuery.Where(d => d.PriceRangeMin <= query.BudgetMax.Value);
+        }
+
+        var designers = await baseQuery.ToListAsync(cancellationToken);
+
+        // Style tag filter
+        if (!string.IsNullOrWhiteSpace(query.Style))
+        {
+            var requestedStyles = query.Style
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (requestedStyles.Length > 0)
+            {
+                designers = designers.Where(d =>
+                    d.StyleTags != null &&
+                    requestedStyles.Any(req => d.StyleTags.Any(dt => dt.Contains(req, StringComparison.OrdinalIgnoreCase)))
+                ).ToList();
+            }
+        }
+
+        // Active project counts for capacity calculation
+        var designerIds = designers.Select(d => d.Id).ToList();
+        var activeCounts = await _capacityGuard.GetActiveProjectCountsAsync(designerIds, cancellationToken);
+
+        // Availability filter
+        if (query.Available.HasValue)
+        {
+            if (query.Available.Value)
+            {
+                designers = designers.Where(d =>
+                    d.IsAvailable &&
+                    _capacityGuard.IsUnderCapacity(d, activeCounts.TryGetValue(d.Id, out var c) ? c : 0)
+                ).ToList();
+            }
+            else
+            {
+                designers = designers.Where(d =>
+                    !d.IsAvailable ||
+                    !_capacityGuard.IsUnderCapacity(d, activeCounts.TryGetValue(d.Id, out var c) ? c : 0)
+                ).ToList();
+            }
+        }
+
+        // Sorting
+        var sortOption = query.Sort?.Trim().ToLowerInvariant();
+        IEnumerable<DesignerProfile> sorted = sortOption switch
+        {
+            "rating" or "rating_desc" => designers.OrderByDescending(d => d.AverageRating ?? 0).ThenByDescending(d => d.CreatedAtUtc),
+            "rating_asc" => designers.OrderBy(d => d.AverageRating ?? 0).ThenBy(d => d.CreatedAtUtc),
+            "price" or "price_asc" => designers.OrderBy(d => d.PriceRangeMin).ThenBy(d => d.RatePerSqFt),
+            "price_desc" => designers.OrderByDescending(d => d.PriceRangeMax).ThenByDescending(d => d.RatePerSqFt),
+            "newest" or "created_desc" => designers.OrderByDescending(d => d.CreatedAtUtc),
+            _ => designers.OrderByDescending(d => d.CreatedAtUtc)
+        };
+
+        var sortedList = sorted.ToList();
+        var totalCount = sortedList.Count;
+        var page = Math.Max(1, query.Page);
+        var pageSize = Math.Clamp(query.PageSize, 1, 50);
+
+        var pagedList = sortedList
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(d =>
+            {
+                var activeCount = activeCounts.TryGetValue(d.Id, out var c) ? c : 0;
+                var isUnder = _capacityGuard.IsUnderCapacity(d, activeCount);
+                var publishedPortfolio = d.PortfolioItems
+                    .Where(p => p.CompletionStatusBadge == ListingStatus.Published)
+                    .OrderByDescending(p => p.CreatedAtUtc)
+                    .ToList();
+
+                return new DesignerListingItemResponse
+                {
+                    Id = d.Id,
+                    DisplayName = d.DisplayName,
+                    Bio = d.Bio,
+                    StyleTags = d.StyleTags ?? new(),
+                    ServiceCategories = d.ServiceCategories ?? new(),
+                    PriceRangeMin = d.PriceRangeMin,
+                    PriceRangeMax = d.PriceRangeMax,
+                    RatePerSqFt = d.RatePerSqFt,
+                    IsAvailable = d.IsAvailable,
+                    MaxConcurrentProjects = d.MaxConcurrentProjects,
+                    ActiveProjectCount = activeCount,
+                    RemainingCapacity = Math.Max(0, d.MaxConcurrentProjects - activeCount),
+                    IsUnderCapacity = isUnder,
+                    IsAtCapacity = !isUnder,
+                    AverageRating = d.AverageRating,
+                    ListingStatus = d.ListingStatus,
+                    PublishedPortfolioCount = publishedPortfolio.Count,
+                    FeaturedImageUrl = publishedPortfolio.FirstOrDefault()?.ImageUrl,
+                    CreatedAtUtc = d.CreatedAtUtc
+                };
+            })
+            .ToList();
+
+        return new PagedResult<DesignerListingItemResponse>(pagedList, totalCount, page, pageSize);
+    }
+
     public async Task<DesignerProfileResponse?> GetProfileByIdAsync(int id, bool includeUnpublished = false)
     {
         var profile = await _context.DesignerProfiles
