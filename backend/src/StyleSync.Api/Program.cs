@@ -9,6 +9,8 @@ using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Configuration;
 using StyleSync.Api.Middleware;
 using StyleSync.Api.Services;
+using StyleSync.Api.Modules.ProjectExecution.Interfaces;
+using StyleSync.Api.Modules.ProjectExecution.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -57,6 +59,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Project Execution Services
+builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<ITaskDependencyService, TaskDependencyService>();
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+builder.Services.AddScoped<IProgressPhotoService, ProgressPhotoService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>

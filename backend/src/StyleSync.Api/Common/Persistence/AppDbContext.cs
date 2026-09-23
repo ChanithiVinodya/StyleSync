@@ -1,5 +1,6 @@
 using StyleSync.Api.Common.Identity;
 using Microsoft.EntityFrameworkCore;
+using StyleSync.Api.Modules.ProjectExecution.Models;
 
 namespace StyleSync.Api.Common.Persistence;
 
@@ -36,8 +37,11 @@ public class AppDbContext : DbContext
     // public DbSet<Quote> Quotes => Set<Quote>();
 
     // ---- Module: Project Execution (Student 4) ----
-    // TODO: add your first DbSet here, e.g.
-    // public DbSet<ProjectMilestone> ProjectMilestones => Set<ProjectMilestone>();
+    public DbSet<ProjectMilestone> ProjectMilestones => Set<ProjectMilestone>();
+    public DbSet<ProjectTask> ProjectTasks => Set<ProjectTask>();
+    public DbSet<TaskDependency> TaskDependencies => Set<TaskDependency>();
+    public DbSet<ProjectMaterial> ProjectMaterials => Set<ProjectMaterial>();
+    public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
