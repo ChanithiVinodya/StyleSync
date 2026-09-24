@@ -35,7 +35,7 @@ class DesignersApiService {
     }
   }
 
-  /// Fetches a single designer's full profile + portfolio items:
+  /// Fetches a single designer's full profile:
   /// GET /api/designers/{id}
   Future<DesignerProfile> getProfile(int id) async {
     try {
@@ -50,6 +50,26 @@ class DesignersApiService {
         orElse: () => _fallbackProfiles.first,
       );
       return found;
+    }
+  }
+
+  /// Fetches portfolio items for gallery view:
+  /// GET /api/designers/{id}/portfolio
+  Future<List<PortfolioItem>> getPortfolioItems(int id) async {
+    try {
+      final responseData = await apiClient.get('/designers/$id/portfolio');
+      if (responseData is List<dynamic>) {
+        return responseData
+            .map((item) => PortfolioItem.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      throw Exception('Unexpected portfolio format');
+    } catch (e) {
+      final profile = _fallbackProfiles.firstWhere(
+        (p) => p.id == id,
+        orElse: () => _fallbackProfiles.first,
+      );
+      return profile.portfolioItems;
     }
   }
 
@@ -333,6 +353,28 @@ class DesignersApiService {
           createdAtUtc: DateTime.parse('2026-09-02T13:00:00Z'),
         ),
       ],
+    ),
+    DesignerProfile(
+      id: 7,
+      userId: 107,
+      displayName: 'Greenline Eco Spaces',
+      bio:
+          'Pioneering biophilic design incorporating vertical green walls, natural cross-ventilation, and carbon-neutral recycled materials.',
+      styleTags: const ['Biophilic', 'Eco-friendly', 'Modern Farmhouse'],
+      serviceCategories: const ['Eco-Home', 'Living Room'],
+      priceRangeMin: 120000.0,
+      priceRangeMax: 400000.0,
+      ratePerSqFt: 360.0,
+      isAvailable: true,
+      maxConcurrentProjects: 3,
+      activeProjectCount: 0,
+      remainingCapacity: 3,
+      isUnderCapacity: true,
+      isAtCapacity: false,
+      averageRating: null, // Nullable averageRating
+      listingStatus: ListingStatus.published,
+      createdAtUtc: DateTime.parse('2026-09-05T09:00:00Z'),
+      portfolioItems: const [],
     ),
   ];
 }
