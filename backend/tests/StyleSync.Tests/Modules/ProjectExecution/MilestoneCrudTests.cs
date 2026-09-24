@@ -33,8 +33,9 @@ public class MilestoneCrudTests : IDisposable
         _service = new MilestoneService(_context);
         var dependencyService = new TaskDependencyService(_context);
         _taskService = new TaskService(_context, dependencyService);
+        var materialService = new MaterialService(_context);
         
-        _controller = new MilestonesController(_service, _taskService);
+        _controller = new MilestonesController(_service, _taskService, materialService);
         
         // Mocking user context for authorization is normally done via ControllerContext in integration tests.
         // For unit tests, we're primarily testing logic, but we can set up HttpContext if needed.

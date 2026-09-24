@@ -16,11 +16,13 @@ public class MilestonesController : ControllerBase
 {
     private readonly IMilestoneService _milestoneService;
     private readonly ITaskService _taskService;
+    private readonly IMaterialService _materialService;
 
-    public MilestonesController(IMilestoneService milestoneService, ITaskService taskService)
+    public MilestonesController(IMilestoneService milestoneService, ITaskService taskService, IMaterialService materialService)
     {
         _milestoneService = milestoneService;
         _taskService = taskService;
+        _materialService = materialService;
     }
 
     [HttpPost]
@@ -78,6 +80,22 @@ public class MilestonesController : ControllerBase
 
         var tasks = await _taskService.GetAllAsync(id, null);
         return Ok(tasks);
+    }
+
+    [HttpGet("{id:guid}/materials")]
+    [Authorize(Roles = "Admin,Designer,Client")]
+    [ProducesResponseType(typeof(IEnumerable<MaterialDto>), 200)]
+    [ProducesResponseType(typeof(ErrorResponse), 404)]
+    public async Task<IActionResult> GetMaterialsForMilestone(Guid id)
+    {
+        var milestone = await _milestoneService.GetByIdAsync(id);
+        if (milestone == null)
+        {
+            return NotFound(new ErrorResponse(404, "Milestone not found."));
+        }
+
+        var materials = await _materialService.GetAllAsync(milestoneId: id);
+        return Ok(materials);
     }
 
     [HttpPut("{id:guid}")]

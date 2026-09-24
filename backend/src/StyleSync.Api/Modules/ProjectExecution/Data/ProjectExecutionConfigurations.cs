@@ -80,6 +80,22 @@ public class ProjectMaterialConfiguration : IEntityTypeConfiguration<ProjectMate
         builder.Property(m => m.Name)
             .IsRequired()
             .HasMaxLength(200);
+
+        builder.Property(m => m.Description)
+            .HasMaxLength(1000);
+
+        builder.Property(m => m.Unit)
+            .HasMaxLength(50);
+
+        builder.HasOne(m => m.Milestone)
+            .WithMany()
+            .HasForeignKey(m => m.MilestoneId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        builder.HasOne(m => m.Task)
+            .WithMany()
+            .HasForeignKey(m => m.TaskId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }
 

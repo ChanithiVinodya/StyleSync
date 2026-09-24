@@ -18,8 +18,7 @@ public enum TaskStatus
 
 public enum MaterialStatus
 {
+    Required,
     Ordered,
-    Shipped,
-    Delivered,
-    Delayed
+    Delivered
 }

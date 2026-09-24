@@ -36,7 +36,8 @@ public class ProjectExecutionFoundationTests
         
         Assert.Equal(0, (int)StyleSync.Api.Modules.ProjectExecution.Models.TaskStatus.NotStarted);
         
-        Assert.Equal(0, (int)MaterialStatus.Ordered);
+        Assert.Equal(0, (int)MaterialStatus.Required);
+        Assert.Equal(1, (int)MaterialStatus.Ordered);
         Assert.Equal(2, (int)MaterialStatus.Delivered);
     }
 
