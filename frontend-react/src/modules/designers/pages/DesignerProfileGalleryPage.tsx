@@ -22,12 +22,14 @@ interface DesignerProfileGalleryPageProps {
   designerId: number;
   onBack: () => void;
   onOpenStudio?: () => void;
+  onOpenProofOfWork?: () => void;
 }
 
 export const DesignerProfileGalleryPage: React.FC<DesignerProfileGalleryPageProps> = ({
   designerId,
   onBack,
-  onOpenStudio
+  onOpenStudio,
+  onOpenProofOfWork
 }) => {
   const [profile, setProfile] = useState<DesignerProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -235,7 +237,7 @@ export const DesignerProfileGalleryPage: React.FC<DesignerProfileGalleryPageProp
 
         {/* Portfolio Gallery Section */}
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-[#E7E1D7] dark:border-[#2C2723] pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-[#E7E1D7] dark:border-[#2C2723] pb-4">
             <div>
               <h2 className="text-xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">
                 Published Portfolio Gallery
@@ -244,6 +246,17 @@ export const DesignerProfileGalleryPage: React.FC<DesignerProfileGalleryPageProp
                 High-resolution architectural renders and finished project showcases ({publishedItems.length} items)
               </p>
             </div>
+
+            {onOpenProofOfWork && (
+              <button
+                type="button"
+                onClick={onOpenProofOfWork}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-[#FAF3E8] dark:bg-[#2A231C] text-[#925C18] dark:text-[#E8A849] border border-[#C48A36]/30 hover:border-[#C48A36] transition-colors self-start sm:self-auto cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Dedicated Proof-of-Work Gallery Screen →</span>
+              </button>
+            )}
           </div>
 
           {publishedItems.length === 0 ? (
