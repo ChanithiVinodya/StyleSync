@@ -31,7 +31,8 @@ public class MilestoneCrudTests : IDisposable
 
         _context = new AppDbContext(options);
         _service = new MilestoneService(_context);
-        _taskService = new TaskService(_context);
+        var dependencyService = new TaskDependencyService(_context);
+        _taskService = new TaskService(_context, dependencyService);
         
         _controller = new MilestonesController(_service, _taskService);
         

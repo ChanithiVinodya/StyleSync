@@ -67,6 +67,13 @@ public class TasksController : ControllerBase
         return Ok(task);
     }
 
+    /// <summary>
+    /// Updates a task's details and status.
+    /// </summary>
+    /// <remarks>
+    /// Note: A task cannot transition to InProgress unless all of its prerequisite tasks are Completed.
+    /// If prerequisites are incomplete, a 400 Bad Request is returned listing the blocking tasks.
+    /// </remarks>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = "Admin,Designer")]
     [ProducesResponseType(typeof(TaskDto), 200)]
@@ -87,6 +94,15 @@ public class TasksController : ControllerBase
         catch (ArgumentException ex)
         {
             return BadRequest(new ErrorResponse(400, ex.Message));
+        }
+        catch (StyleSync.Api.Modules.ProjectExecution.Exceptions.DependencyGuardException ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message,
+                taskId = ex.TaskId,
+                incompletePrerequisites = ex.IncompletePrerequisites
+            });
         }
     }
 

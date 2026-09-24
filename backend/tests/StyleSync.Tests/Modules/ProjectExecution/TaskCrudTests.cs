@@ -28,7 +28,8 @@ public class TaskCrudTests : IDisposable
             .Options;
 
         _context = new AppDbContext(options);
-        _service = new TaskService(_context);
+        var dependencyService = new TaskDependencyService(_context);
+        _service = new TaskService(_context, dependencyService);
         
         _controller = new TasksController(_service);
         

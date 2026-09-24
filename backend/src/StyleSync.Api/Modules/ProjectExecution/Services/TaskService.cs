@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.ProjectExecution.DTOs;
+using StyleSync.Api.Modules.ProjectExecution.Exceptions;
 using StyleSync.Api.Modules.ProjectExecution.Interfaces;
 using StyleSync.Api.Modules.ProjectExecution.Models;
 
@@ -13,10 +14,12 @@ namespace StyleSync.Api.Modules.ProjectExecution.Services;
 public class TaskService : ITaskService
 {
     private readonly AppDbContext _context;
+    private readonly ITaskDependencyService _taskDependencyService;
 
-    public TaskService(AppDbContext context)
+    public TaskService(AppDbContext context, ITaskDependencyService taskDependencyService)
     {
         _context = context;
+        _taskDependencyService = taskDependencyService;
     }
 
     public async Task<IEnumerable<TaskDto>> GetAllAsync(Guid? milestoneId, Models.TaskStatus? status)
@@ -89,6 +92,17 @@ public class TaskService : ITaskService
         var task = await _context.ProjectTasks.FindAsync(id);
         if (task == null)
             return null;
+
+        if (request.Status == Models.TaskStatus.InProgress && task.Status != Models.TaskStatus.InProgress)
+        {
+            var prerequisites = await _taskDependencyService.GetPrerequisitesAsync(id);
+            var incompletePrereqs = prerequisites.Where(p => p.Status != Models.TaskStatus.Completed).ToList();
+            
+            if (incompletePrereqs.Any())
+            {
+                throw new DependencyGuardException(id, incompletePrereqs);
+            }
+        }
 
         task.Name = request.Name;
         task.Description = request.Description;
