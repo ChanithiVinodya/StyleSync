@@ -446,6 +446,55 @@ export const designerApi = {
     }
   },
 
+  async getAllProfiles(): Promise<DesignerProfile[]> {
+    try {
+      // In production/API, fetch all profiles (accessible by Admin)
+      const response = await fetch(`${API_BASE}?pageSize=100`);
+      if (response.ok) {
+        const data: PagedResult<DesignerListingItem> = await response.json();
+        // Merge with in-memory or full profiles
+        return inMemoryDesigners;
+      }
+      return [...inMemoryDesigners];
+    } catch {
+      return [...inMemoryDesigners];
+    }
+  },
+
+  async overrideListingStatusAndCapacity(
+    designerId: number, 
+    listingStatus: ListingStatus, 
+    maxConcurrentProjects: number
+  ): Promise<DesignerProfile> {
+    const existing = inMemoryDesigners.find(d => d.id === designerId);
+    if (!existing) {
+      throw new Error(`Designer profile with ID ${designerId} not found.`);
+    }
+
+    const payload: UpdateDesignerProfileRequest = {
+      displayName: existing.displayName,
+      bio: existing.bio,
+      styleTags: existing.styleTags,
+      serviceCategories: existing.serviceCategories,
+      priceRangeMin: existing.priceRangeMin,
+      priceRangeMax: existing.priceRangeMax,
+      ratePerSqFt: existing.ratePerSqFt,
+      isAvailable: existing.isAvailable,
+      maxConcurrentProjects,
+      listingStatus
+    };
+
+    const updated = await this.updateProfile(designerId, payload);
+    // Recalculate capacity flags for in-memory display
+    updated.maxConcurrentProjects = maxConcurrentProjects;
+    updated.listingStatus = listingStatus;
+    updated.remainingCapacity = Math.max(0, maxConcurrentProjects - updated.activeProjectCount);
+    updated.isUnderCapacity = updated.activeProjectCount < maxConcurrentProjects;
+    updated.isAtCapacity = updated.activeProjectCount >= maxConcurrentProjects;
+    
+    return updated;
+  },
+
   async deletePortfolioItem(designerId: number, itemId: number): Promise<void> {
     try {
       const response = await fetch(`${API_BASE}/${designerId}/portfolio/${itemId}`, {
@@ -463,3 +512,4 @@ export const designerApi = {
     }
   }
 };
+

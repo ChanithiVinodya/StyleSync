@@ -17,6 +17,7 @@ import { DesignerListingCard } from '../components/DesignerListingCard';
 interface DesignerDirectoryPageProps {
   onSelectDesigner: (designerId: number) => void;
   onOpenStudio?: () => void;
+  onOpenAdmin?: () => void;
 }
 
 const DEFAULT_QUERY: DesignerQueryParameters = {
@@ -31,7 +32,8 @@ const DEFAULT_QUERY: DesignerQueryParameters = {
 
 export const DesignerDirectoryPage: React.FC<DesignerDirectoryPageProps> = ({
   onSelectDesigner,
-  onOpenStudio
+  onOpenStudio,
+  onOpenAdmin
 }) => {
   const [query, setQuery] = useState<DesignerQueryParameters>(DEFAULT_QUERY);
   const [result, setResult] = useState<PagedResult<DesignerListingItem> | null>(null);
@@ -93,17 +95,30 @@ export const DesignerDirectoryPage: React.FC<DesignerDirectoryPageProps> = ({
             </p>
           </div>
 
-          {/* Quick Switch to Designer Studio Workspace */}
-          {onOpenStudio && (
-            <button
-              type="button"
-              onClick={onOpenStudio}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-[#FAF8F5] dark:bg-[#201D1A] border border-[#E7E1D7] dark:border-[#2C2723] hover:border-[#C48A36] shadow-xs transition-colors self-start md:self-auto cursor-pointer"
-            >
-              <Briefcase className="w-4 h-4 text-[#925C18] dark:text-[#E8A849]" />
-              <span>Designer Studio Portal</span>
-            </button>
-          )}
+          {/* Quick Action Navigation */}
+          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            {onOpenStudio && (
+              <button
+                type="button"
+                onClick={onOpenStudio}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-[#FAF8F5] dark:bg-[#201D1A] border border-[#E7E1D7] dark:border-[#2C2723] hover:border-[#C48A36] shadow-xs transition-colors cursor-pointer"
+              >
+                <Briefcase className="w-4 h-4 text-[#925C18] dark:text-[#E8A849]" />
+                <span>Designer Studio</span>
+              </button>
+            )}
+
+            {onOpenAdmin && (
+              <button
+                type="button"
+                onClick={onOpenAdmin}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold text-[#925C18] dark:text-[#E8A849] bg-[#FAF3E8] dark:bg-[#2A231C] border border-[#C48A36]/30 hover:border-[#C48A36] shadow-xs transition-colors cursor-pointer"
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                <span>Admin Governance</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

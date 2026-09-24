@@ -3,20 +3,32 @@ import { useParams, useSearchParams, useNavigate, useLocation } from 'react-rout
 import { DesignerDirectoryPage } from './pages/DesignerDirectoryPage';
 import { DesignerProfileGalleryPage } from './pages/DesignerProfileGalleryPage';
 import { DesignerPortfolioGalleryPage } from './pages/DesignerPortfolioGalleryPage';
+import { AdminDesignerGovernancePage } from './pages/AdminDesignerGovernancePage';
 import { DesignerStudioPortal } from './components/DesignerStudioPortal';
 
-export default function DesignersPage() {
+interface DesignersPageProps {
+  initialRole?: string;
+}
+
+export default function DesignersPage({ initialRole = 'admin' }: DesignersPageProps) {
   const { id } = useParams<{ id?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [currentUserRole, setCurrentUserRole] = useState<string>(
+    searchParams.get('role') || initialRole
+  );
 
   // Internal state allows smooth tab switching and back navigation
   const [selectedDesignerId, setSelectedDesignerId] = useState<number | null>(
     id ? parseInt(id, 10) : searchParams.get('designerId') ? parseInt(searchParams.get('designerId')!, 10) : null
   );
   
-  const determineInitialView = (): 'directory' | 'profile' | 'gallery' | 'studio' => {
+  const determineInitialView = (): 'directory' | 'profile' | 'gallery' | 'studio' | 'admin' => {
+    if (location.pathname.includes('/admin') || searchParams.get('view') === 'admin') {
+      return 'admin';
+    }
     if (location.pathname.includes('/studio') || searchParams.get('view') === 'studio') {
       return 'studio';
     }
@@ -29,10 +41,12 @@ export default function DesignersPage() {
     return 'directory';
   };
 
-  const [activeView, setActiveView] = useState<'directory' | 'profile' | 'gallery' | 'studio'>(determineInitialView);
+  const [activeView, setActiveView] = useState<'directory' | 'profile' | 'gallery' | 'studio' | 'admin'>(determineInitialView);
 
   useEffect(() => {
-    if (id) {
+    if (location.pathname.includes('/admin') || searchParams.get('view') === 'admin') {
+      setActiveView('admin');
+    } else if (id) {
       const parsed = parseInt(id, 10);
       if (!isNaN(parsed)) {
         setSelectedDesignerId(parsed);
@@ -85,10 +99,25 @@ export default function DesignersPage() {
     setSearchParams({ view: 'studio' });
   };
 
-  const handleExitStudio = () => {
+  const handleOpenAdmin = () => {
+    setActiveView('admin');
+    setSearchParams({ view: 'admin' });
+  };
+
+  const handleExitToDirectory = () => {
     setActiveView('directory');
     setSearchParams({});
   };
+
+  if (activeView === 'admin') {
+    return (
+      <AdminDesignerGovernancePage
+        userRole={currentUserRole}
+        onBack={handleExitToDirectory}
+        onRoleChange={newRole => setCurrentUserRole(newRole)}
+      />
+    );
+  }
 
   if (activeView === 'studio') {
     return (
@@ -96,7 +125,7 @@ export default function DesignersPage() {
         <div className="bg-[#1C1917] text-[#FAF8F5] px-4 py-2.5 flex items-center justify-between text-xs border-b border-[#38312B]">
           <span className="font-semibold text-[#E8A849]">Designer Studio Management Workspace</span>
           <button
-            onClick={handleExitStudio}
+            onClick={handleExitToDirectory}
             className="underline hover:text-white transition-colors cursor-pointer"
           >
             ← Exit to Public Directory
@@ -135,6 +164,7 @@ export default function DesignersPage() {
     <DesignerDirectoryPage
       onSelectDesigner={handleSelectDesigner}
       onOpenStudio={handleOpenStudio}
+      onOpenAdmin={handleOpenAdmin}
     />
   );
 }
