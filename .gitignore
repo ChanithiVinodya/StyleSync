@@ -1,44 +1,65 @@
-# Monorepo .gitignore
+# ==== .NET / Backend ====
 **/bin/
 **/obj/
 *.user
 *.suo
 .vs/
 **/.vs/
+backend/**/appsettings.*.local.json
+*.trx
 
-# Node / React
+# ==== Node / React ====
 **/node_modules/
 **/dist/
 **/.vite/
+**/coverage/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.tsbuildinfo
 
-# Python
-**/__pycache__/
-*.py[cod]
-*$py.class
-**/.pytest_cache/
-.coverage
-htmlcov/
-.env
-venv/
-.venv/
-env/
-
-# Flutter / Dart
+# ==== Flutter / Dart ====
 **/.dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
 .packages
 **/build/
 *.lock
+flutter-app/android/
+flutter-app/ios/
+flutter-app/linux/
+flutter-app/macos/
+flutter-app/web/
+flutter-app/windows/
 
-# IDE & Scripts
-.idea/
+# ==== Python / AI service ====
+**/.venv/
+**/venv/
+**env/
+**/__pycache__/
+*.py[cod]
+*$py.class
+**/.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+*.egg-info/
+
+# ==== Env / secrets ====
+.env
+.env.local
+**/.env
+**/*.env.local
+
+# ==== OS / IDE & Scripts ====
+.DS_Store
+Thumbs.db
 .vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
 *.swp
 *.swo
+devtools_options.yaml
 make_50_commits.ps1
-Thumbs.db
-.DS_Store

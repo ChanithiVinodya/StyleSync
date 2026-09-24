@@ -1,3 +1,12 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
 :root {
   --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #31104b 100%);
   --card-bg: rgba(30, 41, 59, 0.7);
@@ -10,20 +19,22 @@
   --success: #10b981;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 85px;
+  transition: background-color 0.45s cubic-bezier(0.16, 1, 0.3, 1), color 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 body {
-  background: var(--bg-gradient);
-  color: var(--text-main);
-  min-height: 100vh;
-  overflow-x: hidden;
+  font-family: var(--font-sans);
+  transition: background-color 0.45s cubic-bezier(0.16, 1, 0.3, 1), color 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+h1, h2, h3, .font-editorial {
+  font-family: var(--font-serif);
+}
+
+/* Glass & UI Helpers */
 .glass-panel {
   background: var(--card-bg);
   backdrop-filter: blur(16px);
