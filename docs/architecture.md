@@ -1,89 +1,35 @@
-# Architecture
+# StyleSync Architecture & Authentication Guide
 
-## System Overview
+## Overview
+StyleSync is a modern multi-tiered application designed for intelligent interior design styling and management.
 
-```
-        Flutter (client)              React (designer/PM/admin)
-               │                                │
-               └───────────────┬────────────────┘
-                                ▼
-                    ASP.NET Core Web API
-                    (single source of truth:
-                     auth, business rules, data)
-                                │
-                  ┌─────────────┼─────────────┐
-                  ▼             ▼             ▼
-             PostgreSQL   Cloud Storage   Python AI Service
-             (EF Core)    (room photos)   (FastAPI, internal-only)
-```
+- **Backend Web API**: .NET 8 Web API (`backend/src/StyleSync.Api`)
+- **Frontend SPA**: React 18 + Vite + TypeScript (`frontend-react`)
+- **AI Microservice**: FastAPI + LangGraph (`ai-service`)
+- **Mobile Client**: Flutter application (`flutter-app`)
 
-Flutter and React **only ever talk to ASP.NET Core** — never directly to
-PostgreSQL, cloud storage, or the AI service. This keeps auth, validation,
-and business rules in one place, per the assignment's "golden rule."
+---
 
-## The Four Business Components
+## Authentication Flow
 
-| Component | Owner | Backend module | React module | Flutter module |
-|---|---|---|---|---|
-| Designer Portfolios & Listings | Student 1 | `Modules/Designers` | `modules/designers` | `modules/designers` |
-| Project Requests & Room Uploads | Student 2 | `Modules/ProjectRequests` | `modules/project-requests` | `modules/project_requests` |
-| Quotes & Contracts | Student 3 | `Modules/QuotesContracts` | `modules/quotes-contracts` | `modules/quotes_contracts` |
-| Project Execution & Progress Tracking | Student 4 | `Modules/ProjectExecution` | `modules/project-execution` | `modules/project_execution` |
+### 1. Backend Authentication Architecture
+- Built on JWT (JSON Web Tokens) using HMAC-SHA256 signing.
+- Managed by `AuthService.cs` and `JwtService.cs`.
+- Endpoints:
+  - `POST /api/auth/register`: Creates a new user profile with hashed passwords.
+  - `POST /api/auth/login`: Authenticates credentials and returns a signed JWT token with identity/role claims (`Admin`, `Designer`, `Client`).
+  - `GET /api/auth/me`: Validates caller identity and returns the user context.
 
-## Agent Pipeline
+### 2. Frontend State & Route Guarding
+- **`AuthContext.tsx`**: Provides centralized session state across all React components. Reads and persists JWT tokens in `localStorage`.
+- **`ProtectedRoute.tsx`**: Route wrapper validating user session and role authorization. Redirects unauthorized users to `/unauthorized` or `/login`.
+- **`authService.ts`**: Handles Axios API requests and interceptors, automatically attaching Bearer tokens to outbound requests.
+- **`api.ts`**: Project Requests API client utilizing the token for secure multi-role access.
 
-```
-Client submits room request (Flutter)
-              │
-              ▼
-     ASP.NET Core validates & persists
-              │
-              ▼
-     POST /workflow/run  →  Python AI Service
-              │
-              ▼
-     Style Analysis Agent  ──▶  StyleProfile
-              │
-              ▼
-     Designer-Matching Agent  ──▶  Ranked shortlist (recommend only)
-              │
-              ▼
-     Budget/Scope Agent  ──▶  Draft scope + cost estimate
-              │
-              ▼
-     Validation Agent  ──▶  Deterministic rule checks (not LLM opinion)
-              │
-        ┌─────┴─────┐
-     Invalid       Valid
-        │             │
-   Request         Pending Client Approval
-   revision             │
-                         ▼
-                  Client reviews (Flutter)
-                         │
-                Approve / Reject / Request changes
-                         │
-                         ▼
-              ASP.NET Core re-validates
-                         │
-                         ▼
-                  Contract created
-                         │
-                         ▼
-         Designer works project → Photo timeline
-                         │
-                         ▼
-              Client tracks progress (Flutter)
-```
+---
 
-Each agent lives in `ai-service/app/agents/`, is chained by
-`ai-service/app/orchestrator.py`, and reads/writes a shared
-`WorkflowState` (`ai-service/app/schemas.py`) that mirrors what gets
-persisted in PostgreSQL — this is what makes the workflow auditable and
-recoverable if a step fails.
-
-## Suggested Database Entities
-
-Each module's `Models/` folder is currently empty — build your entities there
-from scratch. A starting list of suggested entities per module (to help you
-design your own) is in `docs/erd/README.md`.
+## Module Layout
+- `modules/project-requests`: Client room styling request wizard, AI analysis visualization, and administrative review.
+- `modules/designers`: Designer portfolio showcasing and inquiry.
+- `modules/quotes-contracts`: Quotation estimation and contract management.
+- `modules/project-execution`: Milestone tracking and delivery management.
