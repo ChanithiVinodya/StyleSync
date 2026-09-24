@@ -14,6 +14,8 @@ export default function App() {
           <Route path="/" element={<LandingPage />} />
           {/* Student 1 owns this route */}
           <Route path="/designers" element={<DesignersPage />} />
+          <Route path="/designers/:id" element={<DesignersPage />} />
+          <Route path="/designers/studio" element={<DesignersPage />} />
           {/* Student 2 owns this route */}
           <Route path="/project-requests" element={<ProjectRequestsPage />} />
           {/* Student 3 owns this route */}

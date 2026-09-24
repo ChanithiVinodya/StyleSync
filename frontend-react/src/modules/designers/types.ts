@@ -41,6 +41,48 @@ export interface DesignerProfile {
   portfolioItems: PortfolioItem[];
 }
 
+export interface DesignerListingItem {
+  id: number;
+  displayName: string;
+  bio: string;
+  styleTags: string[];
+  serviceCategories: string[];
+  priceRangeMin: number;
+  priceRangeMax: number;
+  ratePerSqFt: number;
+  isAvailable: boolean;
+  maxConcurrentProjects: number;
+  activeProjectCount: number;
+  remainingCapacity: number;
+  isUnderCapacity: boolean;
+  isAtCapacity: boolean;
+  averageRating: number | null;
+  listingStatus: ListingStatus;
+  publishedPortfolioCount: number;
+  featuredImageUrl?: string | null;
+  createdAtUtc: string;
+}
+
+export interface DesignerQueryParameters {
+  style?: string;
+  budgetMin?: number;
+  budgetMax?: number;
+  available?: boolean;
+  sort?: string;
+  page: number;
+  pageSize: number;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
 export interface CreateDesignerProfileRequest {
   displayName: string;
   bio: string;
