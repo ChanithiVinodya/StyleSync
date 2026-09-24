@@ -20,6 +20,7 @@ public class MilestoneCrudTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly MilestoneService _service;
+    private readonly TaskService _taskService;
     private readonly MilestonesController _controller;
 
     public MilestoneCrudTests()
@@ -30,8 +31,9 @@ public class MilestoneCrudTests : IDisposable
 
         _context = new AppDbContext(options);
         _service = new MilestoneService(_context);
+        _taskService = new TaskService(_context);
         
-        _controller = new MilestonesController(_service);
+        _controller = new MilestonesController(_service, _taskService);
         
         // Mocking user context for authorization is normally done via ControllerContext in integration tests.
         // For unit tests, we're primarily testing logic, but we can set up HttpContext if needed.
@@ -136,6 +138,27 @@ public class MilestoneCrudTests : IDisposable
     public async Task GetById_ReturnsNotFound_WhenDoesNotExist()
     {
         var result = await _controller.GetMilestoneById(Guid.NewGuid());
+        Assert.IsType<NotFoundObjectResult>(result);
+    }
+
+    [Fact]
+    public async Task GetTasksForMilestone_ReturnsTasks_WhenMilestoneExists()
+    {
+        var milestoneId = Guid.NewGuid();
+        _context.ProjectMilestones.Add(new ProjectMilestone { MilestoneId = milestoneId, ProjectId = Guid.NewGuid(), Name = "M1" });
+        _context.ProjectTasks.Add(new ProjectTask { TaskId = Guid.NewGuid(), MilestoneId = milestoneId, Name = "T1" });
+        await _context.SaveChangesAsync();
+
+        var result = await _controller.GetTasksForMilestone(milestoneId);
+        var ok = Assert.IsType<OkObjectResult>(result);
+        var tasks = Assert.IsAssignableFrom<IEnumerable<TaskDto>>(ok.Value);
+        Assert.Single(tasks);
+    }
+
+    [Fact]
+    public async Task GetTasksForMilestone_ReturnsNotFound_WhenMilestoneDoesNotExist()
+    {
+        var result = await _controller.GetTasksForMilestone(Guid.NewGuid());
         Assert.IsType<NotFoundObjectResult>(result);
     }
 

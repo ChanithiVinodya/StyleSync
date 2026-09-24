@@ -15,10 +15,12 @@ namespace StyleSync.Api.Modules.ProjectExecution.Controllers;
 public class MilestonesController : ControllerBase
 {
     private readonly IMilestoneService _milestoneService;
+    private readonly ITaskService _taskService;
 
-    public MilestonesController(IMilestoneService milestoneService)
+    public MilestonesController(IMilestoneService milestoneService, ITaskService taskService)
     {
         _milestoneService = milestoneService;
+        _taskService = taskService;
     }
 
     [HttpPost]
@@ -60,6 +62,22 @@ public class MilestonesController : ControllerBase
         }
 
         return Ok(milestone);
+    }
+
+    [HttpGet("{id:guid}/tasks")]
+    [Authorize(Roles = "Admin,Designer,Client")]
+    [ProducesResponseType(typeof(IEnumerable<TaskDto>), 200)]
+    [ProducesResponseType(typeof(ErrorResponse), 404)]
+    public async Task<IActionResult> GetTasksForMilestone(Guid id)
+    {
+        var milestone = await _milestoneService.GetByIdAsync(id);
+        if (milestone == null)
+        {
+            return NotFound(new ErrorResponse(404, "Milestone not found."));
+        }
+
+        var tasks = await _taskService.GetAllAsync(id, null);
+        return Ok(tasks);
     }
 
     [HttpPut("{id:guid}")]
