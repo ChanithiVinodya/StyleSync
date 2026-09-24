@@ -1,0 +1,34 @@
+# Auto-requests the right reviewer based on which folders a PR touches.
+# Replace the placeholder GitHub usernames with your teammates' actual usernames.
+# This does NOT block other members from editing these folders - it just
+# adds the right person as a suggested reviewer automatically.
+
+# Student 1 - Designer Portfolios & Listings
+/backend/src/StyleSync.Api/Modules/Designers/      @student1-github-username
+/frontend-react/src/modules/designers/                  @student1-github-username
+/flutter-app/lib/modules/designers/                      @student1-github-username
+/ai-service/app/agents/designer_matching_agent.py        @student1-github-username
+
+# Student 2 - Project Requests & Room Uploads
+/backend/src/StyleSync.Api/Modules/ProjectRequests/ @student2-github-username
+/frontend-react/src/modules/project-requests/            @student2-github-username
+/flutter-app/lib/modules/project_requests/                @student2-github-username
+/ai-service/app/agents/style_analysis_agent.py            @student2-github-username
+
+# Student 3 - Quotes & Contracts
+/backend/src/StyleSync.Api/Modules/QuotesContracts/ @student3-github-username
+/frontend-react/src/modules/quotes-contracts/             @student3-github-username
+/flutter-app/lib/modules/quotes_contracts/                 @student3-github-username
+/ai-service/app/agents/budget_scope_agent.py                @student3-github-username
+
+# Student 4 - Project Execution & Progress Tracking
+/backend/src/StyleSync.Api/Modules/ProjectExecution/ @student4-github-username
+/frontend-react/src/modules/project-execution/             @student4-github-username
+/flutter-app/lib/modules/project_execution/                 @student4-github-username
+/ai-service/app/agents/validation_agent.py                   @student4-github-username
+
+# Shared files - everyone should review changes here
+/backend/src/StyleSync.Api/Common/                    @student1-github-username @student2-github-username @student3-github-username @student4-github-username
+/backend/src/StyleSync.Api/Program.cs                 @student1-github-username @student2-github-username @student3-github-username @student4-github-username
+/ai-service/app/orchestrator.py                            @student1-github-username @student2-github-username @student3-github-username @student4-github-username
+/ai-service/app/schemas.py                                 @student1-github-username @student2-github-username @student3-github-username @student4-github-username
