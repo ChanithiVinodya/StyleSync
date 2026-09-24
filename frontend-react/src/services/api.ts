@@ -1,4 +1,12 @@
+import { authStorage } from '../auth/authService';
+
 const API_BASE = 'http://localhost:5000/api/v1/project-requests';
+
+/** Build auth headers from the stored JWT token */
+function authHeaders(): Record<string, string> {
+  const token = authStorage.getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 // ─── Shared Domain Interfaces ──────────────────────────────────────────────
 
@@ -59,7 +67,9 @@ export async function fetchAllRequests(
     if (status) params.append('status', status);
     if (roomType) params.append('roomType', roomType);
 
-    const res = await fetch(`${API_BASE}?${params.toString()}`);
+    const res = await fetch(`${API_BASE}?${params.toString()}`, {
+      headers: { ...authHeaders() },
+    });
     if (!res.ok) throw new Error('Failed to fetch requests');
     return (await res.json()) as ProjectRequest[];
   } catch (err) {
@@ -139,7 +149,7 @@ export async function createProjectRequest(
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Client-Id': 'client-nimali',
+      ...authHeaders(),
     },
     body: JSON.stringify(payload),
   });
@@ -150,6 +160,7 @@ export async function createProjectRequest(
 export async function submitRequestForAI(id: string): Promise<ProjectRequest> {
   const res = await fetch(`${API_BASE}/${id}/submit`, {
     method: 'POST',
+    headers: { ...authHeaders() },
   });
   if (!res.ok) throw new Error('Failed to submit request for AI analysis');
   return (await res.json()) as ProjectRequest;
