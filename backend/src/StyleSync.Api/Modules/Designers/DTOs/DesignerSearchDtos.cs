@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using StyleSync.Api.Modules.Designers.Models;
 
 namespace StyleSync.Api.Modules.Designers.DTOs;
@@ -34,22 +35,69 @@ public class MatchScoreBreakdown
     /// <summary>
     /// |designer.StyleTags ∩ requestedStyleTags| / |requestedStyleTags| (Weight: 40%)
     /// </summary>
+    [JsonPropertyName("styleTagOverlapPct")]
     public double StyleTagOverlap { get; set; }
+
+    [JsonIgnore]
+    public double StyleTagOverlapPct
+    {
+        get => StyleTagOverlap;
+        set => StyleTagOverlap = value;
+    }
 
     /// <summary>
     /// Overlap of designer's price range with requested budget range as a 0-1 proportion (Weight: 30%)
     /// </summary>
+    [JsonPropertyName("budgetRangeOverlapPct")]
     public double BudgetRangeOverlap { get; set; }
+
+    [JsonIgnore]
+    public double BudgetRangeOverlapPct
+    {
+        get => BudgetRangeOverlap;
+        set => BudgetRangeOverlap = value;
+    }
 
     /// <summary>
     /// designer.AverageRating / 5.0 (defaults to 0.5 if AverageRating is null) (Weight: 20%)
     /// </summary>
+    [JsonPropertyName("pastRatingNormalized")]
     public double PastRatingNormalized { get; set; }
 
     /// <summary>
     /// 1.0 if IsUnderCapacity else 0.0 (Weight: 10%)
     /// </summary>
+    [JsonPropertyName("availabilityBonus")]
     public double AvailabilityBonus { get; set; }
+
+    /// <summary>
+    /// Weighted total match score [0.0 - 1.0].
+    /// </summary>
+    [JsonPropertyName("matchScore")]
+    public double MatchScore { get; set; }
+}
+
+/// <summary>
+/// Response shape for GET /api/designers/{id}/match-score
+/// </summary>
+public class DesignerMatchScoreBreakdownResponse
+{
+    public int DesignerId { get; set; }
+
+    [JsonPropertyName("styleTagOverlapPct")]
+    public double StyleTagOverlapPct { get; set; }
+
+    [JsonPropertyName("budgetRangeOverlapPct")]
+    public double BudgetRangeOverlapPct { get; set; }
+
+    [JsonPropertyName("pastRatingNormalized")]
+    public double PastRatingNormalized { get; set; }
+
+    [JsonPropertyName("availabilityBonus")]
+    public double AvailabilityBonus { get; set; }
+
+    [JsonPropertyName("matchScore")]
+    public double MatchScore { get; set; }
 }
 
 /// <summary>

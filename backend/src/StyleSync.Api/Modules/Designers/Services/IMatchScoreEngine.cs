@@ -27,13 +27,30 @@ public interface IMatchScoreEngine
     double CalculateAvailabilityBonus(bool isUnderCapacity);
 
     /// <summary>
-    /// Computes full match score and score breakdown according to the weighted formula:
+    /// Option (a): Computes just the final scalar match score [0.0 - 1.0] according to the weighted formula:
     /// MatchScore = (StyleTagOverlap × 0.40) + (BudgetRangeOverlap × 0.30) + (PastRatingNormalized × 0.20) + (AvailabilityBonus × 0.10)
+    /// </summary>
+    double ComputeMatchScore(
+        DesignerProfile designer,
+        bool isUnderCapacity,
+        DesignerSearchRequest request);
+
+    /// <summary>
+    /// Option (b): Computes both total score and full breakdown:
+    /// { styleTagOverlapPct, budgetRangeOverlapPct, pastRatingNormalized, availabilityBonus, matchScore }
     /// </summary>
     (double TotalScore, MatchScoreBreakdown Breakdown) CalculateMatchScore(
         DesignerProfile designer, 
         bool isUnderCapacity, 
         DesignerSearchRequest request);
+
+    /// <summary>
+    /// Retrieves a designer by ID and evaluates their match score breakdown against the supplied styleTags/budget parameters.
+    /// </summary>
+    Task<DesignerMatchScoreBreakdownResponse?> GetDesignerMatchScoreBreakdownAsync(
+        int designerId,
+        DesignerSearchRequest request,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Public search_designers() tool contract for AI matching agent and search endpoints.

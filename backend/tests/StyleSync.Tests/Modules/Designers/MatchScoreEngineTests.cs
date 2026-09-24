@@ -236,4 +236,82 @@ public class MatchScoreEngineTests
         Assert.True(searchResults[0].IsUnderCapacity);
         Assert.Equal(1, searchResults[0].ActiveProjectCount);
     }
+
+    [Fact]
+    public async Task Breakdown_FourWeightedComponents_SumToIdenticalMatchScoreFromSearchDesigners()
+    {
+        using var context = CreateInMemoryDbContext();
+        var guard = new CapacityGuardService(context);
+        var engine = new MatchScoreEngine(context, guard);
+
+        var designer = new DesignerProfile
+        {
+            Id = 5,
+            UserId = 105,
+            DisplayName = "Test Studio",
+            Bio = "Bio",
+            StyleTags = new() { "Tropical Modernism", "Minimalist", "Japandi" },
+            PriceRangeMin = 150000m,
+            PriceRangeMax = 450000m,
+            AverageRating = 4.75m,
+            MaxConcurrentProjects = 3,
+            ListingStatus = ListingStatus.Published,
+            IsAvailable = true
+        };
+        context.DesignerProfiles.Add(designer);
+
+        // 1 active project out of 3 -> IsUnderCapacity = true
+        context.Contracts.Add(new ContractStub { Id = 1, DesignerId = designer.Id, Status = ContractStatus.Active });
+        await context.SaveChangesAsync();
+
+        var searchRequest = new DesignerSearchRequest
+        {
+            StyleTags = new() { "Tropical Modernism", "Scandinavian" }, // 1 of 2 match = 0.50
+            BudgetMin = 200000m,
+            BudgetMax = 500000m // Overlap: [200k, 450k] (250k) / 300k span = 0.8333
+        };
+
+        // 1. Perform search_designers()
+        var searchResults = await engine.SearchDesignersAsync(searchRequest);
+        Assert.Single(searchResults);
+        var searchItem = searchResults[0];
+
+        // 2. Fetch breakdown for the designer
+        var breakdownResponse = await engine.GetDesignerMatchScoreBreakdownAsync(designer.Id, searchRequest);
+        Assert.NotNull(breakdownResponse);
+
+        // 3. Confirm (a) scalar calculation, (b) breakdown calculation, and search_designers matchScore are identical
+        var scalarScore = engine.ComputeMatchScore(designer, isUnderCapacity: true, searchRequest);
+        var (tupleScore, tupleBreakdown) = engine.CalculateMatchScore(designer, isUnderCapacity: true, searchRequest);
+
+        Assert.Equal(searchItem.MatchScore, scalarScore);
+        Assert.Equal(searchItem.MatchScore, tupleScore);
+        Assert.Equal(searchItem.MatchScore, breakdownResponse.MatchScore);
+
+        // 4. Confirm the breakdown's 4 weighted components sum to the same matchScore
+        double weightedSum = (breakdownResponse.StyleTagOverlapPct * MatchScoreEngine.StyleWeight)
+                           + (breakdownResponse.BudgetRangeOverlapPct * MatchScoreEngine.BudgetWeight)
+                           + (breakdownResponse.PastRatingNormalized * MatchScoreEngine.RatingWeight)
+                           + (breakdownResponse.AvailabilityBonus * MatchScoreEngine.AvailabilityWeight);
+
+        Assert.Equal(searchItem.MatchScore, Math.Round(weightedSum, 4));
+        Assert.Equal(searchItem.ScoreBreakdown.StyleTagOverlap, breakdownResponse.StyleTagOverlapPct);
+        Assert.Equal(searchItem.ScoreBreakdown.BudgetRangeOverlap, breakdownResponse.BudgetRangeOverlapPct);
+        Assert.Equal(searchItem.ScoreBreakdown.PastRatingNormalized, breakdownResponse.PastRatingNormalized);
+        Assert.Equal(searchItem.ScoreBreakdown.AvailabilityBonus, breakdownResponse.AvailabilityBonus);
+    }
+
+    [Fact]
+    public async Task GetDesignerMatchScoreBreakdown_NotFound_ReturnsNull()
+    {
+        using var context = CreateInMemoryDbContext();
+        var guard = new CapacityGuardService(context);
+        var engine = new MatchScoreEngine(context, guard);
+
+        var request = new DesignerSearchRequest { StyleTags = new() { "Modern" } };
+        var result = await engine.GetDesignerMatchScoreBreakdownAsync(999, request);
+
+        Assert.Null(result);
+    }
 }
+

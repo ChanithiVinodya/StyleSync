@@ -10,11 +10,11 @@ public class MatchScoreEngine : IMatchScoreEngine
     private readonly AppDbContext _context;
     private readonly ICapacityGuardService _capacityGuard;
 
-    // Weights specified by formula
-    private const double StyleWeight = 0.40;
-    private const double BudgetWeight = 0.30;
-    private const double RatingWeight = 0.20;
-    private const double AvailabilityWeight = 0.10;
+    // Weights specified by formula (Prompt 4)
+    public const double StyleWeight = 0.40;
+    public const double BudgetWeight = 0.30;
+    public const double RatingWeight = 0.20;
+    public const double AvailabilityWeight = 0.10;
 
     public MatchScoreEngine(AppDbContext context, ICapacityGuardService capacityGuard)
     {
@@ -98,6 +98,25 @@ public class MatchScoreEngine : IMatchScoreEngine
     }
 
     /// <inheritdoc />
+    public double ComputeMatchScore(
+        DesignerProfile designer, 
+        bool isUnderCapacity, 
+        DesignerSearchRequest request)
+    {
+        double styleOverlap = CalculateStyleTagOverlap(designer.StyleTags, request.StyleTags);
+        double budgetOverlap = CalculateBudgetRangeOverlap(designer.PriceRangeMin, designer.PriceRangeMax, request.BudgetMin, request.BudgetMax);
+        double ratingNormalized = CalculatePastRatingNormalized(designer.AverageRating);
+        double availabilityBonus = CalculateAvailabilityBonus(isUnderCapacity);
+
+        double totalScore = (styleOverlap * StyleWeight)
+                          + (budgetOverlap * BudgetWeight)
+                          + (ratingNormalized * RatingWeight)
+                          + (availabilityBonus * AvailabilityWeight);
+
+        return Math.Round(totalScore, 4);
+    }
+
+    /// <inheritdoc />
     public (double TotalScore, MatchScoreBreakdown Breakdown) CalculateMatchScore(
         DesignerProfile designer, 
         bool isUnderCapacity, 
@@ -113,15 +132,47 @@ public class MatchScoreEngine : IMatchScoreEngine
                           + (ratingNormalized * RatingWeight)
                           + (availabilityBonus * AvailabilityWeight);
 
+        var roundedTotal = Math.Round(totalScore, 4);
+
         var breakdown = new MatchScoreBreakdown
         {
             StyleTagOverlap = Math.Round(styleOverlap, 4),
             BudgetRangeOverlap = Math.Round(budgetOverlap, 4),
             PastRatingNormalized = Math.Round(ratingNormalized, 4),
-            AvailabilityBonus = Math.Round(availabilityBonus, 4)
+            AvailabilityBonus = Math.Round(availabilityBonus, 4),
+            MatchScore = roundedTotal
         };
 
-        return (Math.Round(totalScore, 4), breakdown);
+        return (roundedTotal, breakdown);
+    }
+
+    /// <inheritdoc />
+    public async Task<DesignerMatchScoreBreakdownResponse?> GetDesignerMatchScoreBreakdownAsync(
+        int designerId,
+        DesignerSearchRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var designer = await _context.DesignerProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == designerId, cancellationToken);
+
+        if (designer == null)
+            return null;
+
+        int activeCount = await _capacityGuard.GetActiveProjectCountAsync(designerId, cancellationToken);
+        bool isUnderCapacity = _capacityGuard.IsUnderCapacity(designer, activeCount);
+
+        var (score, breakdown) = CalculateMatchScore(designer, isUnderCapacity, request);
+
+        return new DesignerMatchScoreBreakdownResponse
+        {
+            DesignerId = designer.Id,
+            StyleTagOverlapPct = breakdown.StyleTagOverlap,
+            BudgetRangeOverlapPct = breakdown.BudgetRangeOverlap,
+            PastRatingNormalized = breakdown.PastRatingNormalized,
+            AvailabilityBonus = breakdown.AvailabilityBonus,
+            MatchScore = score
+        };
     }
 
     /// <inheritdoc />

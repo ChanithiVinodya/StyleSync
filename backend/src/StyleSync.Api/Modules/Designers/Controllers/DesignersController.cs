@@ -76,6 +76,39 @@ public class DesignersController : ControllerBase
     }
 
     /// <summary>
+    /// Returns the deterministic match-score breakdown for a specific designer against the supplied style and budget query parameters.
+    /// Used by client apps (e.g. Flutter shortlist breakdown) without querying Component 2 tables.
+    /// </summary>
+    /// <param name="id">The designer profile ID.</param>
+    /// <param name="styleTags">Requested design style tags.</param>
+    /// <param name="budgetMin">Minimum requested budget in LKR.</param>
+    /// <param name="budgetMax">Maximum requested budget in LKR.</param>
+    [HttpGet("{id:int}/match-score")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(DesignerMatchScoreBreakdownResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetDesignerMatchScore(
+        int id,
+        [FromQuery] string[]? styleTags,
+        [FromQuery] decimal budgetMin = 0,
+        [FromQuery] decimal budgetMax = 0,
+        CancellationToken cancellationToken = default)
+    {
+        var request = new DesignerSearchRequest
+        {
+            StyleTags = styleTags?.ToList() ?? new List<string>(),
+            BudgetMin = budgetMin,
+            BudgetMax = budgetMax
+        };
+
+        var result = await _matchScoreEngine.GetDesignerMatchScoreBreakdownAsync(id, request, cancellationToken);
+        if (result == null)
+            return NotFound(new { message = $"Designer profile with ID {id} not found." });
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Designer creates their own profile.
     /// </summary>
     [HttpPost]
