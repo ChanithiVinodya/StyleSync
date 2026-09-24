@@ -12,6 +12,7 @@ import { AdminUsers } from './pages/admin/AdminUsers';
 import { DesignerDashboard } from './pages/designer/DesignerDashboard';
 import { ClientDashboard } from './pages/client/ClientDashboard';
 import { Unauthorized } from './pages/Unauthorized';
+import { NotFound } from './pages/NotFound';
 
 import DesignersPage from './modules/designers/DesignersPage';
 import ProjectRequestsPage from './modules/project-requests/ProjectRequestsPage';
@@ -75,8 +76,8 @@ export default function App() {
             <Route path="/quotes-contracts" element={<QuotesContractsPage />} />
             <Route path="/project-execution" element={<ProjectExecutionPage />} />
 
-            {/* Fallback */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+            {/* Fallback – dedicated 404 page */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
       </AuthProvider>
