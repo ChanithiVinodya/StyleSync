@@ -2,10 +2,12 @@ import { useState } from 'react';
 import CreateRequestWizard from '../../components/CreateRequestWizard';
 import RequestListAdmin from '../../components/RequestListAdmin';
 import StyleAnalysisCard, { RequestStatusBanner } from '../../components/StyleAnalysisCard';
-import { LayoutDashboard, PlusCircle, ArrowLeft, Edit3, Trash2, Lock, Send, Check, X } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, ArrowLeft, Edit3, Trash2, Lock, Check, X } from 'lucide-react';
 import { ProjectRequest } from '../../services/api';
 import { useAuth } from '../../auth/AuthContext';
 import { Link } from 'react-router-dom';
+import { Logo } from '../../components/Logo';
+import { GlassThemeToggle } from '../../components/GlassThemeToggle';
 
 interface EditFormData {
   roomType: string;
@@ -54,7 +56,7 @@ export default function ProjectRequestsPage() {
   const handleSaveEdit = async (): Promise<void> => {
     if (!selectedRequest) return;
     try {
-      const token = localStorage.getItem('stylesync_token');
+      const token = localStorage.getItem('stylesync_jwt_token');
       const res = await fetch(
         `http://localhost:5000/api/v1/project-requests/${selectedRequest.id}`,
         {
@@ -65,27 +67,26 @@ export default function ProjectRequestsPage() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
-            ...editData,
+            roomType: editData.roomType,
             lengthFeet: Number(editData.lengthFeet),
             widthFeet: Number(editData.widthFeet),
             heightFeet: Number(editData.heightFeet),
             budgetLkr: Number(editData.budgetLkr),
-            preferredStyles: selectedRequest.preferredStyles || ['Modern'],
+            description: editData.description,
           }),
         }
       );
-
       if (res.ok) {
         const updated = (await res.json()) as ProjectRequest;
-        alert('✅ Draft request updated successfully!');
         setSelectedRequest(updated);
         setIsEditing(false);
+        alert('✅ Draft request updated successfully!');
       } else {
         const err = (await res.json()) as { message?: string };
-        alert('Backend Error: ' + (err.message ?? 'Failed to update draft request'));
+        alert('Backend Error: ' + (err.message ?? 'Failed to update draft'));
       }
     } catch (err) {
-      alert('Error updating draft: ' + (err instanceof Error ? err.message : String(err)));
+      alert('Error saving edit: ' + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -96,7 +97,7 @@ export default function ProjectRequestsPage() {
     }
     if (window.confirm('Are you sure you want to delete this Draft request?')) {
       try {
-        const token = localStorage.getItem('stylesync_token');
+        const token = localStorage.getItem('stylesync_jwt_token');
         const res = await fetch(
           `http://localhost:5000/api/v1/project-requests/${id}`,
           {
@@ -121,90 +122,67 @@ export default function ProjectRequestsPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-gradient, #0f172a)', color: '#f8fafc' }}>
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#12100E] text-[#1C1917] dark:text-[#FAF8F5] flex flex-col transition-colors">
       {/* Top Bar with Auth status */}
-      <header
-        style={{
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          padding: '16px 32px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backdropFilter: 'blur(10px)',
-          background: 'rgba(15, 23, 42, 0.85)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 40,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <Link to="/" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: 'linear-gradient(135deg, #6366f1 0%, #ec4899 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '1.2rem',
-                color: 'white',
-              }}
-            >
-              S
+      <header className="border-b border-[#E7E1D7] dark:border-[#2E2824] px-6 sm:px-10 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sticky top-0 bg-[#FAF8F5]/90 dark:bg-[#12100E]/90 backdrop-blur-md z-40">
+        <div className="flex items-center gap-4">
+          <Logo variant="auto" size="md" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-serif text-xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">Makeover Studio</h1>
+              <span className="px-2.5 py-0.5 bg-[#FAF3E8] dark:bg-[#2A231A] text-[#925C18] dark:text-[#E8A849] border border-[#E8DEC8] dark:border-[#423525] text-[10px] font-bold uppercase rounded-full">
+                AI Agent
+              </span>
             </div>
-            <div>
-              <h1 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>StyleSync</h1>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
-                Student 2 — Project Requests & Style Analysis Agent
-              </p>
-            </div>
-          </Link>
+            <p className="text-xs text-[#78716C] dark:text-[#A8A29E]">
+              Room Makeover Requests &amp; AI Style Analysis
+            </p>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            onClick={() => {
-              setActiveTab('client-wizard');
-              setSelectedRequest(null);
-            }}
-            className={activeTab === 'client-wizard' ? 'btn-primary' : 'btn-secondary'}
-            style={{ padding: '8px 16px', fontSize: '0.875rem' }}
-          >
-            <PlusCircle size={16} /> Client Wizard (Create)
-          </button>
-          <button
-            onClick={() => {
-              setActiveTab('staff-dashboard');
-              setSelectedRequest(null);
-            }}
-            className={activeTab === 'staff-dashboard' ? 'btn-primary' : 'btn-secondary'}
-            style={{ padding: '8px 16px', fontSize: '0.875rem' }}
-          >
-            <LayoutDashboard size={16} /> Staff Dashboard
-          </button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center p-1 bg-[#EFEAE1] dark:bg-[#1C1917] rounded-xl border border-[#E7E1D7] dark:border-[#2E2824]">
+            <button
+              onClick={() => {
+                setActiveTab('client-wizard');
+                setSelectedRequest(null);
+              }}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeTab === 'client-wizard'
+                  ? 'bg-white dark:bg-[#2A231A] text-[#1C1917] dark:text-[#FAF8F5] shadow-2xs'
+                  : 'text-[#78716C] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#FAF8F5]'
+              }`}
+            >
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span>Create Request</span>
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab('staff-dashboard');
+                setSelectedRequest(null);
+              }}
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                activeTab === 'staff-dashboard'
+                  ? 'bg-white dark:bg-[#2A231A] text-[#1C1917] dark:text-[#FAF8F5] shadow-2xs'
+                  : 'text-[#78716C] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#FAF8F5]'
+              }`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Staff Dashboard</span>
+            </button>
+          </div>
+
+          <GlassThemeToggle />
 
           {user ? (
-            <div style={{ marginLeft: 16, display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(255,255,255,0.08)', borderRadius: 8, fontSize: '0.85rem' }}>
-              <span style={{ color: '#34d399' }}>●</span>
-              <span>{user.name} ({user.role})</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span>{user.name}</span>
             </div>
           ) : (
             <Link
               to="/login"
-              style={{
-                marginLeft: 12,
-                padding: '8px 16px',
-                borderRadius: 8,
-                background: 'rgba(99, 102, 241, 0.2)',
-                border: '1px solid rgba(99, 102, 241, 0.4)',
-                color: '#818cf8',
-                textDecoration: 'none',
-                fontSize: '0.875rem',
-                fontWeight: 600,
-              }}
+              className="px-3.5 py-1.5 text-xs font-semibold text-[#FAF8F5] bg-[#1C1917] dark:bg-[#FAF8F5] dark:text-[#1C1917] rounded-xl hover:opacity-90 transition"
             >
               Sign In
             </Link>
@@ -213,67 +191,59 @@ export default function ProjectRequestsPage() {
       </header>
 
       {/* Main Content Area */}
-      <main style={{ flex: 1, padding: '32px 16px', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+      <main className="flex-1 p-6 sm:p-10 max-w-6xl mx-auto w-full">
         {selectedRequest ? (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <button
                 onClick={() => setSelectedRequest(null)}
-                className="btn-secondary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px' }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs font-semibold hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition self-start"
               >
-                <ArrowLeft size={16} /> Back to Requests
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Requests</span>
               </button>
 
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div className="flex items-center gap-3">
                 {isDraft ? (
                   <>
                     <button
                       onClick={startEditDraft}
-                      className="btn-secondary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#60a5fa' }}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 rounded-xl text-xs font-semibold hover:bg-blue-100 transition"
                     >
-                      <Edit3 size={16} /> Edit Draft
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Draft</span>
                     </button>
                     <button
                       onClick={() => handleDeleteRequest(selectedRequest.id)}
-                      className="btn-secondary"
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: '#f87171' }}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 rounded-xl text-xs font-semibold hover:bg-rose-100 transition"
                     >
-                      <Trash2 size={16} /> Delete Draft
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Delete Draft</span>
                     </button>
                   </>
                 ) : (
-                  <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      fontSize: '0.85rem',
-                      color: 'var(--text-muted, #94a3b8)',
-                      background: 'rgba(255,255,255,0.05)',
-                      padding: '8px 16px',
-                      borderRadius: 8,
-                      border: '1px solid rgba(255,255,255,0.1)',
-                    }}
-                  >
-                    <Lock size={14} /> Editing Locked ({selectedRequest.status})
+                  <div className="inline-flex items-center gap-2 px-3.5 py-2 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs text-[#78716C] dark:text-[#A8A29E]">
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Locked ({selectedRequest.status})</span>
                   </div>
                 )}
               </div>
             </div>
 
             {isEditing && (
-              <div className="glass-panel" style={{ padding: 24, marginBottom: 24, border: '1px solid #3b82f6' }}>
-                <h3 style={{ marginTop: 0, marginBottom: 16 }}>✏️ Edit Draft Request Details</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 }}>
+              <div className="bg-white dark:bg-[#1A1715] border border-[#C48A36]/60 rounded-3xl p-6 shadow-sm space-y-4">
+                <h3 className="font-serif text-lg font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+                  Edit Draft Request Details
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Room Type</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
+                      Room Type
+                    </label>
                     <select
                       value={editData.roomType}
                       onChange={(e) => setEditData({ ...editData, roomType: e.target.value })}
-                      className="input-field"
-                      style={{ marginTop: 4 }}
+                      className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     >
                       <option value="LivingRoom">Living Room</option>
                       <option value="Bedroom">Bedroom</option>
@@ -284,62 +254,75 @@ export default function ProjectRequestsPage() {
                     </select>
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Length (ft)</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
+                      Length (ft)
+                    </label>
                     <input
                       type="number"
                       value={editData.lengthFeet}
                       onChange={(e) => setEditData({ ...editData, lengthFeet: e.target.value })}
-                      className="input-field"
-                      style={{ marginTop: 4 }}
+                      className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Width (ft)</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
+                      Width (ft)
+                    </label>
                     <input
                       type="number"
                       value={editData.widthFeet}
                       onChange={(e) => setEditData({ ...editData, widthFeet: e.target.value })}
-                      className="input-field"
-                      style={{ marginTop: 4 }}
+                      className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Height (ft)</label>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
+                      Height (ft)
+                    </label>
                     <input
                       type="number"
                       value={editData.heightFeet}
                       onChange={(e) => setEditData({ ...editData, heightFeet: e.target.value })}
-                      className="input-field"
-                      style={{ marginTop: 4 }}
+                      className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Budget (LKR)</label>
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
+                      Budget (LKR)
+                    </label>
                     <input
                       type="number"
                       value={editData.budgetLkr}
                       onChange={(e) => setEditData({ ...editData, budgetLkr: e.target.value })}
-                      className="input-field"
-                      style={{ marginTop: 4 }}
+                      className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
                 </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Description</label>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
+                    Description
+                  </label>
                   <textarea
                     rows={3}
                     value={editData.description}
                     onChange={(e) => setEditData({ ...editData, description: e.target.value })}
-                    className="input-field"
-                    style={{ marginTop: 4, width: '100%' }}
+                    className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                   />
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <button onClick={handleSaveEdit} className="btn-primary" style={{ padding: '8px 16px' }}>
-                    <Check size={16} /> Save Changes
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSaveEdit}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#C48A36] text-white rounded-xl text-xs font-semibold hover:bg-[#A87226]"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Save Changes</span>
                   </button>
-                  <button onClick={() => setIsEditing(false)} className="btn-secondary" style={{ padding: '8px 16px' }}>
-                    <X size={16} /> Cancel
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] text-xs font-semibold rounded-xl"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Cancel</span>
                   </button>
                 </div>
               </div>
@@ -356,13 +339,11 @@ export default function ProjectRequestsPage() {
         ) : (
           <div>
             {activeTab === 'client-wizard' && (
-              <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <CreateRequestWizard
-                  onRequestCreated={(created: ProjectRequest) => {
-                    setSelectedRequest(created);
-                  }}
-                />
-              </div>
+              <CreateRequestWizard
+                onRequestCreated={(created: ProjectRequest) => {
+                  setSelectedRequest(created);
+                }}
+              />
             )}
 
             {activeTab === 'staff-dashboard' && (
@@ -375,16 +356,8 @@ export default function ProjectRequestsPage() {
       </main>
 
       {/* Footer */}
-      <footer
-        style={{
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          padding: '16px 32px',
-          textAlign: 'center',
-          fontSize: '0.8rem',
-          color: '#94a3b8',
-        }}
-      >
-        StyleSync — Interior Design Marketplace | Module: SE3090 — Assignment 1 (Student 2 Component)
+      <footer className="border-t border-[#E7E1D7] dark:border-[#2E2824] py-6 px-6 text-center text-xs text-[#78716C] dark:text-[#A8A29E]">
+        StyleSync — Interior Design Marketplace | Architecture &amp; Styling Agent Platform
       </footer>
     </div>
   );

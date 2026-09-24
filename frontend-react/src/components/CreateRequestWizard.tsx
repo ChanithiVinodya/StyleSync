@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createProjectRequest } from '../services/api';
 import type { ProjectRequest } from '../services/api';
-import { Sparkles, Image, ArrowRight, Save, Send } from 'lucide-react';
+import { Sparkles, Image, ArrowRight, Save, Send, Check } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -102,130 +102,145 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
   };
 
   return (
-    <div className="glass-panel" style={{ padding: '32px', maxWidth: '750px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <Sparkles style={{ color: '#f59e0b', width: '28px', height: '28px' }} />
+    <div className="bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl p-6 sm:p-10 shadow-xl max-w-3xl mx-auto transition-colors">
+      {/* Header */}
+      <div className="flex items-center gap-3.5 mb-8">
+        <div className="w-11 h-11 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] border border-[#E8DEC8] dark:border-[#423525] flex items-center justify-center text-[#C48A36]">
+          <Sparkles className="w-6 h-6" />
+        </div>
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: '800' }}>New Room Makeover Request</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-            Submit room specs &amp; photos to kick off Style Analysis AI Agent 🤖
+          <h2 className="font-serif text-2xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+            New Room Makeover Request
+          </h2>
+          <p className="text-xs text-[#78716C] dark:text-[#A8A29E] mt-0.5">
+            Submit room specs &amp; photos to kick off Style Analysis AI Agent
           </p>
         </div>
       </div>
 
       {/* Progress Steps Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
-        {([1, 2, 3] as const).map((num) => (
-          <div
-            key={num}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              color: step >= num ? 'var(--primary)' : 'var(--text-muted)',
-              fontWeight: step >= num ? '700' : '500',
-            }}
-          >
-            <span
-              style={{
-                width: '28px',
-                height: '28px',
-                borderRadius: '50%',
-                background: step >= num ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.85rem',
-              }}
+      <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#E7E1D7] dark:border-[#2E2824]">
+        {([1, 2, 3] as const).map((num) => {
+          const isActive = step >= num;
+          const isCurrent = step === num;
+          return (
+            <div
+              key={num}
+              className={`flex items-center gap-2.5 text-xs font-semibold transition-colors ${
+                isActive
+                  ? 'text-[#C48A36]'
+                  : 'text-[#A8A29E] dark:text-[#78716C]'
+              }`}
             >
-              {num}
-            </span>
-            {num === 1 ? 'Room Specs 📏' : num === 2 ? 'Budget & Style 💰' : 'Photos & Action 📸'}
-          </div>
-        ))}
+              <span
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                  isCurrent
+                    ? 'bg-[#C48A36] text-white shadow-xs scale-105'
+                    : isActive
+                    ? 'bg-[#FAF3E8] dark:bg-[#2A231A] text-[#C48A36] border border-[#E8DEC8] dark:border-[#423525]'
+                    : 'bg-[#FAF8F5] dark:bg-[#25201C] text-[#78716C] border border-[#E7E1D7] dark:border-[#2E2824]'
+                }`}
+              >
+                {step > num ? <Check className="w-3.5 h-3.5" /> : num}
+              </span>
+              <span className="hidden sm:inline">
+                {num === 1 ? 'Room Specs' : num === 2 ? 'Budget & Style' : 'Photos & Action'}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       <div>
+        {/* Step 1: Room Specs */}
         {step === 1 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="space-y-6">
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '600' }}>
-                Room Type 🛏️
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-2">
+                Room Type
               </label>
               <select
-                className="input-field"
+                className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm font-medium text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                 value={formData.roomType}
                 onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
               >
-                <option value="Bedroom">Bedroom 🛏️</option>
-                <option value="Living Room">Living Room 🛋️</option>
-                <option value="Kitchen">Kitchen 🍳</option>
-                <option value="Dining Room">Dining Room 🍽️</option>
-                <option value="Home Office">Home Office 💼</option>
+                <option value="Bedroom">Bedroom</option>
+                <option value="Living Room">Living Room</option>
+                <option value="Kitchen">Kitchen</option>
+                <option value="Dining Room">Dining Room</option>
+                <option value="Home Office">Home Office</option>
               </select>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem' }}>Length (ft)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-2">
+                  Length (ft)
+                </label>
                 <input
                   type="number"
-                  className="input-field"
+                  className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                   value={formData.lengthFeet}
                   onChange={(e) => setFormData({ ...formData, lengthFeet: e.target.value })}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem' }}>Width (ft)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-2">
+                  Width (ft)
+                </label>
                 <input
                   type="number"
-                  className="input-field"
+                  className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                   value={formData.widthFeet}
                   onChange={(e) => setFormData({ ...formData, widthFeet: e.target.value })}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.85rem' }}>Height (ft)</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-2">
+                  Height (ft)
+                </label>
                 <input
                   type="number"
-                  className="input-field"
+                  className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                   value={formData.heightFeet}
                   onChange={(e) => setFormData({ ...formData, heightFeet: e.target.value })}
                 />
               </div>
             </div>
 
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={() => setStep(2)}
-              style={{ alignSelf: 'flex-end', marginTop: '12px' }}
-            >
-              Next: Budget &amp; Style <ArrowRight size={16} />
-            </button>
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
+                onClick={() => setStep(2)}
+              >
+                <span>Next: Budget &amp; Style</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
+        {/* Step 2: Budget & Style */}
         {step === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="space-y-6">
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '600' }}>
-                Maximum Budget (LKR) 💰
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-2">
+                Maximum Budget (LKR)
               </label>
               <input
                 type="number"
-                className="input-field"
+                className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                 value={formData.budgetLkr}
                 onChange={(e) => setFormData({ ...formData, budgetLkr: e.target.value })}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '12px', fontSize: '0.9rem', fontWeight: '600' }}>
-                Preferred Style Aesthetics (Select one or more) 🎨
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-2">
+                Preferred Style Aesthetics (Select one or more)
               </label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+              <div className="flex flex-wrap gap-2.5 pt-1">
                 {SUPPORTED_STYLES.map((style) => {
                   const isSelected = formData.preferredStyles.includes(style);
                   return (
@@ -233,72 +248,60 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                       key={style}
                       type="button"
                       onClick={() => toggleStyle(style)}
-                      style={{
-                        padding: '10px 18px',
-                        borderRadius: '20px',
-                        border: isSelected ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.15)',
-                        background: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255,255,255,0.05)',
-                        color: isSelected ? '#a5b4fc' : 'white',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s',
-                      }}
+                      className={`px-4 py-2 rounded-full text-xs font-semibold border transition-all ${
+                        isSelected
+                          ? 'bg-[#FAF3E8] dark:bg-[#2A231A] text-[#925C18] dark:text-[#E8A849] border-[#C48A36] shadow-xs'
+                          : 'bg-[#FAF8F5] dark:bg-[#12100E] text-[#57534E] dark:text-[#A8A29E] border-[#E7E1D7] dark:border-[#2E2824] hover:border-[#C48A36]/60'
+                      }`}
                     >
-                      {isSelected ? '✓ ' : '+ '}{style}
+                      {isSelected ? '✓ ' : '+ '} {style}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px' }}>
-              <button type="button" className="btn-secondary" onClick={() => setStep(1)}>
+            <div className="flex justify-between items-center pt-4">
+              <button
+                type="button"
+                className="px-5 py-2.5 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition"
+                onClick={() => setStep(1)}
+              >
                 Back
               </button>
-              <button type="button" className="btn-primary" onClick={() => setStep(3)}>
-                Next: Photos &amp; Action <ArrowRight size={16} />
+              <button
+                type="button"
+                className="inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
+                onClick={() => setStep(3)}
+              >
+                <span>Next: Photos &amp; Action</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
+        {/* Step 3: Photos & Action */}
         {step === 3 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div
-              style={{
-                border: '2px dashed rgba(99, 102, 241, 0.4)',
-                padding: '20px',
-                borderRadius: '12px',
-                background: 'rgba(99, 102, 241, 0.05)',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                <Image style={{ width: '24px', height: '24px', color: '#818cf8' }} />
-                <span style={{ fontWeight: '600', fontSize: '0.95rem' }}>
-                  Room Photos ({formData.photoUrls.length} attached) 📸
-                </span>
+          <div className="space-y-6">
+            <div className="border border-dashed border-[#C48A36]/50 bg-[#FAF3E8]/40 dark:bg-[#2A231A]/30 p-5 rounded-2xl space-y-4">
+              <div className="flex items-center gap-2 text-xs font-semibold text-[#925C18] dark:text-[#E8A849]">
+                <Image className="w-4 h-4 text-[#C48A36]" />
+                <span>Room Photos ({formData.photoUrls.length} attached)</span>
               </div>
 
               {formData.photoUrls.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                <div className="flex flex-wrap gap-2">
                   {formData.photoUrls.map((url, idx) => (
                     <div
                       key={`${url}-${idx}`}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: 'rgba(255,255,255,0.1)',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        fontSize: '0.8rem',
-                      }}
+                      className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-lg text-xs text-[#57534E] dark:text-[#A8A29E]"
                     >
                       <span>Photo #{idx + 1}</span>
                       <button
                         type="button"
                         onClick={() => removePhotoUrl(idx)}
-                        style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', fontWeight: 'bold' }}
+                        className="text-rose-500 hover:text-rose-700 font-bold ml-1"
                       >
                         ✕
                       </button>
@@ -307,57 +310,64 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="flex gap-2">
                 <input
                   type="text"
-                  className="input-field"
+                  className="flex-1 px-4 py-2.5 bg-white dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36]"
                   placeholder="Paste photo image URL..."
                   value={newPhotoUrl}
                   onChange={(e) => setNewPhotoUrl(e.target.value)}
-                  style={{ flex: 1, fontSize: '0.85rem' }}
                 />
-                <button type="button" className="btn-secondary" onClick={addPhotoUrl} style={{ fontSize: '0.85rem' }}>
+                <button
+                  type="button"
+                  onClick={addPhotoUrl}
+                  className="px-4 py-2.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition"
+                >
                   + Add Photo
                 </button>
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '0.9rem', fontWeight: '600' }}>
-                Design Preferences &amp; Notes ✍️
+              <label className="block text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-2">
+                Design Preferences &amp; Notes
               </label>
               <textarea
-                className="input-field"
+                className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                 rows={3}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: '12px' }}>
-              <button type="button" className="btn-secondary" onClick={() => setStep(2)}>
+            <div className="flex justify-between items-center pt-4">
+              <button
+                type="button"
+                className="px-5 py-2.5 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition"
+                onClick={() => setStep(2)}
+              >
                 Back
               </button>
 
-              <div style={{ display: 'flex', gap: '12px' }}>
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  className="btn-secondary"
-                  style={{ borderColor: 'rgba(99, 102, 241, 0.5)', color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '6px' }}
                   disabled={loading}
                   onClick={() => handleCreate(false)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#1A1715] border border-[#C48A36]/60 text-xs font-semibold text-[#925C18] dark:text-[#E8A849] rounded-xl hover:bg-[#FAF3E8] dark:hover:bg-[#2A231A] transition"
                 >
-                  <Save size={16} /> Save as Draft 📝
+                  <Save className="w-4 h-4" />
+                  <span>Save as Draft</span>
                 </button>
 
                 <button
                   type="button"
-                  className="btn-primary"
                   disabled={loading}
                   onClick={() => handleCreate(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
                 >
-                  <Send size={16} /> {loading ? 'Analyzing Style...' : 'Submit & Analyze Style 🤖'}
+                  <Send className="w-4 h-4" />
+                  <span>{loading ? 'Analyzing Style...' : 'Submit & Analyze Style'}</span>
                 </button>
               </div>
             </div>
