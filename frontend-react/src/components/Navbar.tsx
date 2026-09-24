@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PersonaRole } from '../types';
 import { Logo } from './Logo';
 import { GlassThemeToggle } from './GlassThemeToggle';
+import { useNavigate } from 'react-router-dom';
 
 interface NavbarProps {
   onOpenPortalModal: (role?: PersonaRole) => void;
@@ -16,6 +17,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  { name: 'Project Requests', href: '/project-requests' },
   { name: 'How it Works', href: '#how-it-works' },
   { name: "Who It's For", href: '#who-its-for' },
   { name: 'Featured Projects', href: '#transformations' },
@@ -27,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenPortalModal,
   onOpenGetStarted,
 }) => {
+  const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
@@ -95,6 +98,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
+    if (!href.startsWith('#')) {
+      navigate(href);
+      return;
+    }
     setActiveSection(href);
     setHoveredNav(null);
 
