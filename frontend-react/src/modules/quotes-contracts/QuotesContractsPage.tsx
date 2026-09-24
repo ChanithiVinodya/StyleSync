@@ -79,7 +79,11 @@ export const QuotesContractsPage: React.FC = () => {
 
         {/* Content Body */}
         <main className="max-w-7xl mx-auto p-4 sm:p-8">
-          {activeTab === 'quotes' ? <QuotesPage /> : <ContractsPage />}
+          {activeTab === 'quotes' ? (
+            <QuotesPage onGoToContracts={() => setActiveTab('contracts')} />
+          ) : (
+            <ContractsPage />
+          )}
         </main>
       </div>
     </ErrorBoundary>

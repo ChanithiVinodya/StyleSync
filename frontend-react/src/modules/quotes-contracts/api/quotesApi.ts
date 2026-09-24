@@ -3,7 +3,8 @@ import type { QuoteFormPayload } from "../components/QuoteFormModal";
 import type { AiDraftPayload } from "../components/AiDraftModal";
 import { addMockContract } from "./contractsApi";
 
-const API_BASE = import.meta.env?.VITE_API_BASE_URL ?? "http://localhost:5000";
+const RAW_API_BASE = import.meta.env?.VITE_API_BASE_URL ?? "http://localhost:5000";
+const API_BASE = RAW_API_BASE.replace(/\/api\/?$/, "");
 
 // Fallback in-memory quote store
 const STORAGE_KEY = "stylesync_quotes_store";
@@ -207,16 +208,21 @@ export async function updateQuoteStatus(id: string, status: string): Promise<Quo
   }
 }
 
-export async function acceptQuote(id: string, clientId: string): Promise<Quote> {
+export async function acceptQuote(id: string, clientId?: string): Promise<any> {
   try {
-    const res = await fetch(`${API_BASE}/api/quotes/${id}/accept?clientId=${clientId}`, {
+    const url = clientId 
+      ? `${API_BASE}/api/quotes/${id}/accept?clientId=${encodeURIComponent(clientId)}`
+      : `${API_BASE}/api/quotes/${id}/accept`;
+    const res = await fetch(url, {
       method: "POST",
     });
-    return await handle<Quote>(res);
-  } catch {
+    return await handle<any>(res);
+  } catch (err: any) {
     const quotes = getLocalQuotes();
     const index = quotes.findIndex((q) => q.id === id);
-    if (index === -1) throw new Error("Quote not found");
+    if (index === -1) {
+      throw err instanceof Error ? err : new Error("Failed to accept quote.");
+    }
 
     const updated = { ...quotes[index], status: "Accepted", updatedAt: new Date().toISOString() };
     quotes[index] = updated;
@@ -228,8 +234,8 @@ export async function acceptQuote(id: string, clientId: string): Promise<Quote> 
       quoteId: updated.id,
       projectRequestId: updated.projectRequestId,
       designerId: updated.designerId,
-      clientId,
-      status: "PendingSignature",
+      clientId: clientId || "client-default",
+      status: "Draft",
       totalAmount: updated.totalCost,
       terms: `Official Contract for ${updated.scopeSummary}. 50% upfront, 50% upon final signoff.`,
       createdAt: new Date().toISOString(),

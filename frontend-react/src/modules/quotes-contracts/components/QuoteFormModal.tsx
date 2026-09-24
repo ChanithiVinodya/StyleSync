@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import type { Quote, QuoteItem } from "../types";
 
 const CATEGORIES = ["Design", "Labor", "Materials", "Furniture", "Other"];
@@ -49,15 +49,36 @@ export default function QuoteFormModal({ initialQuote, projectRequestId, designe
   const [scopeSummary, setScopeSummary] = useState(initialQuote?.scopeSummary ?? "");
   const [notes, setNotes] = useState(initialQuote?.notes ?? "");
   const [items, setItems] = useState<QuoteItem[]>(
-    initialQuote?.items?.map((i) => ({
-      description: i.description ?? "",
-      category: normalizeCategory(i.category),
-      quantity: i.quantity ?? 1,
-      unitCost: i.unitCost ?? 0,
-    })) ?? [emptyItem()]
+    initialQuote?.items && initialQuote.items.length > 0
+      ? initialQuote.items.map((i) => ({
+          id: i.id,
+          description: i.description ?? "",
+          category: normalizeCategory(i.category),
+          quantity: i.quantity ?? 1,
+          unitCost: i.unitCost ?? 0,
+        }))
+      : [emptyItem()]
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialQuote) {
+      setScopeSummary(initialQuote.scopeSummary ?? "");
+      setNotes(initialQuote.notes ?? "");
+      if (initialQuote.items && initialQuote.items.length > 0) {
+        setItems(
+          initialQuote.items.map((i) => ({
+            id: i.id,
+            description: i.description ?? "",
+            category: normalizeCategory(i.category),
+            quantity: i.quantity ?? 1,
+            unitCost: i.unitCost ?? 0,
+          }))
+        );
+      }
+    }
+  }, [initialQuote]);
 
   const total = items.reduce((sum, i) => sum + (Number(i.quantity) || 0) * (Number(i.unitCost) || 0), 0);
 

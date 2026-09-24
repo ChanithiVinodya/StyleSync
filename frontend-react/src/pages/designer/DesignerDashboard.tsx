@@ -12,8 +12,8 @@ export const DesignerDashboard: React.FC = () => {
 
   useEffect(() => {
     api.get('/designer/requests')
-      .then((res) => setRequests(res.data))
-      .catch((err) => console.error('Failed to load designer requests', err));
+      .then((res: any) => setRequests(res.data))
+      .catch((err: any) => console.error('Failed to load designer requests', err));
   }, []);
 
   return (

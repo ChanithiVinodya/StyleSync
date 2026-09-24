@@ -1,6 +1,7 @@
 import type { Contract, PagedResult } from "../types";
 
-const API_BASE = import.meta.env?.VITE_API_BASE_URL ?? "http://localhost:5000";
+const RAW_API_BASE = import.meta.env?.VITE_API_BASE_URL ?? "http://localhost:5000";
+const API_BASE = RAW_API_BASE.replace(/\/api\/?$/, "");
 
 const CONTRACT_STORAGE_KEY = "stylesync_contracts_store";
 

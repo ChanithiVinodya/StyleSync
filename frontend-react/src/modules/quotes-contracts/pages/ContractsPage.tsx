@@ -101,8 +101,11 @@ export default function ContractsPage() {
             )}
             {!loading && !error && contracts?.map((c) => (
               <tr key={c.id}>
-                <td style={{ fontFamily: "monospace", fontSize: 12.5, color: "var(--qc-muted)" }}>
-                  {c.id ? `${c.id.slice(0, 8)}…` : "—"}
+                <td>
+                  <div style={{ fontWeight: 500 }}>{c.termsSummary || "Interior Design Agreement"}</div>
+                  <div style={{ fontFamily: "monospace", fontSize: 11.5, color: "var(--qc-muted)" }}>
+                    {c.id ? `${c.id.slice(0, 8)}…` : "—"}
+                  </div>
                 </td>
                 <td><StatusBadge status={c.status} /></td>
                 <td className="qc-money">{formatMoney(c.totalAmount)}</td>

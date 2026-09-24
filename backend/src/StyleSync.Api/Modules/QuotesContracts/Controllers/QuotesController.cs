@@ -122,6 +122,9 @@ namespace StyleSync.Api.Controllers
             DraftQuoteFromAgentDto dto,
             [FromServices] IHttpClientFactory httpClientFactory)
         {
+            if (dto.ProjectRequestId == Guid.Empty) dto.ProjectRequestId = Guid.NewGuid();
+            if (dto.DesignerId == Guid.Empty) dto.DesignerId = Guid.NewGuid();
+
             var client = httpClientFactory.CreateClient("AiService");
 
             var agentRequest = new AgentBudgetScopeRequest
@@ -140,13 +143,16 @@ namespace StyleSync.Api.Controllers
             {
                 agentHttpResponse = await client.PostAsJsonAsync("/agents/budget-scope", agentRequest);
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException ex)
             {
-                return StatusCode(502, new { message = "Couldn't reach the AI service. Is it running on port 8001?" });
+                return StatusCode(502, new { message = $"Couldn't reach the AI service at {client.BaseAddress}. Is it running? ({ex.Message})" });
             }
 
             if (!agentHttpResponse.IsSuccessStatusCode)
-                return StatusCode(502, new { message = $"AI service returned {(int)agentHttpResponse.StatusCode}." });
+            {
+                var errBody = await agentHttpResponse.Content.ReadAsStringAsync();
+                return StatusCode(502, new { message = $"AI service returned {(int)agentHttpResponse.StatusCode}: {errBody}" });
+            }
 
             var agentResult = await agentHttpResponse.Content.ReadFromJsonAsync<AgentBudgetScopeResponse>();
             if (agentResult is null || agentResult.Items.Count == 0)
@@ -165,7 +171,7 @@ namespace StyleSync.Api.Controllers
                 {
                     Id = Guid.NewGuid(),
                     Description = i.Description,
-                    Category = Enum.TryParse<QuoteItemCategory>(i.Category, out var cat) ? cat : QuoteItemCategory.Other,
+                    Category = Enum.TryParse<QuoteItemCategory>(i.Category, true, out var cat) ? cat : QuoteItemCategory.Other,
                     Quantity = i.Quantity,
                     UnitCost = i.UnitCost,
                     LineTotal = i.Quantity * i.UnitCost
@@ -205,7 +211,7 @@ namespace StyleSync.Api.Controllers
 
                 foreach (var i in dto.Items)
                 {
-                    quote.Items.Add(new QuoteItem
+                    var item = new QuoteItem
                     {
                         Id = Guid.NewGuid(),
                         QuoteId = quote.Id,
@@ -214,7 +220,9 @@ namespace StyleSync.Api.Controllers
                         Quantity = i.Quantity,
                         UnitCost = i.UnitCost,
                         LineTotal = i.Quantity * i.UnitCost
-                    });
+                    };
+                    _db.Entry(item).State = EntityState.Added;
+                    quote.Items.Add(item);
                 }
 
                 quote.TotalCost = quote.Items.Sum(i => i.LineTotal);
@@ -260,12 +268,10 @@ namespace StyleSync.Api.Controllers
         }
 
         // POST /api/quotes/{id}/accept
-        // The one place a Contract gets created. clientId is passed in because,
-        // in the full modular monolith, it comes from Student 2's ProjectRequest —
-        // this controller doesn't own that table, so it's supplied by the caller
-        // (the shared "submit approval decision" endpoint from PRD section 8).
+        // The one place a Contract gets created. Creates a corresponding Contract
+        // and transitions the quote to Accepted.
         [HttpPost("{id:guid}/accept")]
-        public async Task<ActionResult<ContractResponseDto>> Accept(Guid id, [FromQuery] Guid clientId)
+        public async Task<ActionResult<ContractResponseDto>> Accept(Guid id, [FromQuery] string? clientId = null)
         {
             var quote = await _db.Quotes.Include(q => q.Items).Include(q => q.Contract)
                 .FirstOrDefaultAsync(q => q.Id == id);
@@ -278,14 +284,19 @@ namespace StyleSync.Api.Controllers
             quote.Status = QuoteStatus.Accepted;
             quote.UpdatedAt = DateTime.UtcNow;
 
+            Guid resolvedClientId = (Guid.TryParse(clientId, out var parsedGuid) && parsedGuid != Guid.Empty)
+                ? parsedGuid
+                : (quote.ProjectRequestId != Guid.Empty ? quote.ProjectRequestId : Guid.NewGuid());
+
             var contract = new Contract
             {
                 Id = Guid.NewGuid(),
                 QuoteId = quote.Id,
                 ProjectRequestId = quote.ProjectRequestId,
                 DesignerId = quote.DesignerId,
-                ClientId = clientId,
+                ClientId = resolvedClientId,
                 TotalAmount = quote.TotalCost,
+                TermsSummary = string.IsNullOrWhiteSpace(quote.ScopeSummary) ? "Interior Design Contract" : quote.ScopeSummary,
                 Status = ContractStatus.Draft
             };
 
@@ -300,16 +311,17 @@ namespace StyleSync.Api.Controllers
         }
 
         // DELETE /api/quotes/{id}
-        // Only a Draft (never-submitted) quote can be deleted (PRD section 9, Delete row).
+        // Allows deleting a Draft or Submitted quote that has not been converted to an accepted contract.
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
-            var quote = await _db.Quotes.FirstOrDefaultAsync(q => q.Id == id);
+            var quote = await _db.Quotes.Include(q => q.Items).Include(q => q.Contract).FirstOrDefaultAsync(q => q.Id == id);
             if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
 
-            if (quote.Status != QuoteStatus.Draft)
-                return BadRequest(new { message = "Only a Draft quote can be deleted." });
+            if (quote.Contract is not null || quote.Status == QuoteStatus.Accepted)
+                return BadRequest(new { message = "An accepted quote with an existing contract cannot be deleted." });
 
+            _db.QuoteItems.RemoveRange(quote.Items);
             _db.Quotes.Remove(quote);
             await _db.SaveChangesAsync();
             return NoContent();

@@ -12,8 +12,8 @@ export const ClientDashboard: React.FC = () => {
 
   useEffect(() => {
     api.get('/client/requests')
-      .then((res) => setRequests(res.data))
-      .catch((err) => console.error('Failed to load client requests', err));
+      .then((res: any) => setRequests(res.data))
+      .catch((err: any) => console.error('Failed to load client requests', err));
   }, []);
 
   return (

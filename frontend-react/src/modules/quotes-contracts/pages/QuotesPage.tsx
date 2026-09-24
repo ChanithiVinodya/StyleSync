@@ -20,7 +20,11 @@ function getStatusStr(s: any): string {
   return typeof s === "string" ? s : s.value ?? s.name ?? "";
 }
 
-export default function QuotesPage() {
+interface QuotesPageProps {
+  onGoToContracts?: () => void;
+}
+
+export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -92,10 +96,15 @@ export default function QuotesPage() {
 
   async function handleAccept(quote: Quote) {
     if (!quote?.id) return;
-    const clientId = window.prompt("Client ID to attach this contract to (temporary, until this is wired to the real request):");
-    if (!clientId) return;
-    await acceptQuote(quote.id, clientId);
-    refresh();
+    try {
+      await acceptQuote(quote.id);
+      await refresh();
+      if (onGoToContracts) {
+        onGoToContracts();
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to accept quote.");
+    }
   }
 
   async function handleReject(quote: Quote) {
@@ -196,16 +205,17 @@ export default function QuotesPage() {
                       {(statusStr === "Draft" || statusStr === "RevisionRequested") && (
                         <button className="qc-btn qc-btn--ghost" onClick={() => setEditingQuote(q)}>Edit</button>
                       )}
-                      {(statusStr === "Draft" || statusStr === "Submitted") && (
-                        <button className="qc-btn qc-btn--ghost" onClick={() => handleAdvance(q)}>
-                          {statusStr === "Draft" ? "Submit" : "Move to review"}
-                        </button>
+                      {statusStr === "Draft" && (
+                        <button className="qc-btn qc-btn--ghost" onClick={() => handleAdvance(q)}>Submit</button>
                       )}
-                      {statusStr === "ClientReview" && (
+                      {(statusStr === "Submitted" || statusStr === "ClientReview") && (
                         <>
                           <button className="qc-btn qc-btn--primary" onClick={() => handleAccept(q)}>Accept</button>
-                          <button className="qc-btn qc-btn--danger" onClick={() => handleReject(q)}>Reject</button>
+                          <button className="qc-btn qc-btn--danger" onClick={() => handleDelete(q)}>Delete</button>
                         </>
+                      )}
+                      {statusStr === "Accepted" && onGoToContracts && (
+                        <button className="qc-btn qc-btn--ghost" onClick={onGoToContracts}>View Contract</button>
                       )}
                       {statusStr === "Draft" && (
                         <button className="qc-btn qc-btn--danger" onClick={() => handleDelete(q)}>Delete</button>
@@ -232,7 +242,12 @@ export default function QuotesPage() {
         <QuoteFormModal onSubmit={handleCreate} onClose={() => setModalOpen(false)} />
       )}
       {editingQuote && (
-        <QuoteFormModal initialQuote={editingQuote} onSubmit={handleEdit} onClose={() => setEditingQuote(null)} />
+        <QuoteFormModal
+          key={`${editingQuote.id}-${editingQuote.updatedAt || ""}`}
+          initialQuote={editingQuote}
+          onSubmit={handleEdit}
+          onClose={() => setEditingQuote(null)}
+        />
       )}
       {aiModalOpen && (
         <AiDraftModal onSubmit={handleAiDraft} onClose={() => setAiModalOpen(false)} />
