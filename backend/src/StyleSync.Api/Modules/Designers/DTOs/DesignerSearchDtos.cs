@@ -98,6 +98,9 @@ public class DesignerMatchScoreBreakdownResponse
 
     [JsonPropertyName("matchScore")]
     public double MatchScore { get; set; }
+
+    [JsonPropertyName("averageRating")]
+    public decimal? AverageRating { get; set; }
 }
 
 /// <summary>

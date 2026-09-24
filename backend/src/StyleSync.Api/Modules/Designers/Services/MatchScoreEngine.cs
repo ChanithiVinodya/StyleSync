@@ -171,7 +171,8 @@ public class MatchScoreEngine : IMatchScoreEngine
             BudgetRangeOverlapPct = breakdown.BudgetRangeOverlap,
             PastRatingNormalized = breakdown.PastRatingNormalized,
             AvailabilityBonus = breakdown.AvailabilityBonus,
-            MatchScore = score
+            MatchScore = score,
+            AverageRating = designer.AverageRating
         };
     }
 

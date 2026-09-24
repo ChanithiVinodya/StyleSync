@@ -4,6 +4,7 @@ import '../models/designer_summary.dart';
 import '../models/designer_profile.dart';
 import '../models/portfolio_item.dart';
 import '../models/paged_result.dart';
+import '../models/match_score_breakdown.dart';
 
 class DesignersApiService {
   final ApiClient apiClient;
@@ -70,6 +71,94 @@ class DesignersApiService {
         orElse: () => _fallbackProfiles.first,
       );
       return profile.portfolioItems;
+    }
+  }
+
+  /// Fetches the deterministic match-score breakdown for a single designer:
+  /// GET /api/designers/{id}/match-score?styleTags=&budgetMin=&budgetMax=
+  Future<MatchScoreBreakdownResponse> getMatchScoreBreakdown({
+    required int designerId,
+    required List<String> styleTags,
+    required double budgetMin,
+    required double budgetMax,
+  }) async {
+    final queryParams = <String, String>{};
+    for (int i = 0; i < styleTags.length; i++) {
+      queryParams['styleTags'] = styleTags.join(',');
+    }
+    if (budgetMin > 0) {
+      queryParams['budgetMin'] = budgetMin.toInt().toString();
+    }
+    if (budgetMax > 0) {
+      queryParams['budgetMax'] = budgetMax.toInt().toString();
+    }
+
+    final uri = Uri(
+      path: '/designers/$designerId/match-score',
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
+
+    try {
+      final responseData = await apiClient.get(uri.toString());
+      if (responseData is Map<String, dynamic>) {
+        return MatchScoreBreakdownResponse.fromJson(responseData);
+      }
+      throw Exception('Unexpected match score format');
+    } catch (e) {
+      // Deterministic offline calculation
+      final profile = _fallbackProfiles.firstWhere(
+        (p) => p.id == designerId,
+        orElse: () => _fallbackProfiles.first,
+      );
+
+      // 1. Style tag overlap
+      double styleOverlap = 1.0;
+      if (styleTags.isNotEmpty) {
+        final matches = styleTags
+            .where((t) => profile.styleTags
+                .any((pt) => pt.toLowerCase() == t.toLowerCase()))
+            .length;
+        styleOverlap = matches / styleTags.length;
+      }
+
+      // 2. Budget range overlap
+      double budgetOverlap = 1.0;
+      final requestedSpan = budgetMax - budgetMin;
+      if (requestedSpan > 0) {
+        final overlapStart = profile.priceRangeMin > budgetMin
+            ? profile.priceRangeMin
+            : budgetMin;
+        final overlapEnd = profile.priceRangeMax < budgetMax
+            ? profile.priceRangeMax
+            : budgetMax;
+        final overlapSpan =
+            overlapEnd > overlapStart ? (overlapEnd - overlapStart) : 0.0;
+        budgetOverlap = (overlapSpan / requestedSpan).clamp(0.0, 1.0);
+      }
+
+      // 3. Past rating normalized
+      final ratingNormalized = profile.averageRating != null
+          ? (profile.averageRating! / 5.0).clamp(0.0, 1.0)
+          : 0.5;
+
+      // 4. Availability bonus
+      final availabilityBonus =
+          (profile.isAvailable && profile.isUnderCapacity) ? 1.0 : 0.0;
+
+      final totalScore = (styleOverlap * 0.40) +
+          (budgetOverlap * 0.30) +
+          (ratingNormalized * 0.20) +
+          (availabilityBonus * 0.10);
+
+      return MatchScoreBreakdownResponse(
+        designerId: designerId,
+        styleTagOverlapPct: double.parse(styleOverlap.toStringAsFixed(4)),
+        budgetRangeOverlapPct: double.parse(budgetOverlap.toStringAsFixed(4)),
+        pastRatingNormalized: double.parse(ratingNormalized.toStringAsFixed(4)),
+        availabilityBonus: double.parse(availabilityBonus.toStringAsFixed(4)),
+        matchScore: double.parse(totalScore.toStringAsFixed(4)),
+        averageRating: profile.averageRating,
+      );
     }
   }
 
