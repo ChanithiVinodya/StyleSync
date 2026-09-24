@@ -345,18 +345,20 @@ export default function ProjectRequestsPage() {
               </div>
             )}
 
-            <RequestStatusBanner request={selectedRequest} />
-            <StyleAnalysisCard
-              request={selectedRequest}
-              onRequestUpdated={(updated) => setSelectedRequest(updated)}
-            />
+            <RequestStatusBanner status={selectedRequest.status} />
+            {selectedRequest.styleAnalysis && (
+              <StyleAnalysisCard
+                analysis={selectedRequest.styleAnalysis}
+                photos={selectedRequest.photos}
+              />
+            )}
           </div>
         ) : (
           <div>
             {activeTab === 'client-wizard' && (
               <div style={{ maxWidth: '800px', margin: '0 auto' }}>
                 <CreateRequestWizard
-                  onSuccess={(created) => {
+                  onRequestCreated={(created: ProjectRequest) => {
                     setSelectedRequest(created);
                   }}
                 />
@@ -365,7 +367,7 @@ export default function ProjectRequestsPage() {
 
             {activeTab === 'staff-dashboard' && (
               <RequestListAdmin
-                onSelectRequest={(req) => setSelectedRequest(req)}
+                onViewDetail={(req: ProjectRequest) => setSelectedRequest(req)}
               />
             )}
           </div>
