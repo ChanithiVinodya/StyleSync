@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -127,5 +128,23 @@ public class TasksController : ControllerBase
         {
             return Conflict(new ErrorResponse(409, ex.Message));
         }
+    }
+
+    [HttpGet("delayed")]
+    [Authorize(Roles = "Admin,Designer,Client")]
+    [ProducesResponseType(typeof(IEnumerable<DelayedTaskDto>), 200)]
+    public async Task<IActionResult> GetDelayedTasks([FromServices] IDelayService delayService)
+    {
+        var result = await delayService.GetDelayedTasksAsync();
+        return Ok(new { count = result.Count(), tasks = result });
+    }
+
+    [HttpPost("delay-detection/run")]
+    [Authorize(Roles = "Admin,Designer")]
+    [ProducesResponseType(typeof(DelayDetectionResultDto), 200)]
+    public async Task<IActionResult> RunDelayDetection([FromServices] IDelayService delayService)
+    {
+        var result = await delayService.RunDelayDetectionAsync();
+        return Ok(result);
     }
 }
