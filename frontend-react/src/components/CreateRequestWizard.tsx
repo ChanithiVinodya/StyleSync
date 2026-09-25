@@ -165,10 +165,11 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                 onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
               >
                 <option value="Bedroom">Bedroom</option>
-                <option value="Living Room">Living Room</option>
+                <option value="LivingRoom">Living Room</option>
                 <option value="Kitchen">Kitchen</option>
-                <option value="Dining Room">Dining Room</option>
-                <option value="Home Office">Home Office</option>
+                <option value="DiningRoom">Dining Room</option>
+                <option value="Office">Home Office</option>
+                <option value="Bathroom">Bathroom</option>
               </select>
             </div>
 

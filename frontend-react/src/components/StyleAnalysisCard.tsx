@@ -31,76 +31,69 @@ interface LifecycleStep {
 // ─── RequestStatusBanner ──────────────────────────────────────────────────
 
 export function RequestStatusBanner({ status }: RequestStatusBannerProps) {
-  const getStatusDisplay = (st: string): StatusDisplay => {
+  const getStatusDisplay = (st: string) => {
     switch (st) {
       case 'Draft':
         return {
           icon: '📝',
           label: 'Draft',
-          badgeClass: 'badge-draft',
-          bgColor: 'rgba(99, 102, 241, 0.15)',
-          borderColor: 'rgba(99, 102, 241, 0.4)',
-          textColor: '#818cf8',
+          containerClass: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800/50',
+          textClass: 'text-indigo-700 dark:text-indigo-400',
+          descClass: 'text-indigo-600 dark:text-indigo-300',
           description: 'Request created. Ready to be submitted for AI Style Analysis.',
         };
       case 'Submitted':
         return {
           icon: '📤',
           label: 'Submitted',
-          badgeClass: 'badge-submitted',
-          bgColor: 'rgba(245, 158, 11, 0.15)',
-          borderColor: 'rgba(245, 158, 11, 0.4)',
-          textColor: '#fbbf24',
+          containerClass: 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/50',
+          textClass: 'text-amber-700 dark:text-amber-400',
+          descClass: 'text-amber-600 dark:text-amber-300',
           description: 'Request queued. Preparing AI Style Analysis Agent...',
         };
       case 'AIAnalysis':
         return {
           icon: '🤖',
           label: 'AI Analysis',
-          badgeClass: 'badge-submitted',
-          bgColor: 'rgba(168, 85, 247, 0.2)',
-          borderColor: 'rgba(168, 85, 247, 0.5)',
-          textColor: '#c084fc',
+          containerClass: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800/50',
+          textClass: 'text-purple-700 dark:text-purple-400',
+          descClass: 'text-purple-600 dark:text-purple-300',
           description: 'Analyzing your room photos & preferences with LangGraph StateGraph...',
         };
       case 'ProposalReady':
         return {
           icon: '🟢',
           label: 'Proposal Ready',
-          badgeClass: 'badge-proposal',
-          bgColor: 'rgba(16, 185, 129, 0.15)',
-          borderColor: 'rgba(16, 185, 129, 0.4)',
-          textColor: '#34d399',
+          containerClass: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/50',
+          textClass: 'text-emerald-700 dark:text-emerald-400',
+          descClass: 'text-emerald-600 dark:text-emerald-300',
           description: 'AI Style Analysis complete! Design recommendation ready for client review.',
         };
       case 'AwaitingApproval':
         return {
           icon: '⏳',
           label: 'Awaiting Approval',
-          badgeClass: 'badge-submitted',
-          bgColor: 'rgba(59, 130, 246, 0.15)',
-          borderColor: 'rgba(59, 130, 246, 0.4)',
-          textColor: '#60a5fa',
+          containerClass: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/50',
+          textClass: 'text-blue-700 dark:text-blue-400',
+          descClass: 'text-blue-600 dark:text-blue-300',
           description: 'Awaiting client approval before passing to Designer Matching.',
         };
       case 'Approved':
         return {
           icon: '✅',
           label: 'Approved',
-          badgeClass: 'badge-proposal',
-          bgColor: 'rgba(16, 185, 129, 0.2)',
-          borderColor: 'rgba(16, 185, 129, 0.6)',
-          textColor: '#10b981',
+          containerClass: 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800/50',
+          textClass: 'text-emerald-800 dark:text-emerald-400',
+          descClass: 'text-emerald-700 dark:text-emerald-300',
           description: 'Request approved! Assigned to Designer Matching.',
         };
       default:
         return {
           icon: '📌',
           label: st || 'Unknown',
-          badgeClass: 'badge-draft',
-          bgColor: 'rgba(255,255,255,0.1)',
-          borderColor: 'rgba(255,255,255,0.2)',
-          textColor: '#cbd5e1',
+          containerClass: 'bg-gray-50 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800/50',
+          textClass: 'text-gray-700 dark:text-gray-400',
+          descClass: 'text-gray-600 dark:text-gray-300',
           description: '',
         };
     }
@@ -121,64 +114,47 @@ export function RequestStatusBanner({ status }: RequestStatusBannerProps) {
   const currentIndex = getStepIndex(status);
 
   return (
-    <div
-      style={{
-        padding: '20px',
-        borderRadius: '14px',
-        background: current.bgColor,
-        border: `1px solid ${current.borderColor}`,
-        marginBottom: '24px',
-      }}
-    >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+    <div className={`p-5 rounded-2xl border mb-6 ${current.containerClass} transition-colors`}>
+      <div className="flex justify-between items-center mb-3">
         <div>
-          <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-muted)' }}>
+          <span className="text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E]">
             Request Status Lifecycle
           </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '4px' }}>
-            <span style={{ fontSize: '1.8rem' }}>{current.icon}</span>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: current.textColor }}>
+          <div className="flex items-center gap-2.5 mt-1">
+            <span className="text-2xl">{current.icon}</span>
+            <h3 className={`text-xl font-bold ${current.textClass}`}>
               {current.label}
             </h3>
           </div>
         </div>
       </div>
 
-      <p style={{ fontSize: '0.9rem', color: '#e2e8f0', marginBottom: '16px' }}>
+      <p className={`text-sm mb-4 ${current.descClass}`}>
         {current.description}
       </p>
 
       {/* Lifecycle Progress Pipeline */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', overflowX: 'auto', paddingTop: '8px' }}>
+      <div className="flex items-center gap-1 overflow-x-auto pt-2 scrollbar-hide">
         {steps.map((s, idx) => {
           const isPassed = currentIndex >= idx;
           const isCurrent = currentIndex === idx;
           return (
             <React.Fragment key={s.key}>
               <div
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '20px',
-                  fontSize: '0.75rem',
-                  fontWeight: isCurrent ? '800' : '600',
-                  background: isCurrent
-                    ? current.textColor
+                className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap flex items-center gap-1 transition-colors ${
+                  isCurrent
+                    ? `${current.textClass} font-extrabold bg-white/60 dark:bg-black/20 shadow-xs`
                     : isPassed
-                    ? 'rgba(255,255,255,0.15)'
-                    : 'rgba(255,255,255,0.05)',
-                  color: isCurrent ? '#0f172a' : isPassed ? '#f8fafc' : '#64748b',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                }}
+                    ? 'font-bold bg-white/40 dark:bg-white/10 text-[#57534E] dark:text-[#E8E6E3]'
+                    : 'font-semibold bg-white/20 dark:bg-white/5 text-[#A8A29E] dark:text-[#78716C]'
+                }`}
               >
                 {isPassed && !isCurrent && <span>✓</span>}
                 {isCurrent && <span>➔</span>}
                 {s.label}
               </div>
               {idx < steps.length - 1 && (
-                <div style={{ width: '12px', height: '2px', background: isPassed ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.08)' }} />
+                <div className={`w-3 h-0.5 rounded-full ${isPassed ? 'bg-[#57534E]/30 dark:bg-[#E8E6E3]/30' : 'bg-[#A8A29E]/30 dark:bg-[#78716C]/30'}`} />
               )}
             </React.Fragment>
           );

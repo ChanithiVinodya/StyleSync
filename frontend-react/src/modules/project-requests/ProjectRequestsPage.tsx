@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import CreateRequestWizard from '../../components/CreateRequestWizard';
 import RequestListAdmin from '../../components/RequestListAdmin';
 import StyleAnalysisCard, { RequestStatusBanner } from '../../components/StyleAnalysisCard';
@@ -22,9 +22,17 @@ type ActiveTab = 'client-wizard' | 'staff-dashboard';
 
 export default function ProjectRequestsPage() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('client-wizard');
+  const [activeTab, setActiveTab] = useState<ActiveTab>('staff-dashboard');
   const [selectedRequest, setSelectedRequest] = useState<ProjectRequest | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (user?.role === 'Client') {
+      setActiveTab('client-wizard');
+    } else {
+      setActiveTab('staff-dashboard');
+    }
+  }, [user?.role]);
 
   const [editData, setEditData] = useState<EditFormData>({
     roomType: '',
@@ -142,20 +150,22 @@ export default function ProjectRequestsPage() {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center p-1 bg-[#EFEAE1] dark:bg-[#1C1917] rounded-xl border border-[#E7E1D7] dark:border-[#2E2824]">
-            <button
-              onClick={() => {
-                setActiveTab('client-wizard');
-                setSelectedRequest(null);
-              }}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                activeTab === 'client-wizard'
-                  ? 'bg-white dark:bg-[#2A231A] text-[#1C1917] dark:text-[#FAF8F5] shadow-2xs'
-                  : 'text-[#78716C] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#FAF8F5]'
-              }`}
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>Create Request</span>
-            </button>
+            {user?.role === 'Client' && (
+              <button
+                onClick={() => {
+                  setActiveTab('client-wizard');
+                  setSelectedRequest(null);
+                }}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  activeTab === 'client-wizard'
+                    ? 'bg-white dark:bg-[#2A231A] text-[#1C1917] dark:text-[#FAF8F5] shadow-2xs'
+                    : 'text-[#78716C] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#FAF8F5]'
+                }`}
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Create Request</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 setActiveTab('staff-dashboard');
@@ -168,7 +178,7 @@ export default function ProjectRequestsPage() {
               }`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>Staff Dashboard</span>
+              <span>{user?.role === 'Client' ? 'My Requests' : 'Staff Dashboard'}</span>
             </button>
           </div>
 

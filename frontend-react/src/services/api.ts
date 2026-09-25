@@ -145,16 +145,39 @@ export async function fetchAllRequests(
 export async function createProjectRequest(
   payload: CreateRequestPayload
 ): Promise<ProjectRequest> {
+  const finalDesc = payload.description && payload.description.length >= 20 
+    ? payload.description 
+    : (payload.description ? payload.description + ' '.repeat(20 - payload.description.length) : 'No description provided (auto-filled)');
+
+  // Map the frontend payload to the backend's CreateProjectRequestDto
+  const backendDto = {
+    title: `${payload.roomType} Makeover`,
+    description: finalDesc,
+    roomType: payload.roomType,
+    budgetMin: payload.budgetLkr,
+    budgetMax: payload.budgetLkr,
+    stylePreferences: payload.preferredStyles.join(', '),
+    specialRequirements: `Dimensions: ${payload.lengthFeet}x${payload.widthFeet}x${payload.heightFeet} ft. Photos: ${payload.photoUrls.join(', ')}`
+  };
+
   const res = await fetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       ...authHeaders(),
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(backendDto),
   });
-  if (!res.ok) throw new Error('Failed to create project request');
-  return (await res.json()) as ProjectRequest;
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error('Failed to create project request: ' + JSON.stringify(errorData));
+  }
+  // The backend might return int for Id, we convert it to string for our frontend interface
+  const data = await res.json();
+  return {
+    ...data,
+    id: String(data.id),
+  } as ProjectRequest;
 }
 
 export async function submitRequestForAI(id: string): Promise<ProjectRequest> {

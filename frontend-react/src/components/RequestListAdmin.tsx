@@ -51,7 +51,7 @@ export default function RequestListAdmin({ onViewDetail }: RequestListAdminProps
     const matchesSearch =
       r.roomType.toLowerCase().includes(query) ||
       r.description.toLowerCase().includes(query) ||
-      r.id.toLowerCase().includes(query) ||
+      String(r.id).toLowerCase().includes(query) ||
       (r.clientId && r.clientId.toLowerCase().includes(query));
 
     const matchesStatus = !statusFilter || r.status === statusFilter;
@@ -183,7 +183,7 @@ export default function RequestListAdmin({ onViewDetail }: RequestListAdminProps
                       <div>
                         <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>🏠 {req.roomType}</h3>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                          Client: {req.clientId || 'default'} | ID: {req.id.substring(0, 8)}...
+                          Client: {req.clientId || 'default'} | ID: {req.id}
                         </span>
                       </div>
                       <span className={`badge ${badge.class}`}>
