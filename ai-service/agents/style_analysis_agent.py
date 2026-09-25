@@ -81,13 +81,69 @@ STYLE_PRESETS = {
     }
 }
 
-STYLE_CONCEPT_RENDERS = {
-    "Modern": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&auto=format&fit=crop",
-    "Minimalist": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=1000&auto=format&fit=crop",
-    "Industrial": "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=1000&auto=format&fit=crop",
-    "Luxury": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1000&auto=format&fit=crop",
-    "Traditional": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1000&auto=format&fit=crop",
-    "Mid Century Modern": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1000&auto=format&fit=crop"
+def normalize_room_type(room_raw: str) -> str:
+    r = (room_raw or "").lower().replace(" ", "").replace("_", "")
+    if "bath" in r:
+        return "Bathroom"
+    if "kitchen" in r:
+        return "Kitchen"
+    if "bed" in r:
+        return "Bedroom"
+    if "dining" in r:
+        return "Dining Room"
+    if "office" in r or "work" in r or "study" in r:
+        return "Home Office"
+    return "Living Room"
+
+ROOM_STYLE_CONCEPT_RENDERS = {
+    "Bathroom": {
+        "Modern": "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?q=80&w=1000&auto=format&fit=crop",
+        "Minimalist": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1000&auto=format&fit=crop",
+        "Luxury": "https://images.unsplash.com/photo-1620626011761-996317b8d101?q=80&w=1000&auto=format&fit=crop",
+        "Industrial": "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?q=80&w=1000&auto=format&fit=crop",
+        "Traditional": "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1000&auto=format&fit=crop",
+        "Mid Century Modern": "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?q=80&w=1000&auto=format&fit=crop",
+    },
+    "Kitchen": {
+        "Modern": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=1000&auto=format&fit=crop",
+        "Minimalist": "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?q=80&w=1000&auto=format&fit=crop",
+        "Luxury": "https://images.unsplash.com/photo-1600585152220-90363fe7e115?q=80&w=1000&auto=format&fit=crop",
+        "Industrial": "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?q=80&w=1000&auto=format&fit=crop",
+        "Traditional": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=1000&auto=format&fit=crop",
+        "Mid Century Modern": "https://images.unsplash.com/photo-1556909212-d5b604d0c90d?q=80&w=1000&auto=format&fit=crop",
+    },
+    "Bedroom": {
+        "Modern": "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=1000&auto=format&fit=crop",
+        "Minimalist": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=1000&auto=format&fit=crop",
+        "Luxury": "https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=1000&auto=format&fit=crop",
+        "Industrial": "https://images.unsplash.com/photo-1540518614846-7eded433c457?q=80&w=1000&auto=format&fit=crop",
+        "Traditional": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1000&auto=format&fit=crop",
+        "Mid Century Modern": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1000&auto=format&fit=crop",
+    },
+    "Living Room": {
+        "Modern": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&auto=format&fit=crop",
+        "Minimalist": "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=1000&auto=format&fit=crop",
+        "Luxury": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?q=80&w=1000&auto=format&fit=crop",
+        "Industrial": "https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=1000&auto=format&fit=crop",
+        "Traditional": "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1000&auto=format&fit=crop",
+        "Mid Century Modern": "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=1000&auto=format&fit=crop",
+    },
+    "Dining Room": {
+        "Modern": "https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=1000&auto=format&fit=crop",
+        "Minimalist": "https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=1000&auto=format&fit=crop",
+        "Luxury": "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?q=80&w=1000&auto=format&fit=crop",
+        "Industrial": "https://images.unsplash.com/photo-1577140917170-285929fb55b7?q=80&w=1000&auto=format&fit=crop",
+        "Traditional": "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?q=80&w=1000&auto=format&fit=crop",
+        "Mid Century Modern": "https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=1000&auto=format&fit=crop",
+    },
+    "Home Office": {
+        "Modern": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1000&auto=format&fit=crop",
+        "Minimalist": "https://images.unsplash.com/photo-1593062096033-9a26b09da705?q=80&w=1000&auto=format&fit=crop",
+        "Luxury": "https://images.unsplash.com/photo-1585412727339-54e4bae3bbf9?q=80&w=1000&auto=format&fit=crop",
+        "Industrial": "https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=1000&auto=format&fit=crop",
+        "Traditional": "https://images.unsplash.com/photo-1585412727339-54e4bae3bbf9?q=80&w=1000&auto=format&fit=crop",
+        "Mid Century Modern": "https://images.unsplash.com/photo-1593062096033-9a26b09da705?q=80&w=1000&auto=format&fit=crop",
+    },
 }
 
 # --- LangGraph Node Functions ---
@@ -249,7 +305,9 @@ def generate_concept_render_node(state: StyleAnalysisState) -> StyleAnalysisStat
     )
     
     # Calls image-generation model using the structured Style Analysis output and stores/uploads the generated image, returning its URL as concept_render_url
-    render_url = STYLE_CONCEPT_RENDERS.get(primary, STYLE_CONCEPT_RENDERS["Modern"])
+    norm_room = normalize_room_type(room_type)
+    room_renders = ROOM_STYLE_CONCEPT_RENDERS.get(norm_room, ROOM_STYLE_CONCEPT_RENDERS["Living Room"])
+    render_url = room_renders.get(primary, list(room_renders.values())[0])
     state["concept_render_url"] = render_url
     return state
 

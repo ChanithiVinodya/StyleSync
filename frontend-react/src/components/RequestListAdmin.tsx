@@ -175,14 +175,8 @@ export default function RequestListAdmin({ onViewDetail }: RequestListAdminProps
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px', marginBottom: '24px' }}>
             {paginatedRequests.map((req) => {
               const badge = getStatusBadge(req.status);
-              // Backend stores budget in budgetMin/budgetMax and dimensions in specialRequirements
-              const raw = req as unknown as Record<string, unknown>;
-              const budget = (raw.budgetMin ?? raw.budgetMax ?? req.budgetLkr) as number | undefined;
-              const specReq = (raw.specialRequirements ?? '') as string;
-              const dimMatch = specReq.match(/Dimensions:\s*(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/i);
-              const dims = dimMatch
-                ? { l: dimMatch[1], w: dimMatch[2], h: dimMatch[3] }
-                : { l: req.lengthFeet, w: req.widthFeet, h: req.heightFeet };
+              const budget = req.budgetLkr;
+              const dims = { l: req.lengthFeet, w: req.widthFeet, h: req.heightFeet };
               // Format enum name: LivingRoom → Living Room
               const roomLabel = req.roomType.replace(/([A-Z])/g, ' $1').trim();
               return (

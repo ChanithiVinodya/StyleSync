@@ -31,6 +31,35 @@ const SUPPORTED_STYLES: string[] = [
   'Mid Century Modern',
 ];
 
+import { getRoomDefaultPhotos } from '../services/api';
+
+export const ROOM_SAMPLE_PHOTOS: Record<string, string[]> = {
+  Bedroom: [
+    'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=800&auto=format&fit=crop',
+  ],
+  Bathroom: [
+    'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop',
+  ],
+  Kitchen: [
+    'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1556909212-d5b604d0c90d?q=80&w=800&auto=format&fit=crop',
+  ],
+  LivingRoom: [
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=800&auto=format&fit=crop',
+  ],
+  DiningRoom: [
+    'https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?q=80&w=800&auto=format&fit=crop',
+  ],
+  Office: [
+    'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1585412727339-54e4bae3bbf9?q=80&w=800&auto=format&fit=crop',
+  ],
+};
+
 // ─── Component ────────────────────────────────────────────────────────────
 
 export default function CreateRequestWizard({ onRequestCreated }: CreateRequestWizardProps) {
@@ -43,12 +72,29 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
     widthFeet: 12,
     heightFeet: 10,
     budgetLkr: 250000,
-    preferredStyles: ['Industrial'],
-    description: 'Exposed brick wall with raw timber beams and steel frames.',
-    photoUrls: [
-      'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=800&auto=format&fit=crop',
-    ],
+    preferredStyles: ['Modern', 'Minimalist'],
+    description: 'Clean aesthetic room makeover with functional spatial layout.',
+    photoUrls: ROOM_SAMPLE_PHOTOS.Bedroom,
   });
+
+  const handleRoomTypeChange = (newRoom: string): void => {
+    // Check if the current photoUrls match one of the default sample photo sets or is empty
+    const currentIsDefaultSample =
+      formData.photoUrls.length === 0 ||
+      Object.keys(ROOM_SAMPLE_PHOTOS).some(
+        (key) => JSON.stringify(ROOM_SAMPLE_PHOTOS[key]) === JSON.stringify(formData.photoUrls)
+      );
+
+    const updatedPhotos = currentIsDefaultSample
+      ? (ROOM_SAMPLE_PHOTOS[newRoom] || getRoomDefaultPhotos(newRoom))
+      : formData.photoUrls;
+
+    setFormData((prev) => ({
+      ...prev,
+      roomType: newRoom,
+      photoUrls: updatedPhotos,
+    }));
+  };
 
   const [newPhotoUrl, setNewPhotoUrl] = useState<string>('');
 
@@ -162,7 +208,7 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
               <select
                 className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm font-medium text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                 value={formData.roomType}
-                onChange={(e) => setFormData({ ...formData, roomType: e.target.value })}
+                onChange={(e) => handleRoomTypeChange(e.target.value)}
               >
                 <option value="Bedroom">Bedroom</option>
                 <option value="LivingRoom">Living Room</option>

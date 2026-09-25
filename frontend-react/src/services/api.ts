@@ -60,6 +60,44 @@ export interface CreateRequestPayload {
 
 const AI_SERVICE_BASE = 'http://localhost:8000/api/v1/ai';
 
+export function getRoomDefaultPhotos(roomType: string): string[] {
+  const r = (roomType || '').toLowerCase().replace(/[^a-z]/g, '');
+  if (r.includes('bath')) {
+    return [
+      'https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=800&auto=format&fit=crop',
+    ];
+  }
+  if (r.includes('kitchen')) {
+    return [
+      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1556909212-d5b604d0c90d?q=80&w=800&auto=format&fit=crop',
+    ];
+  }
+  if (r.includes('dining')) {
+    return [
+      'https://images.unsplash.com/photo-1617806118233-18e1de247200?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?q=80&w=800&auto=format&fit=crop',
+    ];
+  }
+  if (r.includes('office') || r.includes('work') || r.includes('study')) {
+    return [
+      'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1585412727339-54e4bae3bbf9?q=80&w=800&auto=format&fit=crop',
+    ];
+  }
+  if (r.includes('bed')) {
+    return [
+      'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?q=80&w=800&auto=format&fit=crop',
+    ];
+  }
+  return [
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1554995207-c18c203602cb?q=80&w=800&auto=format&fit=crop',
+  ];
+}
+
 export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): ProjectRequest {
   const budget = raw.budgetMin ?? raw.budgetMax ?? raw.budgetLkr ?? 0;
   const specReq = (raw.specialRequirements as string) ?? '';
@@ -74,6 +112,8 @@ export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): Pro
     height = parseFloat(dimMatch[3]);
   }
 
+  const roomTypeStr = (raw.roomType as string) || 'LivingRoom';
+
   // Extract photo URLs from specialRequirements or raw photos array
   const rawPhotos = (raw.photos as Photo[]) || [];
   const photos: Photo[] = [...rawPhotos];
@@ -85,6 +125,14 @@ export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): Pro
         photos.push({ id: `photo-${i + 1}`, photoUrl: url, storageKey: url });
       });
     }
+  }
+
+  // If still no photos, attach room-type-matched default sample photos
+  if (photos.length === 0) {
+    const defaults = getRoomDefaultPhotos(roomTypeStr);
+    defaults.forEach((url, i) => {
+      photos.push({ id: `photo-${i + 1}`, photoUrl: url, storageKey: url });
+    });
   }
 
   // Extract preferred styles
@@ -115,7 +163,7 @@ export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): Pro
   return {
     id: idStr,
     clientId: String(raw.clientId || ''),
-    roomType: (raw.roomType as string) || 'LivingRoom',
+    roomType: roomTypeStr,
     lengthFeet: length,
     widthFeet: width,
     heightFeet: height,
@@ -133,9 +181,7 @@ export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): Pro
 export async function fetchAIStyleAnalysis(req: ProjectRequest): Promise<StyleAnalysis> {
   const photoUrls = req.photos && req.photos.length > 0
     ? req.photos.map((p) => p.photoUrl)
-    : [
-        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop',
-      ];
+    : getRoomDefaultPhotos(req.roomType);
 
   const payload = {
     project_request_id: String(req.id || 'req-temp'),
@@ -157,6 +203,7 @@ export async function fetchAIStyleAnalysis(req: ProjectRequest): Promise<StyleAn
   }
 
   const data = await res.json();
+  const defaultRenders = getRoomDefaultPhotos(req.roomType);
   const analysis: StyleAnalysis = {
     id: `analysis-${req.id}-${Date.now()}`,
     primaryStyle: data.primary_style || 'Modern',
@@ -165,7 +212,7 @@ export async function fetchAIStyleAnalysis(req: ProjectRequest): Promise<StyleAn
     recommendedColors: data.recommended_colors || ['#FFFFFF', '#D7C4B7', '#1F2937'],
     detectedFeatures: data.detected_features || ['Clean Architectural Lines', 'Abundant Daylight'],
     analysisSummary: data.analysis_summary || 'Style Analysis completed by LangGraph AI agent.',
-    conceptRenderUrl: data.concept_render_url || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&auto=format&fit=crop',
+    conceptRenderUrl: data.concept_render_url || defaultRenders[0],
     analyzedAt: new Date().toISOString(),
   };
 
