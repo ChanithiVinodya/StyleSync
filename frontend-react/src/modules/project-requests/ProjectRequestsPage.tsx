@@ -128,7 +128,7 @@ export default function ProjectRequestsPage() {
       try {
         const token = localStorage.getItem('stylesync_jwt_token');
         const res = await fetch(
-          `http://localhost:5000/api/v1/project-requests/${id}`,
+          `http://localhost:5000/api/v1/project-requests/${id}/cancel`,
           {
             method: 'DELETE',
             headers: {
