@@ -259,7 +259,13 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
               <button
                 type="button"
                 className="inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
-                onClick={() => setStep(2)}
+                onClick={() => {
+                  if (Number(formData.lengthFeet) <= 0 || Number(formData.widthFeet) <= 0 || Number(formData.heightFeet) <= 0) {
+                    alert('Please enter valid dimensions greater than zero.');
+                    return;
+                  }
+                  setStep(2);
+                }}
               >
                 <span>Next: Budget &amp; Style</span>
                 <ArrowRight className="w-4 h-4" />
@@ -319,7 +325,13 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
               <button
                 type="button"
                 className="inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  if (Number(formData.budgetLkr) <= 0) {
+                    alert('Please enter a valid budget greater than zero.');
+                    return;
+                  }
+                  setStep(3);
+                }}
               >
                 <span>Next: Photos &amp; Action</span>
                 <ArrowRight className="w-4 h-4" />

@@ -137,6 +137,16 @@ export default function ProjectRequestsPage() {
 
   const handleSaveEdit = async (): Promise<void> => {
     if (!selectedRequest) return;
+    
+    if (Number(editData.lengthFeet) <= 0 || Number(editData.widthFeet) <= 0 || Number(editData.heightFeet) <= 0) {
+      alert('Please enter valid dimensions greater than zero.');
+      return;
+    }
+    if (Number(editData.budgetLkr) <= 0) {
+      alert('Please enter a valid budget greater than zero.');
+      return;
+    }
+
     try {
       const token = localStorage.getItem('stylesync_jwt_token');
       const res = await fetch(
