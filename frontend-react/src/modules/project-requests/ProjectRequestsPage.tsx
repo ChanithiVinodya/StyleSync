@@ -21,7 +21,6 @@ import {
   Banknote,
   Palette,
   FileText,
-  FileText,
   Image as ImageIcon,
   AlertCircle
 } from 'lucide-react';
