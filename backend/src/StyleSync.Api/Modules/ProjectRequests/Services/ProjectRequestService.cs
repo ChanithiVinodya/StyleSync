@@ -50,7 +50,7 @@ public class ProjectRequestService : IProjectRequestService
             PreferredEndDate = dto.PreferredEndDate,
             StylePreferences = dto.StylePreferences?.Trim(),
             SpecialRequirements = dto.SpecialRequirements?.Trim(),
-            Status = ProjectRequestStatus.Submitted,
+            Status = dto.SubmitImmediately ? ProjectRequestStatus.Submitted : ProjectRequestStatus.Draft,
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow
         };
@@ -116,8 +116,8 @@ public class ProjectRequestService : IProjectRequestService
         if (entity.ClientId != clientId)
             throw new UnauthorizedAccessException("You are not authorised to edit this request.");
 
-        if (entity.Status != ProjectRequestStatus.Submitted)
-            throw new InvalidOperationException("Only requests in 'Submitted' status may be edited.");
+        if (entity.Status != ProjectRequestStatus.Draft && entity.Status != ProjectRequestStatus.Submitted)
+            throw new InvalidOperationException("Only Draft or Submitted requests may be edited.");
 
         // Apply updates
         if (!string.IsNullOrWhiteSpace(dto.Title)) entity.Title = dto.Title.Trim();
@@ -152,6 +152,7 @@ public class ProjectRequestService : IProjectRequestService
 
         var cancellableStatuses = new[]
         {
+            ProjectRequestStatus.Draft,
             ProjectRequestStatus.Submitted,
             ProjectRequestStatus.UnderReview
         };
@@ -179,6 +180,7 @@ public class ProjectRequestService : IProjectRequestService
         // Status transition rules
         var allowedTransitions = new Dictionary<ProjectRequestStatus, ProjectRequestStatus[]>
         {
+            [ProjectRequestStatus.Draft]         = [ProjectRequestStatus.Submitted, ProjectRequestStatus.Cancelled],
             [ProjectRequestStatus.Submitted]     = [ProjectRequestStatus.UnderReview, ProjectRequestStatus.Rejected],
             [ProjectRequestStatus.UnderReview]   = [ProjectRequestStatus.QuoteProvided, ProjectRequestStatus.Rejected],
             [ProjectRequestStatus.QuoteProvided] = [ProjectRequestStatus.Accepted, ProjectRequestStatus.Rejected],

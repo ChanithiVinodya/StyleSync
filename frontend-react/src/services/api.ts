@@ -157,7 +157,8 @@ export async function createProjectRequest(
     budgetMin: payload.budgetLkr,
     budgetMax: payload.budgetLkr,
     stylePreferences: payload.preferredStyles.join(', '),
-    specialRequirements: `Dimensions: ${payload.lengthFeet}x${payload.widthFeet}x${payload.heightFeet} ft. Photos: ${payload.photoUrls.join(', ')}`
+    specialRequirements: `Dimensions: ${payload.lengthFeet}x${payload.widthFeet}x${payload.heightFeet} ft. Photos: ${payload.photoUrls.join(', ')}`,
+    submitImmediately: payload.submitImmediately,
   };
 
   const res = await fetch(API_BASE, {
@@ -174,10 +175,22 @@ export async function createProjectRequest(
   }
   // The backend might return int for Id, we convert it to string for our frontend interface
   const data = await res.json();
-  return {
+  const created = {
     ...data,
     id: String(data.id),
   } as ProjectRequest;
+
+  // Only submit for AI analysis if the user explicitly clicked "Submit & Analyze Style"
+  if (payload.submitImmediately) {
+    try {
+      return await submitRequestForAI(created.id);
+    } catch {
+      // If submit fails, still return the created draft so the user isn't left empty-handed
+      return created;
+    }
+  }
+
+  return created;
 }
 
 export async function submitRequestForAI(id: string): Promise<ProjectRequest> {

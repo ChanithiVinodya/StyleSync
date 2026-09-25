@@ -5,6 +5,7 @@ namespace StyleSync.Api.Modules.ProjectRequests.Models;
 
 public enum ProjectRequestStatus
 {
+    Draft,
     Submitted,
     UnderReview,
     QuoteProvided,
@@ -45,7 +46,7 @@ public class ProjectRequest : BaseEntity
     public string? StylePreferences { get; set; }
     public string? SpecialRequirements { get; set; }
 
-    public ProjectRequestStatus Status { get; set; } = ProjectRequestStatus.Submitted;
+    public ProjectRequestStatus Status { get; set; } = ProjectRequestStatus.Draft;
 
     public string? AssignedDesignerId { get; set; }
     public string? RejectionReason { get; set; }

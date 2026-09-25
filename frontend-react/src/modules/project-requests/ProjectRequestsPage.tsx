@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import CreateRequestWizard from '../../components/CreateRequestWizard';
 import RequestListAdmin from '../../components/RequestListAdmin';
 import StyleAnalysisCard, { RequestStatusBanner } from '../../components/StyleAnalysisCard';
-import { LayoutDashboard, PlusCircle, ArrowLeft, Edit3, Trash2, Lock, Check, X } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, ArrowLeft, Edit3, Trash2, Lock, Check, X, ChevronDown, LogOut } from 'lucide-react';
 import { ProjectRequest } from '../../services/api';
 import { useAuth } from '../../auth/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
 import { GlassThemeToggle } from '../../components/GlassThemeToggle';
 
@@ -21,10 +21,12 @@ interface EditFormData {
 type ActiveTab = 'client-wizard' | 'staff-dashboard';
 
 export default function ProjectRequestsPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ActiveTab>('staff-dashboard');
   const [selectedRequest, setSelectedRequest] = useState<ProjectRequest | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
 
   useEffect(() => {
     if (user?.role === 'Client') {
@@ -50,13 +52,31 @@ export default function ProjectRequestsPage() {
       alert('🔒 Editing locked: The backend enforces that only Draft requests can be modified.');
       return;
     }
+
+    // Backend stores budget in budgetMin/budgetMax and dimensions in specialRequirements
+    // e.g. "Dimensions: 15x12x10 ft. Photos: ..."
+    const raw = selectedRequest as unknown as Record<string, unknown>;
+    const budgetVal = (raw.budgetMin ?? raw.budgetMax ?? selectedRequest.budgetLkr ?? 0) as number;
+
+    // Parse dimensions from specialRequirements string
+    let length = selectedRequest.lengthFeet ?? 0;
+    let width = selectedRequest.widthFeet ?? 0;
+    let height = selectedRequest.heightFeet ?? 0;
+    const specReq = (raw.specialRequirements ?? '') as string;
+    const dimMatch = specReq.match(/Dimensions:\s*(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/i);
+    if (dimMatch) {
+      length = parseFloat(dimMatch[1]);
+      width = parseFloat(dimMatch[2]);
+      height = parseFloat(dimMatch[3]);
+    }
+
     setEditData({
-      roomType: selectedRequest.roomType,
-      lengthFeet: selectedRequest.lengthFeet,
-      widthFeet: selectedRequest.widthFeet,
-      heightFeet: selectedRequest.heightFeet,
-      budgetLkr: selectedRequest.budgetLkr,
-      description: selectedRequest.description,
+      roomType: selectedRequest.roomType ?? 'Bedroom',
+      lengthFeet: length,
+      widthFeet: width,
+      heightFeet: height,
+      budgetLkr: budgetVal,
+      description: selectedRequest.description ?? '',
     });
     setIsEditing(true);
   };
@@ -76,11 +96,12 @@ export default function ProjectRequestsPage() {
           },
           body: JSON.stringify({
             roomType: editData.roomType,
-            lengthFeet: Number(editData.lengthFeet),
-            widthFeet: Number(editData.widthFeet),
-            heightFeet: Number(editData.heightFeet),
-            budgetLkr: Number(editData.budgetLkr),
-            description: editData.description,
+            budgetMin: Number(editData.budgetLkr),
+            budgetMax: Number(editData.budgetLkr),
+            description: editData.description && editData.description.length >= 20
+              ? editData.description
+              : (editData.description || '') + ' '.repeat(Math.max(0, 20 - (editData.description?.length ?? 0))),
+            specialRequirements: `Dimensions: ${editData.lengthFeet}x${editData.widthFeet}x${editData.heightFeet} ft`,
           }),
         }
       );
@@ -185,9 +206,77 @@ export default function ProjectRequestsPage() {
           <GlassThemeToggle />
 
           {user ? (
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs font-medium">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span>{user.name}</span>
+            <div className="relative">
+              <button
+                onClick={() => setIsProfileOpen((prev) => !prev)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs font-medium hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                <span className="max-w-[120px] truncate">{user.name}</span>
+                <ChevronDown className={`w-3.5 h-3.5 text-[#78716C] dark:text-[#A8A29E] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isProfileOpen && (
+                <>
+                  {/* Backdrop */}
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsProfileOpen(false)}
+                  />
+                  {/* Dropdown panel */}
+                  <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl shadow-xl z-50 overflow-hidden">
+                    {/* Profile header */}
+                    <div className="px-4 py-4 border-b border-[#E7E1D7] dark:border-[#2E2824] bg-[#FAF8F5] dark:bg-[#12100E]">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#C48A36] flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          {user.name?.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-bold text-[#1C1917] dark:text-[#FAF8F5] truncate">{user.name}</p>
+                          <p className="text-xs text-[#78716C] dark:text-[#A8A29E] truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Role badge */}
+                    <div className="px-4 py-3 border-b border-[#E7E1D7] dark:border-[#2E2824]">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-[#78716C] dark:text-[#A8A29E]">Role</span>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                          user.role === 'Client'
+                            ? 'bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900'
+                            : user.role === 'Designer'
+                            ? 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-900'
+                            : 'bg-[#FAF3E8] dark:bg-[#2A231A] text-[#925C18] dark:text-[#E8A849] border border-[#E8DEC8] dark:border-[#423525]'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </div>
+                      {user.id && (
+                        <div className="flex items-center justify-between mt-2">
+                          <span className="text-xs text-[#78716C] dark:text-[#A8A29E]">User ID</span>
+                          <span className="text-xs font-mono text-[#57534E] dark:text-[#A8A29E]">#{user.id}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Logout */}
+                    <div className="p-2">
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsProfileOpen(false);
+                          navigate('/login');
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>Sign out</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           ) : (
             <Link
@@ -314,10 +403,16 @@ export default function ProjectRequestsPage() {
                   </label>
                   <textarea
                     rows={3}
+                    placeholder="Describe your design preferences (min 20 characters)..."
                     value={editData.description}
                     onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                     className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                   />
+                  {editData.description && editData.description.length < 20 && (
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">
+                      ⚠ Description must be at least 20 characters ({20 - editData.description.length} more needed)
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-2">
                   <button

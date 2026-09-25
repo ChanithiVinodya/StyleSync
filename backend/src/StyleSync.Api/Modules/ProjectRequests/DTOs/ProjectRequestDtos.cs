@@ -32,6 +32,9 @@ public class CreateProjectRequestDto
 
     [StringLength(1000, ErrorMessage = "Special requirements cannot exceed 1000 characters.")]
     public string? SpecialRequirements { get; set; }
+
+    /// <summary>If true, the request is immediately moved to Submitted status. If false, it stays as Draft.</summary>
+    public bool SubmitImmediately { get; set; } = false;
 }
 
 public class UpdateProjectRequestDto
