@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createProjectRequest } from '../services/api';
 import type { ProjectRequest } from '../services/api';
-import { Sparkles, Image, ArrowRight, Save, Send, Check } from 'lucide-react';
+import { Sparkles, Image, ArrowRight, Save, Send, Check, AlertCircle } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -65,6 +65,7 @@ export const ROOM_SAMPLE_PHOTOS: Record<string, string[]> = {
 export default function CreateRequestWizard({ onRequestCreated }: CreateRequestWizardProps) {
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const [formData, setFormData] = useState<WizardFormData>({
     roomType: 'Bedroom',
@@ -208,7 +209,10 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
               <select
                 className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm font-medium text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                 value={formData.roomType}
-                onChange={(e) => handleRoomTypeChange(e.target.value)}
+                onChange={(e) => {
+                  setErrorMsg(null);
+                  handleRoomTypeChange(e.target.value);
+                }}
               >
                 <option value="Bedroom">Bedroom</option>
                 <option value="LivingRoom">Living Room</option>
@@ -250,10 +254,20 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                   type="number"
                   className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                   value={formData.heightFeet}
-                  onChange={(e) => setFormData({ ...formData, heightFeet: e.target.value })}
+                  onChange={(e) => {
+                    setErrorMsg(null);
+                    setFormData({ ...formData, heightFeet: e.target.value });
+                  }}
                 />
               </div>
             </div>
+
+            {errorMsg && (
+              <div className="flex items-center gap-2.5 p-3.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
 
             <div className="flex justify-end pt-2">
               <button
@@ -261,9 +275,10 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                 className="inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
                 onClick={() => {
                   if (Number(formData.lengthFeet) <= 0 || Number(formData.widthFeet) <= 0 || Number(formData.heightFeet) <= 0) {
-                    alert('Please enter valid dimensions greater than zero.');
+                    setErrorMsg('Please enter valid dimensions greater than zero.');
                     return;
                   }
+                  setErrorMsg(null);
                   setStep(2);
                 }}
               >
@@ -285,7 +300,10 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                 type="number"
                 className="w-full px-4 py-3 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-sm text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:border-[#C48A36] transition-colors"
                 value={formData.budgetLkr}
-                onChange={(e) => setFormData({ ...formData, budgetLkr: e.target.value })}
+                onChange={(e) => {
+                  setErrorMsg(null);
+                  setFormData({ ...formData, budgetLkr: e.target.value });
+                }}
               />
             </div>
 
@@ -314,11 +332,21 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
               </div>
             </div>
 
+            {errorMsg && (
+              <div className="flex items-center gap-2.5 p-3.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center pt-4">
               <button
                 type="button"
                 className="px-5 py-2.5 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition"
-                onClick={() => setStep(1)}
+                onClick={() => {
+                  setErrorMsg(null);
+                  setStep(1);
+                }}
               >
                 Back
               </button>
@@ -327,9 +355,10 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                 className="inline-flex items-center gap-2 px-6 py-3 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
                 onClick={() => {
                   if (Number(formData.budgetLkr) <= 0) {
-                    alert('Please enter a valid budget greater than zero.');
+                    setErrorMsg('Please enter a valid budget greater than zero.');
                     return;
                   }
+                  setErrorMsg(null);
                   setStep(3);
                 }}
               >

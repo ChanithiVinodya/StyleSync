@@ -21,7 +21,9 @@ import {
   Banknote,
   Palette,
   FileText,
-  Image as ImageIcon
+  FileText,
+  Image as ImageIcon,
+  AlertCircle
 } from 'lucide-react';
 import { ProjectRequest, fetchAIStyleAnalysis, submitRequestForAI } from '../../services/api';
 import { useAuth } from '../../auth/AuthContext';
@@ -48,6 +50,7 @@ export default function ProjectRequestsPage() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
   const [analyzingAi, setAnalyzingAi] = useState<boolean>(false);
+  const [editErrorMsg, setEditErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.role === 'Client') {
@@ -139,13 +142,14 @@ export default function ProjectRequestsPage() {
     if (!selectedRequest) return;
     
     if (Number(editData.lengthFeet) <= 0 || Number(editData.widthFeet) <= 0 || Number(editData.heightFeet) <= 0) {
-      alert('Please enter valid dimensions greater than zero.');
+      setEditErrorMsg('Please enter valid dimensions greater than zero.');
       return;
     }
     if (Number(editData.budgetLkr) <= 0) {
-      alert('Please enter a valid budget greater than zero.');
+      setEditErrorMsg('Please enter a valid budget greater than zero.');
       return;
     }
+    setEditErrorMsg(null);
 
     try {
       const token = localStorage.getItem('stylesync_jwt_token');
@@ -405,7 +409,10 @@ export default function ProjectRequestsPage() {
                     </label>
                     <select
                       value={editData.roomType}
-                      onChange={(e) => setEditData({ ...editData, roomType: e.target.value })}
+                      onChange={(e) => {
+                        setEditErrorMsg(null);
+                        setEditData({ ...editData, roomType: e.target.value });
+                      }}
                       className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     >
                       <option value="LivingRoom">Living Room</option>
@@ -423,7 +430,10 @@ export default function ProjectRequestsPage() {
                     <input
                       type="number"
                       value={editData.lengthFeet}
-                      onChange={(e) => setEditData({ ...editData, lengthFeet: e.target.value })}
+                      onChange={(e) => {
+                        setEditErrorMsg(null);
+                        setEditData({ ...editData, lengthFeet: e.target.value });
+                      }}
                       className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
@@ -434,7 +444,10 @@ export default function ProjectRequestsPage() {
                     <input
                       type="number"
                       value={editData.widthFeet}
-                      onChange={(e) => setEditData({ ...editData, widthFeet: e.target.value })}
+                      onChange={(e) => {
+                        setEditErrorMsg(null);
+                        setEditData({ ...editData, widthFeet: e.target.value });
+                      }}
                       className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
@@ -445,7 +458,10 @@ export default function ProjectRequestsPage() {
                     <input
                       type="number"
                       value={editData.heightFeet}
-                      onChange={(e) => setEditData({ ...editData, heightFeet: e.target.value })}
+                      onChange={(e) => {
+                        setEditErrorMsg(null);
+                        setEditData({ ...editData, heightFeet: e.target.value });
+                      }}
                       className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
@@ -456,7 +472,10 @@ export default function ProjectRequestsPage() {
                     <input
                       type="number"
                       value={editData.budgetLkr}
-                      onChange={(e) => setEditData({ ...editData, budgetLkr: e.target.value })}
+                      onChange={(e) => {
+                        setEditErrorMsg(null);
+                        setEditData({ ...editData, budgetLkr: e.target.value });
+                      }}
                       className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                     />
                   </div>
@@ -469,7 +488,10 @@ export default function ProjectRequestsPage() {
                     rows={3}
                     placeholder="Describe your design preferences (min 20 characters)..."
                     value={editData.description}
-                    onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                    onChange={(e) => {
+                      setEditErrorMsg(null);
+                      setEditData({ ...editData, description: e.target.value });
+                    }}
                     className="w-full px-3 py-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs"
                   />
                   {editData.description && editData.description.length < 20 && (
@@ -478,6 +500,14 @@ export default function ProjectRequestsPage() {
                     </p>
                   )}
                 </div>
+
+                {editErrorMsg && (
+                  <div className="flex items-center gap-2.5 p-3.5 text-xs font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl dark:bg-rose-950/30 dark:border-rose-900/50 dark:text-rose-400">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{editErrorMsg}</span>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <button
                     onClick={handleSaveEdit}
