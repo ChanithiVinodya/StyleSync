@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { fetchAllRequests, ProjectRequest } from '../../services/api';
 import { 
@@ -14,15 +14,18 @@ import {
   Clock,
   CheckCircle2,
   Calendar,
-  Layers
+  Layers,
+  ChevronDown
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { GlassThemeToggle } from '../../components/GlassThemeToggle';
 
 export const ClientDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -87,13 +90,75 @@ export const ClientDashboard: React.FC = () => {
               <PlusCircle className="w-4 h-4" />
               <span>New Request</span>
             </Link>
-            <button
-              onClick={logout}
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition shadow-2xs"
-            >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
-            </button>
+
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsProfileOpen((prev) => !prev)}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl text-xs font-medium hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition shadow-2xs"
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="max-w-[120px] truncate">{user.name}</span>
+                  <ChevronDown className={`w-3.5 h-3.5 text-[#78716C] dark:text-[#A8A29E] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isProfileOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsProfileOpen(false)} />
+                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl shadow-xl z-50 overflow-hidden">
+                      <div className="px-4 py-4 border-b border-[#E7E1D7] dark:border-[#2E2824] bg-[#FAF8F5] dark:bg-[#12100E]">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">
+                            {user.name?.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#1C1917] dark:text-[#FAF8F5] truncate">{user.name}</p>
+                            <p className="text-xs text-[#78716C] dark:text-[#A8A29E] truncate">{user.email}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="px-4 py-3 border-b border-[#E7E1D7] dark:border-[#2E2824]">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-[#78716C] dark:text-[#A8A29E]">Role</span>
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900">
+                            {user.role}
+                          </span>
+                        </div>
+                        {user.id && (
+                          <div className="flex items-center justify-between mt-2">
+                            <span className="text-xs text-[#78716C] dark:text-[#A8A29E]">User ID</span>
+                            <span className="text-xs font-mono text-[#57534E] dark:text-[#A8A29E]">#{user.id}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setIsProfileOpen(false);
+                            navigate('/login');
+                          }}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Sign out</span>
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={logout}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition shadow-2xs"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </header>
 
