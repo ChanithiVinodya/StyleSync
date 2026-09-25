@@ -2,8 +2,28 @@ import { useState, useEffect } from 'react';
 import CreateRequestWizard from '../../components/CreateRequestWizard';
 import RequestListAdmin from '../../components/RequestListAdmin';
 import StyleAnalysisCard, { RequestStatusBanner } from '../../components/StyleAnalysisCard';
-import { LayoutDashboard, PlusCircle, ArrowLeft, Edit3, Trash2, Lock, Check, X, ChevronDown, LogOut } from 'lucide-react';
-import { ProjectRequest } from '../../services/api';
+import {
+  LayoutDashboard,
+  PlusCircle,
+  ArrowLeft,
+  Edit3,
+  Trash2,
+  Lock,
+  Check,
+  X,
+  ChevronDown,
+  LogOut,
+  Sparkles,
+  Send,
+  RefreshCw,
+  Home,
+  Ruler,
+  Banknote,
+  Palette,
+  FileText,
+  Image as ImageIcon
+} from 'lucide-react';
+import { ProjectRequest, fetchAIStyleAnalysis, submitRequestForAI } from '../../services/api';
 import { useAuth } from '../../auth/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
@@ -27,6 +47,7 @@ export default function ProjectRequestsPage() {
   const [selectedRequest, setSelectedRequest] = useState<ProjectRequest | null>(null);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
+  const [analyzingAi, setAnalyzingAi] = useState<boolean>(false);
 
   useEffect(() => {
     if (user?.role === 'Client') {
@@ -35,6 +56,39 @@ export default function ProjectRequestsPage() {
       setActiveTab('staff-dashboard');
     }
   }, [user?.role]);
+
+  // Auto-run AI style analysis if request is not Draft and has no style analysis yet
+  useEffect(() => {
+    if (selectedRequest && !selectedRequest.styleAnalysis && selectedRequest.status !== 'Draft' && !analyzingAi) {
+      handleRunAiAnalysis(selectedRequest);
+    }
+  }, [selectedRequest?.id]);
+
+  const handleRunAiAnalysis = async (req: ProjectRequest): Promise<void> => {
+    setAnalyzingAi(true);
+    try {
+      const analysis = await fetchAIStyleAnalysis(req);
+      const updated = { ...req, styleAnalysis: analysis };
+      setSelectedRequest(updated);
+    } catch (err) {
+      console.warn('AI analysis execution notice:', err);
+    } finally {
+      setAnalyzingAi(false);
+    }
+  };
+
+  const handleSubmitDraft = async (req: ProjectRequest): Promise<void> => {
+    setAnalyzingAi(true);
+    try {
+      const submitted = await submitRequestForAI(req.id, req);
+      setSelectedRequest(submitted);
+      alert('🚀 Request submitted! AI Style Analysis Agent invoked successfully.');
+    } catch (err) {
+      alert('Error submitting draft: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setAnalyzingAi(false);
+    }
+  };
 
   const [editData, setEditData] = useState<EditFormData>({
     roomType: '',
@@ -433,12 +487,216 @@ export default function ProjectRequestsPage() {
               </div>
             )}
 
+            {/* Request Overview Card */}
+            {!isEditing && (
+              <div className="bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#E7E1D7] dark:border-[#2E2824] pb-5">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] border border-[#E8DEC8] dark:border-[#423525] flex items-center justify-center text-[#C48A36]">
+                      <Home className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="font-serif text-2xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+                        {selectedRequest.roomType.replace(/([A-Z])/g, ' $1').trim()} Makeover
+                      </h2>
+                      <div className="flex items-center gap-3 text-xs text-[#78716C] dark:text-[#A8A29E] mt-0.5">
+                        <span>Client: <strong className="font-mono text-[#1C1917] dark:text-[#FAF8F5]">{selectedRequest.clientId || 'Client'}</strong></span>
+                        <span>•</span>
+                        <span>Request #{selectedRequest.id}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Actions for Draft or AI Re-run */}
+                  <div className="flex items-center gap-2">
+                    {isDraft ? (
+                      <button
+                        onClick={() => handleSubmitDraft(selectedRequest)}
+                        disabled={analyzingAi}
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-[#C48A36] to-[#A87226] text-white text-xs font-bold rounded-xl shadow-md hover:opacity-95 transition"
+                      >
+                        {analyzingAi ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Submitting &amp; Analyzing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Submit &amp; Run AI Style Analysis</span>
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleRunAiAnalysis(selectedRequest)}
+                        disabled={analyzingAi}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-[#FAF3E8] dark:bg-[#2A231A] text-[#925C18] dark:text-[#E8A849] border border-[#E8DEC8] dark:border-[#423525] text-xs font-semibold rounded-xl hover:bg-[#F3EAD9] transition"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${analyzingAi ? 'animate-spin' : ''}`} />
+                        <span>{analyzingAi ? 'Analyzing...' : 'Re-run AI Style Agent'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Key Metrics Grid: Budget, Dimensions, Room Type, Styles */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Budget */}
+                  <div className="bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl p-4 flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                      <Banknote className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] block">
+                        Budget (LKR)
+                      </span>
+                      <span className="text-base font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+                        {selectedRequest.budgetLkr > 0
+                          ? `LKR ${Number(selectedRequest.budgetLkr).toLocaleString()}`
+                          : 'Not specified'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Dimensions */}
+                  <div className="bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl p-4 flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/40 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                      <Ruler className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] block">
+                        Dimensions (L × W × H)
+                      </span>
+                      <span className="text-base font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+                        {selectedRequest.lengthFeet > 0
+                          ? `${selectedRequest.lengthFeet} × ${selectedRequest.widthFeet} × ${selectedRequest.heightFeet} ft`
+                          : 'Not specified'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Room Type & Preferred Styles */}
+                  <div className="bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl p-4 flex items-center gap-3.5">
+                    <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 flex items-center justify-center text-[#C48A36]">
+                      <Palette className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] block">
+                        Aesthetics
+                      </span>
+                      <div className="flex flex-wrap gap-1 mt-0.5">
+                        {selectedRequest.preferredStyles && selectedRequest.preferredStyles.length > 0 ? (
+                          selectedRequest.preferredStyles.map((st) => (
+                            <span key={st} className="px-2 py-0.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-md text-[10px] font-semibold text-[#57534E] dark:text-[#A8A29E]">
+                              {st}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-[#78716C] dark:text-[#A8A29E]">Modern default</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description details */}
+                <div className="bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-2 text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E]">
+                    <FileText className="w-4 h-4 text-[#C48A36]" />
+                    <span>Client Design Description &amp; Notes</span>
+                  </div>
+                  <p className="text-sm text-[#1C1917] dark:text-[#FAF8F5] leading-relaxed italic">
+                    {selectedRequest.description ? `"${selectedRequest.description}"` : 'No additional description provided.'}
+                  </p>
+                </div>
+
+                {/* Photos if any */}
+                {selectedRequest.photos && selectedRequest.photos.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E]">
+                      <ImageIcon className="w-4 h-4 text-[#C48A36]" />
+                      <span>Uploaded Room Photos ({selectedRequest.photos.length})</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {selectedRequest.photos.map((ph, idx) => (
+                        <div key={ph.id || idx} className="h-28 rounded-xl overflow-hidden border border-[#E7E1D7] dark:border-[#2E2824] bg-stone-900 group relative">
+                          <img
+                            src={ph.photoUrl}
+                            alt={`Photo ${idx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Lifecycle Status Banner */}
             <RequestStatusBanner status={selectedRequest.status} />
-            {selectedRequest.styleAnalysis && (
-              <StyleAnalysisCard
-                analysis={selectedRequest.styleAnalysis}
-                photos={selectedRequest.photos}
-              />
+
+            {/* AI Style Analysis Section */}
+            {analyzingAi ? (
+              <div className="bg-white dark:bg-[#1A1715] border border-[#C48A36]/40 rounded-3xl p-8 text-center space-y-3 shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-[#FAF3E8] dark:bg-[#2A231A] text-[#C48A36] flex items-center justify-center mx-auto animate-spin">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h4 className="font-serif text-lg font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+                  Executing AI Style Analysis Agent...
+                </h4>
+                <p className="text-xs text-[#78716C] dark:text-[#A8A29E] max-w-md mx-auto">
+                  Invoking LangGraph StateGraph pipeline at <code className="font-mono text-[#C48A36]">http://localhost:8000</code> to analyze room aesthetics, extract features, and generate concept styling recommendations.
+                </p>
+              </div>
+            ) : selectedRequest.styleAnalysis ? (
+              <div>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Live AI Agent Output (LangGraph Subsystem @ localhost:8000) — Dynamic &amp; Verified</span>
+                  </div>
+                </div>
+                <StyleAnalysisCard
+                  analysis={selectedRequest.styleAnalysis}
+                  photos={selectedRequest.photos}
+                />
+              </div>
+            ) : isDraft ? (
+              <div className="bg-[#FAF3E8]/50 dark:bg-[#2A231A]/30 border border-[#E8DEC8] dark:border-[#423525] rounded-3xl p-8 text-center space-y-3">
+                <Sparkles className="w-8 h-8 text-[#C48A36] mx-auto" />
+                <h4 className="font-serif text-base font-bold text-[#925C18] dark:text-[#E8A849]">
+                  AI Style Analysis is Ready
+                </h4>
+                <p className="text-xs text-[#78716C] dark:text-[#A8A29E] max-w-md mx-auto">
+                  This request is currently in <strong>Draft</strong>. Submit it to trigger our Python LangGraph AI Style Analysis agent to evaluate color schemes, layout features, and generate 3D concept renders.
+                </p>
+                <button
+                  onClick={() => handleSubmitDraft(selectedRequest)}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#C48A36] hover:bg-[#A87226] text-white text-xs font-semibold rounded-xl transition shadow-xs"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>Submit &amp; Run AI Style Analysis</span>
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl p-8 text-center space-y-3">
+                <Sparkles className="w-8 h-8 text-[#C48A36] mx-auto" />
+                <h4 className="font-serif text-base font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+                  Generate AI Style Analysis
+                </h4>
+                <p className="text-xs text-[#78716C] dark:text-[#A8A29E] max-w-md mx-auto">
+                  Run the real-time AI Style Analysis agent to process this room makeover request.
+                </p>
+                <button
+                  onClick={() => handleRunAiAnalysis(selectedRequest)}
+                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#C48A36] hover:bg-[#A87226] text-white text-xs font-semibold rounded-xl transition shadow-xs"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Run AI Style Analysis Now</span>
+                </button>
+              </div>
             )}
           </div>
         ) : (

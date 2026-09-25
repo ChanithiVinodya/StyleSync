@@ -22,6 +22,9 @@ public interface IProjectRequestService
     /// <summary>Cancel a pending request (Client, own requests only).</summary>
     Task CancelAsync(int requestId, Guid clientId);
 
+    /// <summary>Submit a draft request (Client, own requests only).</summary>
+    Task<ProjectRequestDetailDto> SubmitAsync(int requestId, Guid clientId);
+
     /// <summary>Admin: transition request status (UnderReview, QuoteProvided, Accepted, Rejected).</summary>
     Task<ProjectRequestDetailDto> UpdateStatusAsync(int requestId, string newStatus, string? rejectionReason);
 }

@@ -92,6 +92,21 @@ public class ProjectRequestsController : ControllerBase
         return NoContent();
     }
 
+    // ─── POST api/v1/project-requests/{id}/submit ────────────────────────────
+    /// <summary>Submit a draft project request for review and AI analysis.</summary>
+    [HttpPost("{id:int}/submit")]
+    [Authorize(Roles = "Client")]
+    [ProducesResponseType(typeof(ProjectRequestDetailDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Submit(int id)
+    {
+        var clientId = GetCurrentUserId();
+        var result = await _service.SubmitAsync(id, clientId);
+        return Ok(result);
+    }
+
     // ─── PATCH api/v1/project-requests/{id}/status ────────────────────────────
     /// <summary>Admin: update request status along the approval lifecycle.</summary>
     [HttpPatch("{id:int}/status")]

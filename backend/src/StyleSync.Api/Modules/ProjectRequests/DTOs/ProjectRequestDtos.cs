@@ -77,7 +77,12 @@ public record ProjectRequestSummaryDto(
     string Title,
     string RoomType,
     string Status,
-    DateTime CreatedAtUtc
+    DateTime CreatedAtUtc,
+    string? Description,
+    decimal? BudgetMin,
+    decimal? BudgetMax,
+    string? SpecialRequirements,
+    Guid ClientId
 );
 
 public record ProjectRequestDetailDto(

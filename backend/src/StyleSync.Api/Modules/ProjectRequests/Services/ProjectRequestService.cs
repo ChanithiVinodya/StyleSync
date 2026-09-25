@@ -73,7 +73,12 @@ public class ProjectRequestService : IProjectRequestService
                 r.Title,
                 r.RoomType.ToString(),
                 r.Status.ToString(),
-                r.CreatedAtUtc))
+                r.CreatedAtUtc,
+                r.Description,
+                r.BudgetMin,
+                r.BudgetMax,
+                r.SpecialRequirements,
+                r.ClientId))
             .ToListAsync();
     }
 
@@ -86,7 +91,12 @@ public class ProjectRequestService : IProjectRequestService
                 r.Title,
                 r.RoomType.ToString(),
                 r.Status.ToString(),
-                r.CreatedAtUtc))
+                r.CreatedAtUtc,
+                r.Description,
+                r.BudgetMin,
+                r.BudgetMax,
+                r.SpecialRequirements,
+                r.ClientId))
             .ToListAsync();
     }
 
@@ -163,6 +173,28 @@ public class ProjectRequestService : IProjectRequestService
         entity.Status = ProjectRequestStatus.Cancelled;
         entity.UpdatedAtUtc = DateTime.UtcNow;
         await _context.SaveChangesAsync();
+    }
+
+    // ─── Submit ───────────────────────────────────────────────────────────────
+
+    public async Task<ProjectRequestDetailDto> SubmitAsync(int requestId, Guid clientId)
+    {
+        var entity = await _context.ProjectRequests
+            .Include(r => r.Client)
+            .FirstOrDefaultAsync(r => r.Id == requestId)
+            ?? throw new KeyNotFoundException($"Project request '{requestId}' not found.");
+
+        if (entity.ClientId != clientId)
+            throw new UnauthorizedAccessException("You are not authorised to submit this request.");
+
+        if (entity.Status != ProjectRequestStatus.Draft)
+            throw new InvalidOperationException($"Only Draft requests can be submitted. Current status: '{entity.Status}'.");
+
+        entity.Status = ProjectRequestStatus.Submitted;
+        entity.UpdatedAtUtc = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        return MapToDetail(entity, entity.Client.Name);
     }
 
     // ─── Admin: Status transitions ────────────────────────────────────────────

@@ -175,13 +175,23 @@ export default function RequestListAdmin({ onViewDetail }: RequestListAdminProps
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px', marginBottom: '24px' }}>
             {paginatedRequests.map((req) => {
               const badge = getStatusBadge(req.status);
+              // Backend stores budget in budgetMin/budgetMax and dimensions in specialRequirements
+              const raw = req as unknown as Record<string, unknown>;
+              const budget = (raw.budgetMin ?? raw.budgetMax ?? req.budgetLkr) as number | undefined;
+              const specReq = (raw.specialRequirements ?? '') as string;
+              const dimMatch = specReq.match(/Dimensions:\s*(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)/i);
+              const dims = dimMatch
+                ? { l: dimMatch[1], w: dimMatch[2], h: dimMatch[3] }
+                : { l: req.lengthFeet, w: req.widthFeet, h: req.heightFeet };
+              // Format enum name: LivingRoom → Living Room
+              const roomLabel = req.roomType.replace(/([A-Z])/g, ' $1').trim();
               return (
                 <div key={req.id} className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', transition: 'transform 0.2s', border: '1px solid rgba(255,255,255,0.12)' }}>
                   <div>
                     {/* Status Badge & Room Type */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
                       <div>
-                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>🏠 {req.roomType}</h3>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>🏠 {roomLabel}</h3>
                         <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                           Client: {req.clientId || 'default'} | ID: {req.id}
                         </span>
@@ -193,13 +203,15 @@ export default function RequestListAdmin({ onViewDetail }: RequestListAdminProps
 
                     {/* Specs & Budget */}
                     <div style={{ display: 'flex', gap: '16px', fontSize: '0.88rem', color: '#cbd5e1', marginBottom: '16px', background: 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: '8px' }}>
-                      <span>📏 {req.lengthFeet} × {req.widthFeet} × {req.heightFeet} ft</span>
-                      <span>💰 LKR {Number(req.budgetLkr).toLocaleString()}</span>
+                      {dims.l && dims.w && dims.h
+                        ? <span>📏 {dims.l} × {dims.w} × {dims.h} ft</span>
+                        : <span>📏 Dimensions not set</span>}
+                      <span>💰 LKR {budget != null && !isNaN(Number(budget)) ? Number(budget).toLocaleString() : 'N/A'}</span>
                     </div>
 
                     {/* Description excerpt */}
                     <p style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '16px', fontStyle: 'italic', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      "{req.description}"
+                      {req.description ? `"${req.description}"` : 'No description provided'}
                     </p>
 
                     {/* Style Analysis Preview */}
