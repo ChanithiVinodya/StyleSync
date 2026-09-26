@@ -11,7 +11,8 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken')
+  // Use the same key as authStorage
+  const token = localStorage.getItem('stylesync_jwt_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }

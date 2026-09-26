@@ -41,6 +41,15 @@ public class ProgressPhotosController : ControllerBase
         }
     }
 
+    [HttpGet]
+    [Authorize(Roles = "Admin,Designer,Client")]
+    [ProducesResponseType(typeof(IEnumerable<ProgressPhotoDto>), 200)]
+    public async Task<IActionResult> GetPhotos([FromQuery] Guid projectId, [FromQuery] Guid? milestoneId = null, [FromQuery] Guid? taskId = null)
+    {
+        var photos = await _progressPhotoService.GetProjectPhotosAsync(projectId, milestoneId, taskId);
+        return Ok(photos);
+    }
+
     [HttpGet("{id:guid}")]
     [Authorize(Roles = "Admin,Designer,Client")]
     [ProducesResponseType(typeof(ProgressPhotoDto), 200)]

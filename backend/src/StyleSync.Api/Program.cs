@@ -73,6 +73,7 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<IProgressPhotoService, ProgressPhotoService>();
 builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IProjectTimelineService, ProjectTimelineService>();
+builder.Services.AddScoped<IProjectAnalyticsService, ProjectAnalyticsService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -121,6 +122,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
 

@@ -6,8 +6,8 @@ import { Logo } from '../components/Logo';
 import { GlassThemeToggle } from '../components/GlassThemeToggle';
 
 export const AdminLogin: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('admin@stylesync.com');
+  const [password, setPassword] = useState('Admin@StyleSync2026!');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
