@@ -71,6 +71,8 @@ builder.Services.AddScoped<ITaskDependencyService, TaskDependencyService>();
 builder.Services.AddScoped<IDelayService, DelayService>();
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<IProgressPhotoService, ProgressPhotoService>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IProjectTimelineService, ProjectTimelineService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
