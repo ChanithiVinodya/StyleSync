@@ -109,6 +109,23 @@ public class DesignersController : ControllerBase
     }
 
     /// <summary>
+    /// AI Matching Agent tool endpoint: checks designer availability and capacity status.
+    /// </summary>
+    /// <param name="id">The designer profile ID.</param>
+    [HttpGet("{id:int}/availability")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(DesignerAvailabilityResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAvailability(int id, CancellationToken cancellationToken = default)
+    {
+        var result = await _designerService.GetAvailabilityAsync(id, cancellationToken);
+        if (result == null)
+            return NotFound(new { message = $"Designer profile with ID {id} not found." });
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Designer creates their own profile.
     /// </summary>
     [HttpPost]

@@ -214,4 +214,38 @@ public class CapacityGuardTests
         Assert.Single(candidatesAfter);
         Assert.Equal(designer.Id, candidatesAfter[0].Id);
     }
+
+    [Fact]
+    public async Task GetAvailability_ReturnsExactAvailabilityAndCapacityState()
+    {
+        using var context = CreateInMemoryDbContext();
+        var guardService = new CapacityGuardService(context);
+        var designerService = new DesignerService(context, guardService);
+
+        var designer = new DesignerProfile
+        {
+            Id = 42,
+            UserId = 101,
+            DisplayName = "Availability Test Designer",
+            Bio = "Bio",
+            MaxConcurrentProjects = 3,
+            IsAvailable = true,
+            ListingStatus = ListingStatus.Published
+        };
+        context.DesignerProfiles.Add(designer);
+
+        context.Contracts.AddRange(
+            new ContractStub { Id = 1, DesignerId = 42, Status = ContractStatus.Active },
+            new ContractStub { Id = 2, DesignerId = 42, Status = ContractStatus.Completed }
+        );
+        await context.SaveChangesAsync();
+
+        var availability = await designerService.GetAvailabilityAsync(42);
+
+        Assert.NotNull(availability);
+        Assert.True(availability.IsAvailable);
+        Assert.True(availability.IsUnderCapacity);
+        Assert.Equal(1, availability.ActiveProjectCount);
+        Assert.Equal(3, availability.MaxConcurrentProjects);
+    }
 }

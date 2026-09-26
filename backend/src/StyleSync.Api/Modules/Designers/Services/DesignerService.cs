@@ -354,6 +354,27 @@ public class DesignerService : IDesignerService
         return true;
     }
 
+    public async Task<DesignerAvailabilityResponse?> GetAvailabilityAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var profile = await _context.DesignerProfiles
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
+
+        if (profile == null)
+            return null;
+
+        var activeCount = await _capacityGuard.GetActiveProjectCountAsync(id, cancellationToken);
+        var isUnderCapacity = _capacityGuard.IsUnderCapacity(profile, activeCount);
+
+        return new DesignerAvailabilityResponse
+        {
+            IsAvailable = profile.IsAvailable,
+            IsUnderCapacity = isUnderCapacity,
+            ActiveProjectCount = activeCount,
+            MaxConcurrentProjects = profile.MaxConcurrentProjects
+        };
+    }
+
     private static DesignerProfileResponse MapToResponse(DesignerProfile profile, int activeProjects, bool isUnderCapacity, bool includeUnpublished)
     {
         var portfolioItems = profile.PortfolioItems

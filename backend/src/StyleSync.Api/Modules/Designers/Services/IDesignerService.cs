@@ -12,4 +12,5 @@ public interface IDesignerService
     Task<PortfolioItemResponse> AddPortfolioItemAsync(int designerId, int currentUserId, bool isAdmin, CreatePortfolioItemRequest request);
     Task<List<PortfolioItemResponse>> GetPortfolioItemsAsync(int designerId, bool publicOnly = true);
     Task<bool> DeletePortfolioItemAsync(int designerId, int itemId, int currentUserId, bool isAdmin);
+    Task<DesignerAvailabilityResponse?> GetAvailabilityAsync(int id, CancellationToken cancellationToken = default);
 }

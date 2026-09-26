@@ -80,3 +80,11 @@ public class DesignerProfileResponse
     public DateTime? UpdatedAtUtc { get; set; }
     public List<PortfolioItemResponse> PortfolioItems { get; set; } = new();
 }
+
+public class DesignerAvailabilityResponse
+{
+    public bool IsAvailable { get; set; }
+    public bool IsUnderCapacity { get; set; }
+    public int ActiveProjectCount { get; set; }
+    public int MaxConcurrentProjects { get; set; }
+}
