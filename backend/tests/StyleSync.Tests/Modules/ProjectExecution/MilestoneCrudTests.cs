@@ -34,9 +34,9 @@ public class MilestoneCrudTests : IDisposable
         var dependencyService = new TaskDependencyService(_context);
         _taskService = new TaskService(_context, dependencyService);
         var materialService = new MaterialService(_context);
-        
+
         _controller = new MilestonesController(_service, _taskService, materialService);
-        
+
         // Mocking user context for authorization is normally done via ControllerContext in integration tests.
         // For unit tests, we're primarily testing logic, but we can set up HttpContext if needed.
         _controller.ControllerContext = new ControllerContext
@@ -67,7 +67,7 @@ public class MilestoneCrudTests : IDisposable
 
         var createdResult = Assert.IsType<CreatedAtActionResult>(result);
         var returnedDto = Assert.IsType<MilestoneDto>(createdResult.Value);
-        
+
         Assert.Equal("Design Phase", returnedDto.Name);
         Assert.Equal(MilestoneStatus.NotStarted, returnedDto.Status);
     }
@@ -168,10 +168,10 @@ public class MilestoneCrudTests : IDisposable
     public async Task Update_UpdatesFields_AndSetsUpdatedAt()
     {
         var id = Guid.NewGuid();
-        var original = new ProjectMilestone 
-        { 
-            MilestoneId = id, 
-            ProjectId = Guid.NewGuid(), 
+        var original = new ProjectMilestone
+        {
+            MilestoneId = id,
+            ProjectId = Guid.NewGuid(),
             Name = "M1",
             StartDate = DateTime.UtcNow,
             DueDate = DateTime.UtcNow.AddDays(5),
@@ -215,14 +215,14 @@ public class MilestoneCrudTests : IDisposable
     public async Task Delete_ReturnsConflict_WhenTasksExist()
     {
         var id = Guid.NewGuid();
-        var milestone = new ProjectMilestone 
-        { 
-            MilestoneId = id, 
-            ProjectId = Guid.NewGuid(), 
-            Name = "M1" 
+        var milestone = new ProjectMilestone
+        {
+            MilestoneId = id,
+            ProjectId = Guid.NewGuid(),
+            Name = "M1"
         };
         milestone.Tasks.Add(new ProjectTask { TaskId = Guid.NewGuid(), Name = "T1" });
-        
+
         _context.ProjectMilestones.Add(milestone);
         await _context.SaveChangesAsync();
 

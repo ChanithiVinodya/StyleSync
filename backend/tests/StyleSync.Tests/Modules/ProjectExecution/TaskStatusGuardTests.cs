@@ -31,7 +31,7 @@ public class TaskStatusGuardTests : IDisposable
         _context = new AppDbContext(options);
         _dependencyService = new TaskDependencyService(_context);
         _taskService = new TaskService(_context, _dependencyService);
-        
+
         _controller = new TasksController(_taskService);
         _controller.ControllerContext = new ControllerContext
         {
@@ -96,7 +96,7 @@ public class TaskStatusGuardTests : IDisposable
         };
 
         var result = await _controller.UpdateTask(task.TaskId, dto);
-        
+
         var okResult = Assert.IsType<OkObjectResult>(result);
         var returnedDto = Assert.IsType<TaskDto>(okResult.Value);
         Assert.Equal(StyleSync.Api.Modules.ProjectExecution.Models.TaskStatus.InProgress, returnedDto.Status);
@@ -147,7 +147,7 @@ public class TaskStatusGuardTests : IDisposable
         };
 
         var result = await _controller.UpdateTask(t3.TaskId, dto);
-        
+
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         // We know we return an anonymous object in the controller for this specific exception
         // Unfortunately anonymous objects are internal by default and hard to reflect on directly in tests if they are in different assemblies.
@@ -180,7 +180,7 @@ public class TaskStatusGuardTests : IDisposable
         };
 
         var result = await _controller.UpdateTask(t4.TaskId, dto);
-        
+
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var json = System.Text.Json.JsonSerializer.Serialize(badRequest.Value);
         Assert.Contains("Task cannot start because prerequisite tasks are incomplete.", json);
@@ -207,7 +207,7 @@ public class TaskStatusGuardTests : IDisposable
         };
 
         var result = await _controller.UpdateTask(t2.TaskId, dto);
-        
+
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var json = System.Text.Json.JsonSerializer.Serialize(badRequest.Value);
         Assert.Contains(t1.TaskId.ToString(), json, StringComparison.OrdinalIgnoreCase);
@@ -231,7 +231,7 @@ public class TaskStatusGuardTests : IDisposable
         };
 
         var result = await _controller.UpdateTask(t2.TaskId, dto);
-        
+
         var badRequest = Assert.IsType<BadRequestObjectResult>(result);
         var json = System.Text.Json.JsonSerializer.Serialize(badRequest.Value);
         Assert.Contains(t1.TaskId.ToString(), json, StringComparison.OrdinalIgnoreCase);

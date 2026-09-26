@@ -119,6 +119,15 @@ public class MilestonesController : ControllerBase
         {
             return BadRequest(new ErrorResponse(400, ex.Message));
         }
+        catch (StyleSync.Api.Modules.ProjectExecution.Exceptions.MaterialCompletionGuardException ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message,
+                milestoneId = ex.MilestoneId,
+                incompleteMaterials = ex.IncompleteMaterials
+            });
+        }
     }
 
     [HttpDelete("{id:guid}")]

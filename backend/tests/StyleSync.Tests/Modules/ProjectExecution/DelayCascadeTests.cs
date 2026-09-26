@@ -170,7 +170,7 @@ public class DelayCascadeTests : IDisposable
 
         // Run 2 (simulate running again immediately or on the same day)
         var result2 = await _delayService.RunDelayDetectionAsync();
-        
+
         // T1 is already delayed, its DueDate is still past, but CascadedDelay = 3. 
         // NewDelayToCascade = TotalDelay(3) - CascadedDelay(3) = 0.
         // Detected tasks is 1 because it finds t1 as overdue (DueDate < today), but it doesn't cascade!

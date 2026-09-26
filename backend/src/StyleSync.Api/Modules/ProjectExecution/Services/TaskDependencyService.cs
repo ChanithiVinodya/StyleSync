@@ -46,7 +46,7 @@ public class TaskDependencyService : ITaskDependencyService
 
         var exists = await _context.TaskDependencies
             .AnyAsync(d => d.TaskId == taskId && d.PrerequisiteTaskId == request.PrerequisiteTaskId);
-            
+
         if (exists)
         {
             throw new InvalidOperationException("This task dependency already exists.");
@@ -82,16 +82,16 @@ public class TaskDependencyService : ITaskDependencyService
         // We want to add edge: prerequisiteTaskId -> taskId.
         // A cycle occurs if there is already a path from taskId to prerequisiteTaskId.
         // We will traverse the graph starting from taskId following the "dependents" relationships.
-        
+
         var visited = new HashSet<Guid>();
         var queue = new Queue<Guid>();
-        
+
         queue.Enqueue(taskId);
 
         while (queue.Count > 0)
         {
             var current = queue.Dequeue();
-            
+
             if (current == prerequisiteTaskId)
             {
                 return true;

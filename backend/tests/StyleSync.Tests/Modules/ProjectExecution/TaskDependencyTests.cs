@@ -29,7 +29,7 @@ public class TaskDependencyTests : IDisposable
 
         _context = new AppDbContext(options);
         _service = new TaskDependencyService(_context);
-        
+
         _controller = new TaskDependenciesController(_service);
         _controller.ControllerContext = new ControllerContext
         {
@@ -58,7 +58,7 @@ public class TaskDependencyTests : IDisposable
             new ProjectTask { TaskId = t3, MilestoneId = mId, Name = "T3" }
         );
         await _context.SaveChangesAsync();
-        
+
         return (pId, mId, t1, t2, t3);
     }
 
@@ -66,14 +66,14 @@ public class TaskDependencyTests : IDisposable
     public async Task CreateDependency_Valid_ReturnsCreated()
     {
         var (_, _, t1, t2, _) = await SeedTasksAsync();
-        
+
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = t1 };
         var result = await _controller.CreateDependency(t2, dto);
 
         var createdResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(201, createdResult.StatusCode);
         var returnedDto = Assert.IsType<TaskDependencyDto>(createdResult.Value);
-        
+
         Assert.Equal(t2, returnedDto.TaskId);
         Assert.Equal(t1, returnedDto.PrerequisiteTaskId);
     }
@@ -82,7 +82,7 @@ public class TaskDependencyTests : IDisposable
     public async Task CreateDependency_SelfDependency_ReturnsBadRequest()
     {
         var (_, _, t1, _, _) = await SeedTasksAsync();
-        
+
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = t1 };
         var result = await _controller.CreateDependency(t1, dto);
 
@@ -100,7 +100,7 @@ public class TaskDependencyTests : IDisposable
         _context.ProjectMilestones.Add(new ProjectMilestone { MilestoneId = m2, ProjectId = Guid.NewGuid(), Name = "M2" });
         _context.ProjectTasks.Add(new ProjectTask { TaskId = t4, MilestoneId = m2, Name = "T4" });
         await _context.SaveChangesAsync();
-        
+
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = t4 };
         var result = await _controller.CreateDependency(t1, dto);
 
@@ -115,7 +115,7 @@ public class TaskDependencyTests : IDisposable
         var (_, _, t1, t2, _) = await SeedTasksAsync();
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t2, PrerequisiteTaskId = t1 });
         await _context.SaveChangesAsync();
-        
+
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = t1 };
         var result = await _controller.CreateDependency(t2, dto);
 
@@ -131,7 +131,7 @@ public class TaskDependencyTests : IDisposable
         // t2 depends on t1
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t2, PrerequisiteTaskId = t1 });
         await _context.SaveChangesAsync();
-        
+
         // try to make t1 depend on t2
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = t2 };
         var result = await _controller.CreateDependency(t1, dto);
@@ -149,7 +149,7 @@ public class TaskDependencyTests : IDisposable
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t2, PrerequisiteTaskId = t1 });
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t3, PrerequisiteTaskId = t2 });
         await _context.SaveChangesAsync();
-        
+
         // try to make t1 depend on t3 (cycle: t1->t3->t2->t1)
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = t3 };
         var result = await _controller.CreateDependency(t1, dto);
@@ -163,7 +163,7 @@ public class TaskDependencyTests : IDisposable
     public async Task CreateDependency_TaskNotFound_ReturnsNotFound()
     {
         var (_, _, t1, _, _) = await SeedTasksAsync();
-        
+
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = t1 };
         var result = await _controller.CreateDependency(Guid.NewGuid(), dto);
 
@@ -176,7 +176,7 @@ public class TaskDependencyTests : IDisposable
     public async Task CreateDependency_PrerequisiteNotFound_ReturnsNotFound()
     {
         var (_, _, t1, _, _) = await SeedTasksAsync();
-        
+
         var dto = new CreateTaskDependencyDto { PrerequisiteTaskId = Guid.NewGuid() };
         var result = await _controller.CreateDependency(t1, dto);
 
@@ -193,11 +193,11 @@ public class TaskDependencyTests : IDisposable
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t3, PrerequisiteTaskId = t1 });
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t3, PrerequisiteTaskId = t2 });
         await _context.SaveChangesAsync();
-        
+
         var result = await _controller.GetPrerequisites(t3);
         var okResult = Assert.IsType<OkObjectResult>(result);
         var dtos = Assert.IsAssignableFrom<IEnumerable<TaskDependencyTaskDto>>(okResult.Value);
-        
+
         Assert.Equal(2, dtos.Count());
         Assert.Contains(dtos, d => d.TaskId == t1);
         Assert.Contains(dtos, d => d.TaskId == t2);
@@ -211,11 +211,11 @@ public class TaskDependencyTests : IDisposable
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t2, PrerequisiteTaskId = t1 });
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t3, PrerequisiteTaskId = t1 });
         await _context.SaveChangesAsync();
-        
+
         var result = await _controller.GetDependents(t1);
         var okResult = Assert.IsType<OkObjectResult>(result);
         var dtos = Assert.IsAssignableFrom<IEnumerable<TaskDependencyTaskDto>>(okResult.Value);
-        
+
         Assert.Equal(2, dtos.Count());
         Assert.Contains(dtos, d => d.TaskId == t2);
         Assert.Contains(dtos, d => d.TaskId == t3);
@@ -227,10 +227,10 @@ public class TaskDependencyTests : IDisposable
         var (_, _, t1, t2, _) = await SeedTasksAsync();
         _context.TaskDependencies.Add(new TaskDependency { TaskId = t2, PrerequisiteTaskId = t1 });
         await _context.SaveChangesAsync();
-        
+
         var result = await _controller.DeleteDependency(t2, t1);
         Assert.IsType<NoContentResult>(result);
-        
+
         Assert.Empty(_context.TaskDependencies);
     }
 
@@ -239,7 +239,7 @@ public class TaskDependencyTests : IDisposable
     {
         var (_, _, t1, t2, _) = await SeedTasksAsync();
         var result = await _controller.DeleteDependency(t2, t1);
-        
+
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         var error = Assert.IsType<ErrorResponse>(notFoundResult.Value);
         Assert.Equal("Task dependency not found.", error.Message);

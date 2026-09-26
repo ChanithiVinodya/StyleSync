@@ -97,7 +97,7 @@ public class TaskService : ITaskService
         {
             var prerequisites = await _taskDependencyService.GetPrerequisitesAsync(id);
             var incompletePrereqs = prerequisites.Where(p => p.Status != Models.TaskStatus.Completed).ToList();
-            
+
             if (incompletePrereqs.Any())
             {
                 throw new DependencyGuardException(id, incompletePrereqs);

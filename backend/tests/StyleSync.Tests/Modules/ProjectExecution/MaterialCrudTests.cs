@@ -161,7 +161,7 @@ public class MaterialCrudTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal("Updated", result.Name);
         Assert.Equal(10, result.Quantity);
-        
+
         var dbEntity = await _context.ProjectMaterials.FindAsync(created.MaterialId);
         Assert.Equal("Updated", dbEntity!.Name);
     }
@@ -178,7 +178,7 @@ public class MaterialCrudTests : IDisposable
         });
 
         var deleted = await _service.DeleteAsync(created.MaterialId);
-        
+
         Assert.True(deleted);
         var dbEntity = await _context.ProjectMaterials.FindAsync(created.MaterialId);
         Assert.Null(dbEntity);

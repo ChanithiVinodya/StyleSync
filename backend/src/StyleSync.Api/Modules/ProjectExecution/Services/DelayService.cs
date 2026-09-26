@@ -118,7 +118,7 @@ public class DelayService : IDelayService
                     // Do not shift the initial delayed task's own dates unless it is ALSO a dependent 
                     // that received a LARGER shift from a prerequisite.
                     var isInitialDelayed = initialDelayedTasks.Any(t => t.TaskId == taskId);
-                    
+
                     // If it's an initial delayed task, we only shift its dates if it inherited a shift
                     // larger than its own delay (which would be extremely rare/impossible unless dependencies were set up weirdly).
                     // Actually, to keep it simple, we just don't shift initial delayed tasks. 

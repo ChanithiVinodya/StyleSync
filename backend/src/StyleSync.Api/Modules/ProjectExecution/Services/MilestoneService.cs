@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.ProjectExecution.DTOs;
 using StyleSync.Api.Modules.ProjectExecution.Interfaces;
+using StyleSync.Api.Modules.ProjectExecution.Exceptions;
 using StyleSync.Api.Modules.ProjectExecution.Models;
 
 namespace StyleSync.Api.Modules.ProjectExecution.Services;
@@ -84,6 +85,24 @@ public class MilestoneService : IMilestoneService
         if (milestone == null)
             return null;
 
+        if (request.Status == MilestoneStatus.Completed && milestone.Status != MilestoneStatus.Completed)
+        {
+            var incompleteMaterials = await _context.ProjectMaterials
+                .Where(m => m.MilestoneId == id && m.Status != MaterialStatus.Delivered)
+                .Select(m => new IncompleteMaterialDto
+                {
+                    MaterialId = m.MaterialId,
+                    Name = m.Name,
+                    Status = m.Status.ToString()
+                })
+                .ToListAsync();
+
+            if (incompleteMaterials.Any())
+            {
+                throw new MaterialCompletionGuardException(id, incompleteMaterials);
+            }
+        }
+
         milestone.Name = request.Name;
         milestone.Description = request.Description;
         milestone.StartDate = request.StartDate;
@@ -103,7 +122,7 @@ public class MilestoneService : IMilestoneService
             .Include(m => m.Materials)
             .Include(m => m.ProgressPhotos)
             .FirstOrDefaultAsync(m => m.MilestoneId == id);
-            
+
         if (milestone == null)
             return false;
 

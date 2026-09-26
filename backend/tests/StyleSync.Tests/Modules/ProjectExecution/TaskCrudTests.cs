@@ -30,9 +30,9 @@ public class TaskCrudTests : IDisposable
         _context = new AppDbContext(options);
         var dependencyService = new TaskDependencyService(_context);
         _service = new TaskService(_context, dependencyService);
-        
+
         _controller = new TasksController(_service);
-        
+
         _controller.ControllerContext = new ControllerContext
         {
             HttpContext = new DefaultHttpContext()
@@ -65,7 +65,7 @@ public class TaskCrudTests : IDisposable
 
         var createdResult = Assert.IsType<CreatedAtActionResult>(result);
         var returnedDto = Assert.IsType<TaskDto>(createdResult.Value);
-        
+
         Assert.Equal("Paint walls", returnedDto.Name);
         Assert.Equal(StyleSync.Api.Modules.ProjectExecution.Models.TaskStatus.NotStarted, returnedDto.Status);
     }
@@ -163,10 +163,10 @@ public class TaskCrudTests : IDisposable
     public async Task Update_UpdatesFields_AndSetsUpdatedAt()
     {
         var id = Guid.NewGuid();
-        var original = new ProjectTask 
-        { 
-            TaskId = id, 
-            MilestoneId = Guid.NewGuid(), 
+        var original = new ProjectTask
+        {
+            TaskId = id,
+            MilestoneId = Guid.NewGuid(),
             Name = "T1",
             StartDate = DateTime.UtcNow,
             DueDate = DateTime.UtcNow.AddDays(5),
@@ -210,14 +210,14 @@ public class TaskCrudTests : IDisposable
     public async Task Delete_ReturnsConflict_WhenDependenciesExist()
     {
         var id = Guid.NewGuid();
-        var task = new ProjectTask 
-        { 
-            TaskId = id, 
-            MilestoneId = Guid.NewGuid(), 
-            Name = "T1" 
+        var task = new ProjectTask
+        {
+            TaskId = id,
+            MilestoneId = Guid.NewGuid(),
+            Name = "T1"
         };
         task.Dependents.Add(new TaskDependency { TaskDependencyId = Guid.NewGuid() });
-        
+
         _context.ProjectTasks.Add(task);
         await _context.SaveChangesAsync();
 

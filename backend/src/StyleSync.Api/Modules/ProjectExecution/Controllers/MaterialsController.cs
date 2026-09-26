@@ -41,9 +41,9 @@ public class MaterialsController : ControllerBase
     [Authorize(Roles = "Admin,Designer,Client")]
     [ProducesResponseType(typeof(IEnumerable<MaterialDto>), 200)]
     public async Task<IActionResult> GetMaterials(
-        [FromQuery] Guid? projectId, 
-        [FromQuery] Guid? milestoneId, 
-        [FromQuery] Guid? taskId, 
+        [FromQuery] Guid? projectId,
+        [FromQuery] Guid? milestoneId,
+        [FromQuery] Guid? taskId,
         [FromQuery] string? status)
     {
         var result = await _materialService.GetAllAsync(projectId, milestoneId, taskId, status);

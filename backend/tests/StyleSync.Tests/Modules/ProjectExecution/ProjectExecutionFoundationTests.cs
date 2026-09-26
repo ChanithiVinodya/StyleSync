@@ -23,7 +23,7 @@ public class ProjectExecutionFoundationTests
         Assert.NotNull(dependency);
         Assert.NotNull(material);
         Assert.NotNull(photo);
-        
+
         Assert.Equal("Foundation Phase", milestone.Name);
     }
 
@@ -33,9 +33,9 @@ public class ProjectExecutionFoundationTests
         // Assert some default/expected enum values exist
         Assert.Equal(0, (int)MilestoneStatus.NotStarted);
         Assert.Equal(1, (int)MilestoneStatus.InProgress);
-        
+
         Assert.Equal(0, (int)StyleSync.Api.Modules.ProjectExecution.Models.TaskStatus.NotStarted);
-        
+
         Assert.Equal(0, (int)MaterialStatus.Required);
         Assert.Equal(1, (int)MaterialStatus.Ordered);
         Assert.Equal(2, (int)MaterialStatus.Delivered);
@@ -66,26 +66,26 @@ public class ProjectExecutionFoundationTests
             .Options;
 
         using var context = new AppDbContext(options);
-        
+
         var model = context.Model;
-        
+
         var milestoneType = model.FindEntityType(typeof(ProjectMilestone));
         Assert.NotNull(milestoneType);
-        
+
         var taskType = model.FindEntityType(typeof(ProjectTask));
         Assert.NotNull(taskType);
-        
+
         // Verify relationship: Milestone -> Tasks
         var milestoneToTasks = taskType.GetForeignKeys()
             .FirstOrDefault(fk => fk.PrincipalEntityType.ClrType == typeof(ProjectMilestone));
-            
+
         Assert.NotNull(milestoneToTasks);
         Assert.Equal(DeleteBehavior.Cascade, milestoneToTasks.DeleteBehavior);
-        
+
         // Verify TaskDependency relationships
         var dependencyType = model.FindEntityType(typeof(TaskDependency));
         Assert.NotNull(dependencyType);
-        
+
         var fks = dependencyType.GetForeignKeys().ToList();
         Assert.Equal(2, fks.Count); // Should have FKs to Task and PrerequisiteTask
     }

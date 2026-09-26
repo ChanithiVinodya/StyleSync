@@ -52,7 +52,7 @@ public class MaterialService : IMaterialService
         if (projectId.HasValue) query = query.Where(m => m.ProjectId == projectId.Value);
         if (milestoneId.HasValue) query = query.Where(m => m.MilestoneId == milestoneId.Value);
         if (taskId.HasValue) query = query.Where(m => m.TaskId == taskId.Value);
-        
+
         if (!string.IsNullOrEmpty(status) && Enum.TryParse<MaterialStatus>(status, true, out var parsedStatus))
         {
             query = query.Where(m => m.Status == parsedStatus);
@@ -133,7 +133,7 @@ public class MaterialService : IMaterialService
                 material.DeliveredDate = null; // Clear both if reverting all the way
             }
         }
-        
+
         if (request.Status == MaterialStatus.Ordered && oldStatus == MaterialStatus.Delivered)
         {
             material.DeliveredDate = null; // reverting from delivered to ordered
@@ -169,7 +169,7 @@ public class MaterialService : IMaterialService
             {
                 throw new ArgumentException("Task does not belong to the specified Project.");
             }
-            
+
             // If both milestone and task are provided, they should match logically
             if (milestoneId.HasValue && task.MilestoneId != milestoneId.Value)
             {
