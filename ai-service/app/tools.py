@@ -7,10 +7,16 @@ automatic validation and audit logging.
 """
 from __future__ import annotations
 
+import os
 from typing import Any
 
+import httpx
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
+
+from app.schemas import DesignerAvailabilityResponseDto, DesignerSearchResultDto
+
+BACKEND_API_BASE_URL = os.getenv("BACKEND_API_BASE_URL", os.getenv("BACKEND_URL", "http://localhost:5000")).rstrip("/")
 
 # ============================================================================
 # 1. Style Analysis Tools (Agent 1)
@@ -82,104 +88,96 @@ STYLE_ANALYSIS_TOOLS = [analyze_room_image, get_client_preferences, get_style_co
 # ============================================================================
 
 class SearchDesignersInput(BaseModel):
-    primary_style: str = Field(description="Target interior design style to match")
-    budget_max: float = Field(description="Maximum project budget from client")
-    min_rating: float = Field(default=4.0, description="Minimum acceptable designer rating (out of 5.0)")
+    style_tags: list[str] = Field(description="Desired interior design styles to match against")
+    budget_min: float = Field(default=0.0, description="Minimum budget in LKR")
+    budget_max: float = Field(default=0.0, description="Maximum budget in LKR")
 
 
 class CheckDesignerAvailabilityInput(BaseModel):
-    designer_id: int = Field(description="ID of the designer to check availability for")
-
-
-class GetDesignerPortfolioInput(BaseModel):
-    designer_id: int = Field(description="ID of the designer to inspect portfolio for")
+    designer_id: str = Field(description="ID of the designer to check availability for")
 
 
 @tool("search_designers", args_schema=SearchDesignersInput)
 def search_designers(
-    primary_style: str,
-    budget_max: float,
-    min_rating: float = 4.0,
+    style_tags: list[str],
+    budget_min: float = 0.0,
+    budget_max: float = 0.0,
 ) -> list[dict[str, Any]]:
-    """Searches and scores available designers against style specialty, rating, and budget."""
-    catalogue = [
-        {
-            "designer_id": 101,
-            "designer_name": "Elena Rostova",
-            "specialties": ["Scandinavian", "Minimalist", "Japandi"],
-            "rating": 4.9,
-            "min_budget": 120_000.0,
-            "max_budget": 300_000.0,
-        },
-        {
-            "designer_id": 102,
-            "designer_name": "Marcus Vance",
-            "specialties": ["Industrial", "Modern Minimalist", "Loft"],
-            "rating": 4.7,
-            "min_budget": 150_000.0,
-            "max_budget": 450_000.0,
-        },
-        {
-            "designer_id": 103,
-            "designer_name": "Aria Chen",
-            "specialties": ["Scandinavian", "Boho Chic", "Contemporary"],
-            "rating": 4.8,
-            "min_budget": 100_000.0,
-            "max_budget": 280_000.0,
-        },
-    ]
+    """HTTP GET to Component 1's search_designers endpoint. Returns the ranked list exactly as returned by the backend."""
+    try:
+        url = f"{BACKEND_API_BASE_URL}/api/designers/search"
+        params: list[tuple[str, str]] = []
+        for tag in style_tags:
+            params.append(("styleTags", tag))
+        params.append(("budgetMin", str(budget_min)))
+        params.append(("budgetMax", str(budget_max)))
 
-    target_style = primary_style.strip().lower()
-    matches = []
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(url, params=params)
 
-    for d in catalogue:
-        if d["rating"] < min_rating:
-            continue
+        if resp.status_code == 404:
+            return [{"error": "no eligible designers found"}]
 
-        style_match = 95.0 if any(target_style in s.lower() for s in d["specialties"]) else 70.0
-        if d["min_budget"] <= budget_max <= d["max_budget"]:
-            budget_match = "High"
-        elif budget_max >= d["min_budget"]:
-            budget_match = "Medium"
-        else:
-            budget_match = "Low"
+        resp.raise_for_status()
+        raw_data = resp.json()
 
-        matches.append({
-            "designer_id": d["designer_id"],
-            "designer_name": d["designer_name"],
-            "style_match_pct": style_match,
-            "budget_match": budget_match,
-            "rating": d["rating"],
-        })
+        if not raw_data:
+            return [{"error": "no eligible designers found"}]
 
-    matches.sort(key=lambda x: (x["style_match_pct"], x["rating"]), reverse=True)
-    return matches
+        # Validate with Pydantic model and preserve exact backend JSON format
+        validated = [
+            DesignerSearchResultDto.model_validate(item).model_dump(by_alias=True)
+            for item in raw_data
+        ]
+        return validated
+    except httpx.HTTPError as e:
+        return [{"error": f"Failed to connect to designer search backend: {str(e)}"}]
+    except Exception as e:
+        return [{"error": f"Unexpected error during designer search: {str(e)}"}]
 
 
 @tool("check_designer_availability", args_schema=CheckDesignerAvailabilityInput)
-def check_designer_availability(designer_id: int) -> dict[str, Any]:
-    """Checks whether a designer currently has bandwidth to accept a new project."""
-    return {
-        "designer_id": designer_id,
-        "is_available": True,
-        "current_active_projects": 2,
-        "max_concurrent_projects": 4,
-        "earliest_start_date": "Immediately",
-    }
+def check_designer_availability(designer_id: str) -> dict[str, Any]:
+    """HTTP GET to /api/designers/{id}/availability to check designer availability and capacity."""
+    try:
+        clean_id = str(designer_id).strip()
+        url = f"{BACKEND_API_BASE_URL}/api/designers/{clean_id}/availability"
+
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.get(url)
+
+        if resp.status_code == 404:
+            return {
+                "error": f"Designer with ID {clean_id} not found",
+                "isAvailable": False,
+                "isUnderCapacity": False,
+                "activeProjectCount": 0,
+                "maxConcurrentProjects": 0,
+            }
+
+        resp.raise_for_status()
+        raw_data = resp.json()
+        validated = DesignerAvailabilityResponseDto.model_validate(raw_data).model_dump(by_alias=True)
+        return validated
+    except httpx.HTTPError as e:
+        return {
+            "error": f"Failed to check designer availability: {str(e)}",
+            "isAvailable": False,
+            "isUnderCapacity": False,
+            "activeProjectCount": 0,
+            "maxConcurrentProjects": 0,
+        }
+    except Exception as e:
+        return {
+            "error": f"Unexpected error checking designer availability: {str(e)}",
+            "isAvailable": False,
+            "isUnderCapacity": False,
+            "activeProjectCount": 0,
+            "maxConcurrentProjects": 0,
+        }
 
 
-@tool("get_designer_portfolio", args_schema=GetDesignerPortfolioInput)
-def get_designer_portfolio(designer_id: int) -> dict[str, Any]:
-    """Retrieves verified portfolio project highlights and client feedback scores."""
-    return {
-        "designer_id": designer_id,
-        "featured_rooms": ["Living Room Makeover - Colombo 07", "Minimalist Master Suite - Kandy"],
-        "completed_projects_count": 28,
-        "client_satisfaction_score": 98.4,
-    }
-
-
-DESIGNER_MATCHING_TOOLS = [search_designers, check_designer_availability, get_designer_portfolio]
+DESIGNER_MATCHING_TOOLS = [search_designers, check_designer_availability]
 
 
 # ============================================================================
