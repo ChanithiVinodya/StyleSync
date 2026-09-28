@@ -127,6 +127,21 @@ export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): Pro
     }
   }
 
+  // Check localStorage for user-uploaded photos saved during create
+  if (photos.length === 0 && idStr) {
+    try {
+      const savedPhotos = localStorage.getItem(`photos_${idStr}`);
+      if (savedPhotos) {
+        const parsed = JSON.parse(savedPhotos) as Photo[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          photos.push(...parsed);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   // If still no photos, attach room-type-matched default sample photos
   if (photos.length === 0) {
     const defaults = getRoomDefaultPhotos(roomTypeStr);
@@ -336,6 +351,7 @@ export async function createProjectRequest(
   let created = mapBackendDtoToProjectRequest(data);
 
   // Preserve user input fields that might not be round-tripped
+  const userPhotos = payload.photoUrls.map((url, i) => ({ id: `photo-${i + 1}`, photoUrl: url, storageKey: url }));
   created = {
     ...created,
     lengthFeet: payload.lengthFeet,
@@ -343,8 +359,17 @@ export async function createProjectRequest(
     heightFeet: payload.heightFeet,
     budgetLkr: payload.budgetLkr,
     preferredStyles: payload.preferredStyles,
-    photos: payload.photoUrls.map((url, i) => ({ id: `photo-${i + 1}`, photoUrl: url, storageKey: url })),
+    photos: userPhotos,
   };
+
+  // Persist user-uploaded photos to localStorage so they survive backend round-trips
+  if (created.id && userPhotos.length > 0) {
+    try {
+      localStorage.setItem(`photos_${created.id}`, JSON.stringify(userPhotos));
+    } catch {
+      // ignore storage errors
+    }
+  }
 
   // If user requested immediate submission, submit and trigger live AI style analysis
   if (payload.submitImmediately) {

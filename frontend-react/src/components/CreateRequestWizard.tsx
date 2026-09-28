@@ -378,18 +378,23 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                 <span>Room Photos ({formData.photoUrls.length} attached)</span>
               </div>
 
+              {/* Photo Thumbnails */}
               {formData.photoUrls.length > 0 && (
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {formData.photoUrls.map((url, idx) => (
-                    <div
-                      key={`${url}-${idx}`}
-                      className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-lg text-xs text-[#57534E] dark:text-[#A8A29E]"
-                    >
-                      <span>Photo #{idx + 1}</span>
+                    <div key={`${url}-${idx}`} className="relative group h-20 rounded-xl overflow-hidden border border-[#E7E1D7] dark:border-[#2E2824] bg-stone-900">
+                      <img
+                        src={url}
+                        alt={`Photo ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/80x80/2A231A/E8A849?text=IMG';
+                        }}
+                      />
                       <button
                         type="button"
                         onClick={() => removePhotoUrl(idx)}
-                        className="text-rose-500 hover:text-rose-700 font-bold ml-1"
+                        className="absolute top-1 right-1 w-5 h-5 bg-rose-600 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         ✕
                       </button>
@@ -405,11 +410,12 @@ export default function CreateRequestWizard({ onRequestCreated }: CreateRequestW
                   placeholder="Paste photo image URL..."
                   value={newPhotoUrl}
                   onChange={(e) => setNewPhotoUrl(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPhotoUrl(); } }}
                 />
                 <button
                   type="button"
                   onClick={addPhotoUrl}
-                  className="px-4 py-2.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition"
+                  className="px-4 py-2.5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition whitespace-nowrap"
                 >
                   + Add Photo
                 </button>
