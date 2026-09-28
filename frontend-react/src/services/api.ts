@@ -100,6 +100,7 @@ export function getRoomDefaultPhotos(roomType: string): string[] {
 
 export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): ProjectRequest {
   const budget = raw.budgetMin ?? raw.budgetMax ?? raw.budgetLkr ?? 0;
+  const idStr = String(raw.id ?? '');
   const specReq = (raw.specialRequirements as string) ?? '';
 
   let length = (raw.lengthFeet as number) ?? 0;
@@ -160,7 +161,7 @@ export function mapBackendDtoToProjectRequest(raw: Record<string, unknown>): Pro
     preferredStyles = (raw.stylePreferences as string).split(',').map((s) => s.trim());
   }
 
-  const idStr = String(raw.id ?? '');
+
 
   // Check cached style analysis from localStorage
   let styleAnalysis: StyleAnalysis | undefined = raw.styleAnalysis as StyleAnalysis | undefined;
