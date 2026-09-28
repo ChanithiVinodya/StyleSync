@@ -331,7 +331,7 @@ export async function createProjectRequest(
     budgetMin: payload.budgetLkr,
     budgetMax: payload.budgetLkr,
     stylePreferences: payload.preferredStyles.join(', '),
-    specialRequirements: `Dimensions: ${payload.lengthFeet}x${payload.widthFeet}x${payload.heightFeet} ft. Photos: ${payload.photoUrls.join(', ')}`,
+    specialRequirements: `Dimensions: ${payload.lengthFeet}x${payload.widthFeet}x${payload.heightFeet} ft`,
     submitImmediately: payload.submitImmediately,
   };
 
