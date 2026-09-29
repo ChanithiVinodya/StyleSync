@@ -12,9 +12,13 @@ import os
 from typing import Any, Optional
 
 from langgraph.checkpoint.memory import MemorySaver
+import importlib
+
+PostgresSaver: Optional[Any] = None
 try:
-    from langgraph.checkpoint.postgres import PostgresSaver
-except ImportError:
+    _pg_mod = importlib.import_module("langgraph.checkpoint.postgres")
+    PostgresSaver = getattr(_pg_mod, "PostgresSaver", None)
+except Exception:
     PostgresSaver = None
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
