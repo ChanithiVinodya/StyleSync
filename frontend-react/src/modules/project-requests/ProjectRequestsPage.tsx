@@ -727,26 +727,29 @@ export default function ProjectRequestsPage() {
           </div>
         ) : (
           <div>
-            {/* Direct Client Notice Card for Component 2 Story */}
-            <div className="mb-8 p-6 bg-[#FAF3E8] dark:bg-[#1C1815] border border-[#EADBCA] dark:border-[#3D3328] rounded-3xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white dark:bg-[#2A231C] text-[#925C18] dark:text-[#E8A849] text-[11px] font-bold shadow-2xs">
-                  <span>📱 Get the StyleSync Mobile App</span>
+            {/* Client Mobile App Prompt Card */}
+            {(!user || user.role === 'Client') && (
+              <div className="mb-6 p-4 sm:p-5 bg-gradient-to-r from-[#FAF3E8] to-[#FAF8F5] dark:from-[#1C1815] dark:to-[#171412] border border-[#EADBCA] dark:border-[#3D3328] rounded-2xl shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white dark:bg-[#2A231C] text-[#925C18] dark:text-[#E8A849] text-[11px] font-semibold border border-[#E8DEC8] dark:border-[#423525] shadow-2xs">
+                    <span>📱 StyleSync Mobile App</span>
+                  </div>
+                  <h3 className="font-serif text-lg font-bold text-[#1C1917] dark:text-[#FAF8F5]">
+                    Submit a Room Makeover Request
+                  </h3>
+                  <p className="text-xs text-[#57534E] dark:text-[#A8A29E] leading-relaxed max-w-xl">
+                    To capture room photos with your camera and auto-extract color palettes, please use our mobile application.
+                  </p>
                 </div>
-                <h3 className="font-serif text-xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">
-                  Project Request
-                </h3>
-                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] leading-relaxed max-w-xl">
-                  To submit a new interior design request, please use our mobile application.
-                </p>
+                <button
+                  onClick={() => setIsMobileModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#C48A36] hover:bg-[#A87226] text-white font-semibold text-xs rounded-xl shadow-xs whitespace-nowrap transition cursor-pointer self-start sm:self-auto"
+                >
+                  <span>Download / Open App</span>
+                  <span className="text-[10px]">📱</span>
+                </button>
               </div>
-              <button
-                onClick={() => setIsMobileModalOpen(true)}
-                className="px-6 py-2.5 bg-[#C48A36] hover:bg-[#A87226] text-white font-bold text-xs rounded-xl shadow-xs whitespace-nowrap transition cursor-pointer self-start sm:self-auto"
-              >
-                [ Download / Open App ]
-              </button>
-            </div>
+            )}
 
             {activeTab === 'client-wizard' && (
               <CreateRequestWizard
