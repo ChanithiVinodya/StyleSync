@@ -8,7 +8,7 @@ import 'project_request_list_screen.dart';
 class CreateProjectRequestScreen extends StatefulWidget {
   final ProjectRequestModel? existingDraft;
 
-  const CreateProjectRequestScreen({Key? key, this.existingDraft}) : super(key: key);
+  const CreateProjectRequestScreen({super.key, this.existingDraft});
 
   @override
   State<CreateProjectRequestScreen> createState() => _CreateProjectRequestScreenState();
@@ -22,7 +22,13 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
   bool _isLoading = false;
 
   String _roomType = 'Bedroom';
-  final _roomSizeController = TextEditingController(text: '180');
+
+  // Room Dimensions controllers
+  final _lengthController = TextEditingController(text: '12');
+  final _widthController = TextEditingController(text: '14');
+  final _heightController = TextEditingController(text: '10');
+  final _roomSizeController = TextEditingController(text: '168');
+
   final _budgetController = TextEditingController(text: '250000');
   final _descriptionController = TextEditingController(
       text: 'I want a modern, peaceful bedroom makeover with light oak accents, soft ambient lighting, and minimalist furniture.');
@@ -45,7 +51,10 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
     if (widget.existingDraft != null) {
       final draft = widget.existingDraft!;
       _roomType = draft.roomType.isNotEmpty ? draft.roomType : 'Bedroom';
-      _roomSizeController.text = draft.roomSize > 0 ? draft.roomSize.toStringAsFixed(0) : '180';
+      _lengthController.text = draft.lengthFeet > 0 ? draft.lengthFeet.toStringAsFixed(0) : '12';
+      _widthController.text = draft.widthFeet > 0 ? draft.widthFeet.toStringAsFixed(0) : '14';
+      _heightController.text = draft.heightFeet > 0 ? draft.heightFeet.toStringAsFixed(0) : '10';
+      _roomSizeController.text = draft.roomSize > 0 ? draft.roomSize.toStringAsFixed(0) : '168';
       _budgetController.text = draft.budgetLkr > 0 ? draft.budgetLkr.toStringAsFixed(0) : '250000';
       _descriptionController.text = draft.description;
       if (draft.preferredColours.isNotEmpty) {
@@ -60,6 +69,27 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
         _uploadedPhotoUrls.clear();
         _uploadedPhotoUrls.addAll(draft.photos.map((p) => p.photoUrl));
       }
+    }
+  }
+
+  @override
+  void dispose() {
+    _lengthController.dispose();
+    _widthController.dispose();
+    _heightController.dispose();
+    _roomSizeController.dispose();
+    _budgetController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  void _recalculateRoomSize() {
+    final double l = double.tryParse(_lengthController.text) ?? 0;
+    final double w = double.tryParse(_widthController.text) ?? 0;
+    if (l > 0 && w > 0) {
+      setState(() {
+        _roomSizeController.text = (l * w).toStringAsFixed(0);
+      });
     }
   }
 
@@ -78,7 +108,6 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
         }
       }
     } catch (e) {
-      // Fallback for desktop / simulator if camera isn't attached
       _addSampleImage('Captured Camera Photo');
     }
   }
@@ -152,18 +181,24 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
     // Perform Device-side Validation
     if (!_formKey.currentState!.validate()) return;
 
-    final double? budget = double.tryParse(_budgetController.text);
-    if (budget == null || budget <= 0) {
+    final double length = double.tryParse(_lengthController.text) ?? 0;
+    final double width = double.tryParse(_widthController.text) ?? 0;
+    final double height = double.tryParse(_heightController.text) ?? 0;
+
+    if (length <= 0 || width <= 0 || height <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ Budget must be greater than 0 LKR!'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('⚠️ Dimensions must be positive (Length, Width, Height > 0 ft)!'), backgroundColor: Colors.red),
       );
       return;
     }
 
-    final double? roomSize = double.tryParse(_roomSizeController.text);
-    if (roomSize == null || roomSize <= 0) {
+    final double calculatedArea = length * width;
+    final double roomSize = double.tryParse(_roomSizeController.text) ?? calculatedArea;
+
+    final double? budget = double.tryParse(_budgetController.text);
+    if (budget == null || budget <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('⚠️ Room size must be positive (> 0 sq ft)!'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('⚠️ Budget must be greater than 0 LKR!'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -183,6 +218,9 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
           'title': '$_roomType Makeover',
           'roomType': _roomType,
           'roomSize': roomSize,
+          'lengthFeet': length,
+          'widthFeet': width,
+          'heightFeet': height,
           'budgetMin': budget,
           'budgetMax': budget,
           'preferredColours': _selectedColours.join(', '),
@@ -197,6 +235,9 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
         await _apiService.createProjectRequest(
           roomType: _roomType,
           roomSize: roomSize,
+          lengthFeet: length,
+          widthFeet: width,
+          heightFeet: height,
           budgetLkr: budget,
           preferredColours: _selectedColours,
           preferredStyles: _selectedStyles,
@@ -234,11 +275,64 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
 
   @override
   Widget build(BuildContext context) {
+    final double l = double.tryParse(_lengthController.text) ?? 12;
+    final double w = double.tryParse(_widthController.text) ?? 14;
+    final double calculatedArea = l * w;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.existingDraft != null ? 'Edit Request Draft' : 'New Room Makeover Request'),
         backgroundColor: Colors.indigo.shade900,
         foregroundColor: Colors.white,
+      ),
+      // Persistent Bottom Action Bar so Save Draft and Submit are ALWAYS visible!
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Colors.grey.shade200)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _isLoading ? null : () => _handleSave(submitImmediately: false),
+                  icon: const Icon(Icons.save_outlined),
+                  label: const Text('Save Draft'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    side: BorderSide(color: Colors.indigo.shade800),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton.icon(
+                  onPressed: _isLoading ? null : () => _handleSave(submitImmediately: true),
+                  icon: const Icon(Icons.send_rounded),
+                  label: const Text('Submit Request'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.indigo.shade900,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
       body: _isLoading
           ? const Center(
@@ -252,7 +346,10 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
               ),
             )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              // Explicit scroll physics ensuring smooth scrolling on mobile emulators
+              physics: const AlwaysScrollableScrollPhysics(),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -290,8 +387,10 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                     // Section 1: Room Details
                     const Text('1. Room Specifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 8),
+
+                    // Room Type Dropdown
                     DropdownButtonFormField<String>(
-                      value: _roomType,
+                      initialValue: _roomType,
                       decoration: InputDecoration(
                         labelText: 'Room Type *',
                         prefixIcon: const Icon(Icons.meeting_room),
@@ -302,45 +401,116 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                           .toList(),
                       onChanged: (val) => setState(() => _roomType = val!),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 14),
+
+                    // Dimensions Header
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Room Dimensions (ft)', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.indigo.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: Colors.indigo.shade100),
+                          ),
+                          child: Text(
+                            '📐 Area: ${calculatedArea.toStringAsFixed(0)} sq ft',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo.shade800),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Length, Width, Height 3-Column Row
                     Row(
                       children: [
+                        // Length (ft)
                         Expanded(
                           child: TextFormField(
-                            controller: _roomSizeController,
+                            controller: _lengthController,
                             decoration: InputDecoration(
-                              labelText: 'Room Size (sq ft) *',
-                              prefixIcon: const Icon(Icons.straighten),
+                              labelText: 'Length (ft) *',
+                              hintText: '12',
+                              prefixIcon: const Icon(Icons.straighten, size: 20),
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                             ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) return 'Size required';
-                              final val = double.tryParse(value);
-                              if (val == null || val <= 0) return 'Must be > 0';
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            onChanged: (_) => _recalculateRoomSize(),
+                            validator: (val) {
+                              if (val == null || val.isEmpty) return 'Req';
+                              final n = double.tryParse(val);
+                              if (n == null || n <= 0) return '>0';
                               return null;
                             },
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
+
+                        // Width (ft)
                         Expanded(
                           child: TextFormField(
-                            controller: _budgetController,
+                            controller: _widthController,
                             decoration: InputDecoration(
-                              labelText: 'Budget (LKR) *',
-                              prefixIcon: const Icon(Icons.payments),
+                              labelText: 'Width (ft) *',
+                              hintText: '14',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                             ),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) return 'Budget required';
-                              final val = double.tryParse(value);
-                              if (val == null || val <= 0) return 'Must be > 0';
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            onChanged: (_) => _recalculateRoomSize(),
+                            validator: (val) {
+                              if (val == null || val.isEmpty) return 'Req';
+                              final n = double.tryParse(val);
+                              if (n == null || n <= 0) return '>0';
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Height (ft)
+                        Expanded(
+                          child: TextFormField(
+                            controller: _heightController,
+                            decoration: InputDecoration(
+                              labelText: 'Height (ft) *',
+                              hintText: '10',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            validator: (val) {
+                              if (val == null || val.isEmpty) return 'Req';
+                              final n = double.tryParse(val);
+                              if (n == null || n <= 0) return '>0';
                               return null;
                             },
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Budget (LKR)
+                    TextFormField(
+                      controller: _budgetController,
+                      decoration: InputDecoration(
+                        labelText: 'Budget (LKR) *',
+                        prefixIcon: const Icon(Icons.payments),
+                        prefixText: 'LKR ',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      keyboardType: TextInputType.number,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) return 'Budget required';
+                        final val = double.tryParse(value);
+                        if (val == null || val <= 0) return 'Must be > 0';
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 20),
 
@@ -387,6 +557,7 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                       SizedBox(
                         height: 100,
                         child: ListView.builder(
+                          physics: const BouncingScrollPhysics(),
                           scrollDirection: Axis.horizontal,
                           itemCount: _uploadedPhotoUrls.length,
                           itemBuilder: (context, index) {
@@ -425,7 +596,7 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                                     left: 4,
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                      color: Colors.black70,
+                                      color: Colors.black54,
                                       child: Text(
                                         index == 0 ? 'Room Photo' : 'Moodboard',
                                         style: const TextStyle(color: Colors.white, fontSize: 9),
@@ -487,6 +658,7 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                       maxLines: 3,
                       decoration: InputDecoration(
                         labelText: 'Detailed Description *',
+                        hintText: 'Describe your aesthetic desires, storage needs, or preferred vibes...',
                         alignLabelWithHint: true,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                       ),
@@ -498,36 +670,6 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                       },
                     ),
                     const SizedBox(height: 28),
-
-                    // Action Buttons: Save as Draft vs Submit
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _handleSave(submitImmediately: false),
-                            icon: const Icon(Icons.save_outlined),
-                            label: const Text('Save as Draft'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              side: BorderSide(color: Colors.indigo.shade800),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () => _handleSave(submitImmediately: true),
-                            icon: const Icon(Icons.send_rounded),
-                            label: const Text('Submit Request'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.indigo.shade900,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
               ),
