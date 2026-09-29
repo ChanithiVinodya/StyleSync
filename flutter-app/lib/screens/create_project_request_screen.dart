@@ -345,14 +345,15 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                 ],
               ),
             )
-          : SingleChildScrollView(
-              // Explicit scroll physics ensuring smooth scrolling on mobile emulators
-              physics: const AlwaysScrollableScrollPhysics(),
-              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-              child: Form(
-                key: _formKey,
-                child: Column(
+          : Scrollbar(
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header card
@@ -669,11 +670,12 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                         return null;
                       },
                     ),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 60),
                   ],
                 ),
               ),
             ),
+          ),
     );
   }
 }

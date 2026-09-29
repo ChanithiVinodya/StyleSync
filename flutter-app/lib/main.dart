@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'modules/designers/designers_page.dart';
 import 'screens/project_request_list_screen.dart';
@@ -8,6 +9,17 @@ void main() {
   runApp(const StyleSyncApp());
 }
 
+class AppScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.unknown,
+  };
+}
+
 class StyleSyncApp extends StatelessWidget {
   const StyleSyncApp({super.key});
 
@@ -16,6 +28,7 @@ class StyleSyncApp extends StatelessWidget {
     return MaterialApp(
       title: 'StyleSync',
       debugShowCheckedModeBanner: false,
+      scrollBehavior: AppScrollBehavior(),
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
       home: const RootShell(),
     );
