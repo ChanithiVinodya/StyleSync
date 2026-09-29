@@ -45,11 +45,32 @@ export const MobileAppModal: React.FC<MobileAppModalProps> = ({ isOpen, onClose 
               <span>For Homeowners & Clients</span>
             </div>
             <h3 id="mobile-modal-title" className="font-serif text-2xl sm:text-3xl text-[#1C1917]">
-              Get the StyleSync Mobile App
+              Project Request
             </h3>
-            <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
-              Clients capture room dimensions with their phone camera, receive deterministic designer matches, inspect calculated quotes, and track makeover milestones.
+            <p className="text-sm text-[#57534E] leading-relaxed">
+              To submit a new interior design request, please use our mobile application.
             </p>
+            <div className="pt-1">
+              <span className="inline-flex items-center gap-2 text-sm sm:text-base font-bold text-[#925C18]">
+                📱 Get the StyleSync Mobile App
+              </span>
+            </div>
+          </div>
+
+          {/* Download / Open App Action Card */}
+          <div className="p-4 bg-[#FAF3E8] border border-[#EADBCA] rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="text-left">
+              <div className="font-bold text-sm text-[#1C1917]">Client Room Submissions</div>
+              <div className="text-xs text-[#78716C]">Requires Flutter mobile app for camera room photos</div>
+            </div>
+            <button
+              onClick={() => {
+                alert("Opening StyleSync Mobile App (Flutter client)... Launching on your connected device/emulator.");
+              }}
+              className="px-5 py-2.5 bg-[#C48A36] hover:bg-[#A87226] text-white font-bold text-xs rounded-xl shadow-xs whitespace-nowrap transition"
+            >
+              [ Download / Open App ]
+            </button>
           </div>
 
           {/* QR Code and App Badges */}

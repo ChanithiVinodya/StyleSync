@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 interface NavbarProps {
   onOpenPortalModal: (role?: PersonaRole) => void;
   onOpenGetStarted: () => void;
+  onOpenMobileModal?: () => void;
 }
 
 interface NavItem {
@@ -17,7 +18,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { name: 'Project Requests', href: '/project-requests' },
+  { name: 'Project Request', href: '#project-request' },
   { name: 'How it Works', href: '#how-it-works' },
   { name: "Who It's For", href: '#who-its-for' },
   { name: 'Featured Projects', href: '#transformations' },
@@ -28,6 +29,7 @@ const NAV_ITEMS: NavItem[] = [
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenPortalModal,
   onOpenGetStarted,
+  onOpenMobileModal,
 }) => {
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -98,6 +100,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
+    if (href === '#project-request' || href === '/project-requests') {
+      if (onOpenMobileModal) {
+        onOpenMobileModal();
+        return;
+      }
+      navigate('/project-requests');
+      return;
+    }
     if (!href.startsWith('#')) {
       navigate(href);
       return;

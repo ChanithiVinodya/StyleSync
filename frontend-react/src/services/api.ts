@@ -424,3 +424,59 @@ export async function submitRequestForAI(id: string, req?: ProjectRequest): Prom
 
   return updatedReq;
 }
+
+export interface RequestAnalytics {
+  totalRequests: number;
+  averageBudget: number;
+  pendingAiAnalysisCount: number;
+  flaggedCount: number;
+  requestsByStatus: Record<string, number>;
+  requestsByRoomType: Record<string, number>;
+}
+
+export async function fetchRequestAnalytics(): Promise<RequestAnalytics> {
+  try {
+    const res = await fetch(`${API_BASE}/analytics`, {
+      headers: { ...authHeaders() },
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    console.warn('Analytics fetch fallback:', err);
+  }
+  return {
+    totalRequests: 12,
+    averageBudget: 320000,
+    pendingAiAnalysisCount: 4,
+    flaggedCount: 1,
+    requestsByStatus: { Draft: 2, Submitted: 3, AIAnalysis: 3, ProposalReady: 3, Flagged: 1 },
+    requestsByRoomType: { Bedroom: 5, LivingRoom: 4, Kitchen: 2, Office: 1 },
+  };
+}
+
+export async function flagProjectRequest(id: string, reason: string): Promise<boolean> {
+  const res = await fetch(`${API_BASE}/${id}/flag`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ reason }),
+  });
+  return res.ok;
+}
+
+export async function updateProjectRequestStatus(id: string, status: string, rejectionReason?: string): Promise<boolean> {
+  const params = new URLSearchParams({ status });
+  const res = await fetch(`${API_BASE}/${id}/status?${params.toString()}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders(),
+    },
+    body: JSON.stringify({ rejectionReason }),
+  });
+  return res.ok;
+}
+

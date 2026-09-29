@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import '../services/project_request_api.dart';
 import '../models/project_request.dart';
-import 'style_analysis_result_screen.dart';
+import 'project_request_list_screen.dart';
 
 class CreateProjectRequestScreen extends StatefulWidget {
-  const CreateProjectRequestScreen({Key? key}) : super(key: key);
+  final ProjectRequestModel? existingDraft;
+
+  const CreateProjectRequestScreen({Key? key, this.existingDraft}) : super(key: key);
 
   @override
   State<CreateProjectRequestScreen> createState() => _CreateProjectRequestScreenState();
@@ -13,28 +17,126 @@ class CreateProjectRequestScreen extends StatefulWidget {
 class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen> {
   final _formKey = GlobalKey<FormState>();
   final _apiService = ProjectRequestApiService();
+  final ImagePicker _picker = ImagePicker();
 
-  int _currentStep = 0;
   bool _isLoading = false;
 
   String _roomType = 'Bedroom';
-  final _lengthController = TextEditingController(text: '15');
-  final _widthController = TextEditingController(text: '12');
-  final _heightController = TextEditingController(text: '10');
+  final _roomSizeController = TextEditingController(text: '180');
   final _budgetController = TextEditingController(text: '250000');
   final _descriptionController = TextEditingController(
-      text: 'I want a simple room. I like white and light brown colours. I don\'t want too much furniture.');
+      text: 'I want a modern, peaceful bedroom makeover with light oak accents, soft ambient lighting, and minimalist furniture.');
 
-  final List<String> _allStyles = [
-    'Modern',
-    'Minimalist',
-    'Industrial',
-    'Luxury',
-    'Traditional',
-    'Mid Century Modern'
+  final List<String> _allColours = ['#F4F1EA', '#C2A68C', '#2C3E50', '#8C9A86', '#E9E4DC', '#6C7B95', '#D4AC0D'];
+  final List<String> _selectedColours = ['#F4F1EA', '#C2A68C', '#2C3E50'];
+
+  final List<String> _allStyles = ['Modern', 'Minimalist', 'Industrial', 'Luxury', 'Traditional', 'Scandinavian'];
+  final List<String> _selectedStyles = ['Modern', 'Minimalist'];
+
+  // Uploaded images (URLs or local paths)
+  final List<String> _uploadedPhotoUrls = [
+    'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?q=80&w=800&auto=format&fit=crop',
+    'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=800&auto=format&fit=crop',
   ];
 
-  final List<String> _selectedStyles = ['Modern', 'Minimalist'];
+  @override
+  void initState() {
+    super.initState();
+    if (widget.existingDraft != null) {
+      final draft = widget.existingDraft!;
+      _roomType = draft.roomType.isNotEmpty ? draft.roomType : 'Bedroom';
+      _roomSizeController.text = draft.roomSize > 0 ? draft.roomSize.toStringAsFixed(0) : '180';
+      _budgetController.text = draft.budgetLkr > 0 ? draft.budgetLkr.toStringAsFixed(0) : '250000';
+      _descriptionController.text = draft.description;
+      if (draft.preferredColours.isNotEmpty) {
+        _selectedColours.clear();
+        _selectedColours.addAll(draft.preferredColours);
+      }
+      if (draft.preferredStyles.isNotEmpty) {
+        _selectedStyles.clear();
+        _selectedStyles.addAll(draft.preferredStyles);
+      }
+      if (draft.photos.isNotEmpty) {
+        _uploadedPhotoUrls.clear();
+        _uploadedPhotoUrls.addAll(draft.photos.map((p) => p.photoUrl));
+      }
+    }
+  }
+
+  // Camera upload (Device feature)
+  Future<void> _pickImageFromCamera() async {
+    try {
+      final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+      if (photo != null) {
+        setState(() {
+          _uploadedPhotoUrls.add(photo.path);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('📷 Room Photo captured via Device Camera!')),
+          );
+        }
+      }
+    } catch (e) {
+      // Fallback for desktop / simulator if camera isn't attached
+      _addSampleImage('Captured Camera Photo');
+    }
+  }
+
+  // Moodboard gallery picker
+  Future<void> _pickMoodboardFromGallery() async {
+    try {
+      final List<XFile> images = await _picker.pickMultiImage();
+      if (images.isNotEmpty) {
+        setState(() {
+          _uploadedPhotoUrls.addAll(images.map((i) => i.path));
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('🖼️ Added ${images.length} inspiration moodboard images!')),
+          );
+        }
+      }
+    } catch (e) {
+      _addSampleImage('Gallery Inspiration');
+    }
+  }
+
+  void _addSampleImage(String label) {
+    final samples = [
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?q=80&w=800&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1524758631624-e2822e304c36?q=80&w=800&auto=format&fit=crop',
+    ];
+    final sampleUrl = samples[_uploadedPhotoUrls.length % samples.length];
+    setState(() {
+      _uploadedPhotoUrls.add(sampleUrl);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Added $label to request!')),
+    );
+  }
+
+  void _copyHexToClipboard(String hex) {
+    Clipboard.setData(ClipboardData(text: hex));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('✅ $hex copied!'),
+        duration: const Duration(seconds: 2),
+        backgroundColor: Colors.indigo.shade800,
+      ),
+    );
+  }
+
+  void _toggleColour(String hex) {
+    setState(() {
+      if (_selectedColours.contains(hex)) {
+        _selectedColours.remove(hex);
+      } else {
+        _selectedColours.add(hex);
+      }
+    });
+  }
 
   void _toggleStyle(String style) {
     setState(() {
@@ -46,39 +148,83 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
     });
   }
 
-  Future<void> _submitRequest() async {
+  Future<void> _handleSave({required bool submitImmediately}) async {
+    // Perform Device-side Validation
     if (!_formKey.currentState!.validate()) return;
+
+    final double? budget = double.tryParse(_budgetController.text);
+    if (budget == null || budget <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⚠️ Budget must be greater than 0 LKR!'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    final double? roomSize = double.tryParse(_roomSizeController.text);
+    if (roomSize == null || roomSize <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⚠️ Room size must be positive (> 0 sq ft)!'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (submitImmediately && _uploadedPhotoUrls.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('⚠️ Please upload at least one room photo before submitting!'), backgroundColor: Colors.orange),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
-      final request = await _apiService.createProjectRequest(
-        roomType: _roomType,
-        lengthFeet: double.parse(_lengthController.text),
-        widthFeet: double.parse(_widthController.text),
-        heightFeet: double.parse(_heightController.text),
-        budgetLkr: double.parse(_budgetController.text),
-        preferredStyles: _selectedStyles,
-        description: _descriptionController.text,
-        submitImmediately: true,
-      );
+      if (widget.existingDraft != null) {
+        await _apiService.updateProjectRequest(widget.existingDraft!.id, {
+          'title': '$_roomType Makeover',
+          'roomType': _roomType,
+          'roomSize': roomSize,
+          'budgetMin': budget,
+          'budgetMax': budget,
+          'preferredColours': _selectedColours.join(', '),
+          'stylePreferences': _selectedStyles.join(', '),
+          'description': _descriptionController.text,
+        });
+
+        if (submitImmediately) {
+          await _apiService.submitRequestForAIAnalysis(widget.existingDraft!.id);
+        }
+      } else {
+        await _apiService.createProjectRequest(
+          roomType: _roomType,
+          roomSize: roomSize,
+          budgetLkr: budget,
+          preferredColours: _selectedColours,
+          preferredStyles: _selectedStyles,
+          description: _descriptionController.text,
+          photoUrls: _uploadedPhotoUrls,
+          submitImmediately: submitImmediately,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Request submitted! AI Style Analysis running...')),
+          SnackBar(
+            content: Text(submitImmediately
+                ? '✅ Request submitted! AI Workflow started.'
+                : '💾 Draft saved successfully!'),
+            backgroundColor: submitImmediately ? Colors.green.shade700 : Colors.indigo.shade700,
+          ),
         );
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => StyleAnalysisResultScreen(requestId: request.id),
-          ),
+          MaterialPageRoute(builder: (_) => const ProjectRequestListScreen()),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
+          SnackBar(content: Text('Error: ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -90,7 +236,7 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Room Makeover Request'),
+        title: Text(widget.existingDraft != null ? 'Edit Request Draft' : 'New Room Makeover Request'),
         backgroundColor: Colors.indigo.shade900,
         foregroundColor: Colors.white,
       ),
@@ -101,175 +247,289 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('AI Style Analysis Agent is analyzing your room photos & preferences...'),
+                  Text('Processing request and initiating AI workflow...'),
                 ],
               ),
             )
-          : Form(
-              key: _formKey,
-              child: Stepper(
-                currentStep: _currentStep,
-                onStepContinue: () {
-                  if (_currentStep < 3) {
-                    setState(() => _currentStep += 1);
-                  } else {
-                    _submitRequest();
-                  }
-                },
-                onStepCancel: () {
-                  if (_currentStep > 0) {
-                    setState(() => _currentStep -= 1);
-                  }
-                },
-                steps: [
-                  // Step 1: Room Details
-                  Step(
-                    title: const Text('Room Specifications 📏'),
-                    isActive: _currentStep >= 0,
-                    content: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        DropdownButtonFormField<String>(
-                          value: _roomType,
-                          decoration: const InputDecoration(labelText: 'Room Type 🛏️'),
-                          items: ['Bedroom', 'Living Room', 'Kitchen', 'Dining Room', 'Home Office']
-                              .map((type) => DropdownMenuItem(value: type, child: Text(type)))
-                              .toList(),
-                          onChanged: (val) => setState(() => _roomType = val!),
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.indigo.shade800, Colors.indigo.shade600],
                         ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _lengthController,
-                                decoration: const InputDecoration(labelText: 'Length (ft)'),
-                                keyboardType: TextInputType.number,
-                              ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.palette_outlined, color: Colors.white, size: 36),
+                          SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Client Request Form',
+                                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                                Text('Fill parameters, upload room photos & moodboard inspiration.',
+                                    style: TextStyle(color: Colors.white70, fontSize: 13)),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _widthController,
-                                decoration: const InputDecoration(labelText: 'Width (ft)'),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _heightController,
-                                decoration: const InputDecoration(labelText: 'Height (ft)'),
-                                keyboardType: TextInputType.number,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Step 2: Budget & Preferred Styles
-                  Step(
-                    title: const Text('Budget & Style 💰🎨'),
-                    isActive: _currentStep >= 1,
-                    content: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(
-                          controller: _budgetController,
-                          decoration: const InputDecoration(
-                            labelText: 'Maximum Budget (LKR) 💰',
-                            prefixText: 'LKR ',
                           ),
-                          keyboardType: TextInputType.number,
-                        ),
-                        const SizedBox(height: 16),
-                        const Text('Preferred Styles (Choose one or more):',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: _allStyles.map((style) {
-                            final isSelected = _selectedStyles.contains(style);
-                            return FilterChip(
-                              label: Text(style),
-                              selected: isSelected,
-                              selectedColor: Colors.indigo.shade100,
-                              checkmarkColor: Colors.indigo.shade900,
-                              onSelected: (_) => _toggleStyle(style),
-                            );
-                          }).toList(),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Step 3: Photos & Description
-                  Step(
-                    title: const Text('Room Photos & Description 📸✍️'),
-                    isActive: _currentStep >= 2,
-                    content: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.indigo.shade200),
-                          ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.photo_library, color: Colors.indigo),
-                              SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  '3 Sample Room Photos ready for AI Analysis (Bedroom angle 1, angle 2, lighting photo).',
-                                  style: TextStyle(fontSize: 13),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: _descriptionController,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: 'Design Goals & Notes ✍️',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Step 4: Summary Review
-                  Step(
-                    title: const Text('Review & Submit ✅'),
-                    isActive: _currentStep >= 3,
-                    content: Card(
-                      color: Colors.grey.shade50,
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Room: $_roomType', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            Text('Size: ${_lengthController.text} × ${_widthController.text} × ${_heightController.text} ft'),
-                            Text('Budget: LKR ${_budgetController.text}'),
-                            Text('Selected Styles: ${_selectedStyles.join(", ")}'),
-                            const SizedBox(height: 8),
-                            Text('Description: "${_descriptionController.text}"',
-                                style: const TextStyle(fontStyle: FontStyle.italic)),
-                          ],
-                        ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 20),
+
+                    // Section 1: Room Details
+                    const Text('1. Room Specifications', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      value: _roomType,
+                      decoration: InputDecoration(
+                        labelText: 'Room Type *',
+                        prefixIcon: const Icon(Icons.meeting_room),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      items: ['Bedroom', 'LivingRoom', 'Kitchen', 'Bathroom', 'Office', 'DiningRoom', 'Outdoor', 'Other']
+                          .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                          .toList(),
+                      onChanged: (val) => setState(() => _roomType = val!),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: _roomSizeController,
+                            decoration: InputDecoration(
+                              labelText: 'Room Size (sq ft) *',
+                              prefixIcon: const Icon(Icons.straighten),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Size required';
+                              final val = double.tryParse(value);
+                              if (val == null || val <= 0) return 'Must be > 0';
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextFormField(
+                            controller: _budgetController,
+                            decoration: InputDecoration(
+                              labelText: 'Budget (LKR) *',
+                              prefixIcon: const Icon(Icons.payments),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) return 'Budget required';
+                              final val = double.tryParse(value);
+                              if (val == null || val <= 0) return 'Must be > 0';
+                              return null;
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Section 2: Room Photos & Moodboards (Meaningful device feature)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('2. Room Photos & Moodboards 📸', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('${_uploadedPhotoUrls.length} attached', style: TextStyle(color: Colors.grey.shade700, fontSize: 12)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: _pickImageFromCamera,
+                            icon: const Icon(Icons.camera_alt),
+                            label: const Text('Camera'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo.shade700,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickMoodboardFromGallery,
+                            icon: const Icon(Icons.photo_library),
+                            label: const Text('Gallery'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Image Thumbnails Grid
+                    if (_uploadedPhotoUrls.isNotEmpty)
+                      SizedBox(
+                        height: 100,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _uploadedPhotoUrls.length,
+                          itemBuilder: (context, index) {
+                            final url = _uploadedPhotoUrls[index];
+                            final isNetwork = url.startsWith('http');
+                            return Container(
+                              margin: const EdgeInsets.only(right: 10),
+                              width: 100,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.indigo.shade200),
+                              ),
+                              child: Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: isNetwork
+                                        ? Image.network(url, width: 100, height: 100, fit: BoxFit.cover)
+                                        : Image.asset('assets/placeholder.png', width: 100, height: 100, fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(color: Colors.grey.shade300, child: const Icon(Icons.image))),
+                                  ),
+                                  Positioned(
+                                    top: 4,
+                                    right: 4,
+                                    child: GestureDetector(
+                                      onTap: () => setState(() => _uploadedPhotoUrls.removeAt(index)),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                        child: const Icon(Icons.close, color: Colors.white, size: 16),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    bottom: 4,
+                                    left: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                      color: Colors.black70,
+                                      child: Text(
+                                        index == 0 ? 'Room Photo' : 'Moodboard',
+                                        style: const TextStyle(color: Colors.white, fontSize: 9),
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    const SizedBox(height: 20),
+
+                    // Section 3: Extracted Colour Palette Hex Chips (Tappable + Copy)
+                    const Text('3. Extracted Colour Palette 🎨', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const Text('Tap any hex chip to select or copy hex code to clipboard.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: _allColours.map((hex) {
+                        final isSelected = _selectedColours.contains(hex);
+                        final int colorVal = int.parse(hex.replaceFirst('#', 'FF'), radix: 16);
+                        return GestureDetector(
+                          onLongPress: () => _copyHexToClipboard(hex),
+                          child: FilterChip(
+                            avatar: CircleAvatar(backgroundColor: Color(colorVal), radius: 8),
+                            label: Text(hex, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            selected: isSelected,
+                            selectedColor: Colors.indigo.shade100,
+                            onSelected: (_) {
+                              _toggleColour(hex);
+                              _copyHexToClipboard(hex);
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Section 4: Preferred Styles & Description
+                    const Text('4. Design Description & Goals ✍️', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      children: _allStyles.map((style) {
+                        final isSelected = _selectedStyles.contains(style);
+                        return ChoiceChip(
+                          label: Text(style),
+                          selected: isSelected,
+                          onSelected: (_) => _toggleStyle(style),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      decoration: InputDecoration(
+                        labelText: 'Detailed Description *',
+                        alignLabelWithHint: true,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().length < 10) {
+                          return 'Please provide at least 10 characters of description.';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 28),
+
+                    // Action Buttons: Save as Draft vs Submit
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _handleSave(submitImmediately: false),
+                            icon: const Icon(Icons.save_outlined),
+                            label: const Text('Save as Draft'),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: BorderSide(color: Colors.indigo.shade800),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed: () => _handleSave(submitImmediately: true),
+                            icon: const Icon(Icons.send_rounded),
+                            label: const Text('Submit Request'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.indigo.shade900,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
     );

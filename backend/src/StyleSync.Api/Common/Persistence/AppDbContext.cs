@@ -31,6 +31,9 @@ public class AppDbContext : DbContext
 
     // ---- Module: Project Requests (Student 2 - Ishani) ----
     public DbSet<ProjectRequest> ProjectRequests => Set<ProjectRequest>();
+    public DbSet<MoodboardImage> MoodboardImages => Set<MoodboardImage>();
+    public DbSet<SuggestedPalette> SuggestedPalettes => Set<SuggestedPalette>();
+    public DbSet<ProjectRequestStatusHistory> ProjectRequestStatusHistories => Set<ProjectRequestStatusHistory>();
 
     // ---- Module: Quotes & Contracts (Student 3) ----
     // TODO: add your first DbSet here, e.g.

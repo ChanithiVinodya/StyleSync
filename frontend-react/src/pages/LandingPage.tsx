@@ -42,6 +42,7 @@ export default function LandingPage() {
       <Navbar
         onOpenPortalModal={handleOpenPortalModal}
         onOpenGetStarted={handleOpenGetStarted}
+        onOpenMobileModal={handleOpenMobileModal}
       />
 
       {/* Main Content Sections adhering to required flow */}

@@ -34,7 +34,13 @@ public class ProjectRequestConfiguration : IEntityTypeConfiguration<ProjectReque
         builder.Property(r => r.BudgetMax)
             .HasColumnType("numeric(12,2)");
 
+        builder.Property(r => r.RoomSize)
+            .HasColumnType("numeric(10,2)");
+
         builder.Property(r => r.StylePreferences)
+            .HasMaxLength(500);
+
+        builder.Property(r => r.PreferredColours)
             .HasMaxLength(500);
 
         builder.Property(r => r.SpecialRequirements)
@@ -43,11 +49,30 @@ public class ProjectRequestConfiguration : IEntityTypeConfiguration<ProjectReque
         builder.Property(r => r.RejectionReason)
             .HasMaxLength(500);
 
+        builder.Property(r => r.FlagReason)
+            .HasMaxLength(500);
+
         // Foreign key to AppUser (Client)
         builder.HasOne(r => r.Client)
             .WithMany()
             .HasForeignKey(r => r.ClientId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Relationships
+        builder.HasMany(r => r.Images)
+            .WithOne(i => i.ProjectRequest)
+            .HasForeignKey(i => i.ProjectRequestId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(r => r.SuggestedPalettes)
+            .WithOne(p => p.ProjectRequest)
+            .HasForeignKey(p => p.ProjectRequestId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasMany(r => r.StatusHistory)
+            .WithOne(h => h.ProjectRequest)
+            .HasForeignKey(h => h.ProjectRequestId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Indexes for common query patterns
         builder.HasIndex(r => r.ClientId);

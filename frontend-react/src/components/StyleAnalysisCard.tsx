@@ -433,9 +433,31 @@ export default function StyleAnalysisCard({ analysis, photos = [] }: StyleAnalys
 
         {/* Analysis Summary */}
         <div style={{ marginTop: '16px', padding: '14px 18px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.1)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-          <p style={{ fontSize: '0.88rem', lineHeight: '1.5', color: '#e0e7ff' }}>
+          <p style={{ fontSize: '0.88rem', lineHeight: '1.5', color: '#e0e7ff', marginBottom: '12px' }}>
             💬 <strong>Agent Summary:</strong> {analysis.analysisSummary}
           </p>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid rgba(99, 102, 241, 0.2)', paddingTop: '10px' }}>
+            <a
+              href="/stage1-review"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                color: 'white',
+                fontWeight: '700',
+                fontSize: '0.82rem',
+                textDecoration: 'none',
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+              }}
+            >
+              <span>🚀 Proceed to Stage 1 AI Review &amp; Release</span>
+              <span>→</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>

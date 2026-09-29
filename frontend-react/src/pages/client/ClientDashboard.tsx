@@ -15,10 +15,12 @@ import {
   CheckCircle2,
   Calendar,
   Layers,
-  ChevronDown
+  ChevronDown,
+  Smartphone
 } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { GlassThemeToggle } from '../../components/GlassThemeToggle';
+import { MobileAppModal } from '../../components/MobileAppModal';
 
 export const ClientDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -26,6 +28,7 @@ export const ClientDashboard: React.FC = () => {
   const [requests, setRequests] = useState<ProjectRequest[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isProfileOpen, setIsProfileOpen] = useState<boolean>(false);
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setIsLoading(true);
@@ -83,13 +86,13 @@ export const ClientDashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <GlassThemeToggle />
-            <Link
-              to="/project-requests"
-              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
+            <button
+              onClick={() => setIsMobileModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4" />
+              <Smartphone className="w-4 h-4" />
               <span>New Request</span>
-            </Link>
+            </button>
 
             {user ? (
               <div className="relative">
@@ -164,22 +167,22 @@ export const ClientDashboard: React.FC = () => {
 
         {/* Feature Hub Quick Action Cards */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link
-            to="/project-requests"
-            className="p-5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl hover:border-[#C48A36] dark:hover:border-[#C48A36] transition shadow-2xs group flex flex-col justify-between h-36"
+          <button
+            onClick={() => setIsMobileModalOpen(true)}
+            className="p-5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl hover:border-[#C48A36] dark:hover:border-[#C48A36] transition shadow-2xs group flex flex-col justify-between h-36 text-left cursor-pointer"
           >
             <div>
               <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-[#C48A36] mb-3 group-hover:scale-105 transition-transform">
-                <Sparkles className="w-5 h-5" />
+                <Smartphone className="w-5 h-5" />
               </div>
-              <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">Makeover Wizard</h3>
-              <p className="text-xs text-[#78716C] dark:text-[#A8A29E] mt-0.5">Create room requests with AI analysis</p>
+              <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">New Request</h3>
+              <p className="text-xs text-[#78716C] dark:text-[#A8A29E] mt-0.5">Please use the StyleSync Mobile App</p>
             </div>
             <div className="flex items-center text-xs font-medium text-[#C48A36] gap-1 group-hover:translate-x-0.5 transition-transform">
-              <span>Start Request</span>
+              <span>📱 Download / Open App</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </div>
-          </Link>
+          </button>
 
           <Link
             to="/designers"
@@ -241,7 +244,7 @@ export const ClientDashboard: React.FC = () => {
                 <Home className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-serif text-xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">Your Room Makeover Requests</h2>
+                <h2 className="font-serif text-xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">My Requests</h2>
                 <p className="text-xs text-[#78716C] dark:text-[#A8A29E]">Active and historical renovation projects submitted by your account</p>
               </div>
             </div>
@@ -265,16 +268,16 @@ export const ClientDashboard: React.FC = () => {
               <div className="space-y-1">
                 <h3 className="text-sm font-semibold text-[#1C1917] dark:text-[#FAF8F5]">No requests created yet</h3>
                 <p className="text-xs text-[#78716C] dark:text-[#A8A29E] max-w-sm mx-auto">
-                  Start your first room redesign with dimensions, desired styles, and photo uploads for instant AI recommendations.
+                  To submit a new interior design request, please use our mobile application.
                 </p>
               </div>
-              <Link
-                to="/project-requests"
-                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs"
+              <button
+                onClick={() => setIsMobileModalOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-[#C48A36] hover:bg-[#A87226] rounded-xl transition shadow-xs cursor-pointer"
               >
-                <PlusCircle className="w-4 h-4" />
-                <span>Create Makeover Request</span>
-              </Link>
+                <Smartphone className="w-4 h-4" />
+                <span>📱 Download / Open App</span>
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -357,6 +360,11 @@ export const ClientDashboard: React.FC = () => {
         </section>
 
       </div>
+
+      <MobileAppModal
+        isOpen={isMobileModalOpen}
+        onClose={() => setIsMobileModalOpen(false)}
+      />
     </div>
   );
 };
