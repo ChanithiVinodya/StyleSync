@@ -1,10 +1,16 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import '../models/project_request.dart';
-import '../models/style_analysis_result.dart';
 
 class ProjectRequestApiService {
-  static const String baseUrl = 'http://localhost:5000/api/v1/requests';
+  static String get baseUrl {
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:5000/api/v1/requests';
+    }
+    return 'http://localhost:5000/api/v1/requests';
+  }
 
   // JWT Token setter if needed for client authentication
   static String? authToken;
