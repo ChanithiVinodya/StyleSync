@@ -33,6 +33,9 @@ class StyleProfile(BaseModel):
     secondary_style: Optional[str] = None
     preferred_colours: list[str] = Field(default_factory=list)
     confidence: float = 0.0
+    style_tags: list[str] = Field(default_factory=list, alias="styleTags")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
 
 
 class MatchScoreBreakdownDto(BaseModel):
@@ -78,10 +81,14 @@ class DesignerAvailabilityResponseDto(BaseModel):
 
 
 class DesignerMatch(BaseModel):
-    designer_id: int
-    designer_name: str
-    style_match_pct: float
-    budget_match: str  # "High" | "Medium" | "Low"
+    designer_id: int = Field(alias="designerId", default=0)
+    designer_name: str = Field(alias="designerName", default="")
+    style_match_pct: float = Field(alias="styleMatchPct", default=0.0)
+    budget_match: str = Field(alias="budgetMatch", default="Medium")  # "High" | "Medium" | "Low"
+    match_score: float = Field(alias="matchScore", default=0.0)
+    explanation: str = Field(alias="explanation", default="")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
 
 
 class ScopeItem(BaseModel):
@@ -118,7 +125,8 @@ class WorkflowState(BaseModel):
 
     # Domain outputs from specialist agents
     style_profile: Optional[StyleProfile] = None
-    designer_shortlist: list[DesignerMatch] = Field(default_factory=list)
+    designer_shortlist: list[DesignerMatch] = Field(default_factory=list, alias="designerMatches")
+    matching_status: str = Field(default="pending", alias="matchingStatus")  # "pending" | "success" | "no_eligible_designers"
     project_scope: Optional[ProjectScope] = None
     validation_result: Optional[ValidationResult] = None
     approval_status: str = "Pending"
@@ -127,4 +135,6 @@ class WorkflowState(BaseModel):
     tool_calls: list[ToolCallRecord] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
     retries: int = 0
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
 
