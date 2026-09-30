@@ -63,3 +63,9 @@ Thumbs.db
 *.swo
 devtools_options.yaml
 make_50_commits.ps1
+
+# ==== Documentation & Local Screenshots ====
+*.pdf
+generate_documentation_pdf.py
+emulator_screen*.png
+emulator_screenshot*.png
