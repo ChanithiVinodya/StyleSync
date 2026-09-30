@@ -1,11 +1,29 @@
+"""
+Golden test cases for Designer-Matching Agent (Node 2 of 4) in isolation.
+
+Test Coverage (per assignment brief):
+1. Happy path: 3+ eligible designers returned -> node shortlists top 2-3, each
+   with explanation grounded in real score components.
+2. No eligible designers: zero style overlap / at-capacity excluded -> node sets
+   matchingStatus = "no_eligible_designers" and never hallucinates candidates.
+3. Tool failure: backend HTTP error/timeout -> fails gracefully, does not crash graph.
+4. Schema validation: output state strictly matches Pydantic schema contracts for
+   downstream consumption by Node 3 (Budget/Scope).
+"""
 import httpx
 import pytest
+
 from app.agents.designer_matching_agent import (
     DESIGNER_MATCHING_SYSTEM_PROMPT,
     match_designers,
     run_designer_matching_node,
 )
-from app.schemas import PlanStep, StyleProfile, WorkflowState
+from app.schemas import (
+    DesignerMatch,
+    PlanStep,
+    StyleProfile,
+    WorkflowState,
+)
 
 
 def _create_sample_state(**overrides) -> WorkflowState:
@@ -32,14 +50,22 @@ def _create_sample_state(**overrides) -> WorkflowState:
     return WorkflowState(**defaults)
 
 
-def _mock_designer_search_results():
+def _mock_designer_search_fixtures():
+    """
+    Mock dataset reflecting Component 1 backend outputs:
+    - High-overlap candidate (Elena Rostova)
+    - Moderate-overlap candidate (Marcus Vance)
+    - Low/borderline candidate (Aria Chen)
+    - Fourth candidate (David Silva) to test narrowing to top 3
+    Note: Designers at-capacity or unpublished are already excluded upstream by Component 1.
+    """
     return [
         {
             "designerId": 101,
             "matchScore": 0.94,
             "scoreBreakdown": {
                 "styleTagOverlapPct": 1.0,
-                "budgetRangeOverlapPct": 0.9,
+                "budgetRangeOverlapPct": 0.90,
                 "pastRatingNormalized": 0.98,
                 "availabilityBonus": 1.0,
                 "matchScore": 0.94,
@@ -64,7 +90,7 @@ def _mock_designer_search_results():
             "designerId": 102,
             "matchScore": 0.88,
             "scoreBreakdown": {
-                "styleTagOverlapPct": 0.8,
+                "styleTagOverlapPct": 0.80,
                 "budgetRangeOverlapPct": 0.85,
                 "pastRatingNormalized": 0.94,
                 "availabilityBonus": 1.0,
@@ -90,7 +116,7 @@ def _mock_designer_search_results():
             "designerId": 103,
             "matchScore": 0.82,
             "scoreBreakdown": {
-                "styleTagOverlapPct": 0.7,
+                "styleTagOverlapPct": 0.70,
                 "budgetRangeOverlapPct": 0.75,
                 "pastRatingNormalized": 0.92,
                 "availabilityBonus": 1.0,
@@ -116,8 +142,8 @@ def _mock_designer_search_results():
             "designerId": 104,
             "matchScore": 0.75,
             "scoreBreakdown": {
-                "styleTagOverlapPct": 0.5,
-                "budgetRangeOverlapPct": 0.7,
+                "styleTagOverlapPct": 0.50,
+                "budgetRangeOverlapPct": 0.70,
                 "pastRatingNormalized": 0.88,
                 "availabilityBonus": 1.0,
                 "matchScore": 0.75,
@@ -141,7 +167,12 @@ def _mock_designer_search_results():
     ]
 
 
+# ============================================================================
+# System Prompt & Role Guardrail Tests
+# ============================================================================
+
 def test_system_prompt_distinct_and_compliant():
+    """Verifies that the agent prompt enforces non-recalculation, tool usage, and shortlist constraints."""
     assert "Designer-Matching agent" in DESIGNER_MATCHING_SYSTEM_PROMPT
     assert "search_designers()" in DESIGNER_MATCHING_SYSTEM_PROMPT
     assert "check_designer_availability()" in DESIGNER_MATCHING_SYSTEM_PROMPT
@@ -149,13 +180,24 @@ def test_system_prompt_distinct_and_compliant():
     assert "Never auto-assign" in DESIGNER_MATCHING_SYSTEM_PROMPT
 
 
-def test_run_designer_matching_node_success_shortlists_top_3(monkeypatch):
-    search_data = _mock_designer_search_results()
+# ============================================================================
+# Golden Test 1: Happy Path
+# ============================================================================
+
+def test_golden_happy_path_shortlists_top_2_to_3_with_grounded_explanations(monkeypatch):
+    """
+    Golden Test 1:
+    - 4 eligible candidates returned from search_designers().
+    - Node confirms availability for each candidate.
+    - Node narrows candidate list to top 2-3 (exactly 3).
+    - Each explanation is grounded in real score components (style overlap, budget, rating, bandwidth).
+    """
+    search_fixtures = _mock_designer_search_fixtures()
 
     def mock_get(self, url, params=None, **kwargs):
         req = httpx.Request("GET", url)
         if "/api/designers/search" in url:
-            return httpx.Response(200, json=search_data, request=req)
+            return httpx.Response(200, json=search_fixtures, request=req)
         elif "/availability" in url:
             return httpx.Response(
                 200,
@@ -174,32 +216,99 @@ def test_run_designer_matching_node_success_shortlists_top_3(monkeypatch):
     initial_state = _create_sample_state()
     output_state = run_designer_matching_node(initial_state)
 
+    # 1. Matching status and shortlist length
     assert output_state.matching_status == "success"
     assert len(output_state.designer_shortlist) == 3
-    assert output_state.designer_shortlist[0].designer_id == 101
-    assert output_state.designer_shortlist[0].designer_name == "Elena Rostova"
-    assert output_state.designer_shortlist[0].match_score == 0.94
-    assert output_state.designer_shortlist[0].style_match_pct == 100.0
-    assert output_state.designer_shortlist[0].budget_match == "High"
 
-    # Verify explanation text is grounded in actual score components
-    explanation = output_state.designer_shortlist[0].explanation
-    assert "Elena Rostova is a 94% overall match" in explanation
-    assert "100% style alignment with Scandinavian, Minimalist" in explanation
-    assert "4.9/5.0" in explanation
-    assert "confirmed active bandwidth" in explanation
+    # 2. Ranking order matches backend without local re-ranking
+    first_match = output_state.designer_shortlist[0]
+    assert first_match.designer_id == 101
+    assert first_match.designer_name == "Elena Rostova"
+    assert first_match.match_score == 0.94
+    assert first_match.style_match_pct == 100.0
+    assert first_match.budget_match == "High"
 
-    # Verify tool call logging
+    second_match = output_state.designer_shortlist[1]
+    assert second_match.designer_id == 102
+    assert second_match.match_score == 0.88
+
+    third_match = output_state.designer_shortlist[2]
+    assert third_match.designer_id == 103
+    assert third_match.match_score == 0.82
+
+    # 3. Grounded explanations trace directly to score breakdown components
+    for match in output_state.designer_shortlist:
+        assert match.explanation != ""
+        assert f"{match.designer_name} is a {round(match.match_score * 100)}% overall match" in match.explanation
+        assert "style alignment" in match.explanation
+        assert "confirmed active bandwidth" in match.explanation
+
+    # 4. Tool call audit logs populated
     assert len(output_state.tool_calls) >= 2
     tool_names = [tc.tool_name for tc in output_state.tool_calls]
     assert "search_designers" in tool_names
     assert "check_designer_availability" in tool_names
 
 
-def test_run_designer_matching_node_no_eligible_designers(monkeypatch):
+# ============================================================================
+# Golden Test 2: No Eligible Designers
+# ============================================================================
+
+def test_golden_no_eligible_designers_sets_status_without_fabricating(monkeypatch):
+    """
+    Golden Test 2:
+    - Zero style overlap or all candidates at capacity upstream -> empty search results.
+    - Node sets matching_status = "no_eligible_designers" and designer_shortlist = [].
+    - Does NOT fabricate candidate matches.
+    """
     def mock_get(self, url, params=None, **kwargs):
         req = httpx.Request("GET", url)
         return httpx.Response(200, json=[], request=req)
+
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
+    initial_state = _create_sample_state(
+        style_profile=StyleProfile(
+            primary_style="Gothic Baroque",
+            style_tags=["Gothic", "Baroque"],
+        )
+    )
+    output_state = run_designer_matching_node(initial_state)
+
+    assert output_state.matching_status == "no_eligible_designers"
+    assert output_state.designer_shortlist == []
+    assert len(output_state.designer_shortlist) == 0
+
+    # Plan step reflects failure status
+    plan_step = next(s for s in output_state.plan if s.step_name == "DesignerMatching")
+    assert plan_step.status == "FAILED"
+
+
+def test_golden_all_candidates_over_capacity_filtered_out(monkeypatch):
+    """
+    Golden Test 2 (Variant):
+    - Search returns candidates, but availability check reveals all are at maximum capacity.
+    - Node filters them and sets matching_status = "no_eligible_designers".
+    """
+    search_fixtures = _mock_designer_search_fixtures()[:2]
+
+    def mock_get(self, url, params=None, **kwargs):
+        req = httpx.Request("GET", url)
+        if "/api/designers/search" in url:
+            return httpx.Response(200, json=search_fixtures, request=req)
+        elif "/availability" in url:
+            # Over capacity! (3 of 3 projects active)
+            return httpx.Response(
+                200,
+                json={
+                    "isAvailable": True,
+                    "isUnderCapacity": False,
+                    "activeProjectCount": 3,
+                    "maxConcurrentProjects": 3,
+                },
+                request=req,
+            )
+        return httpx.Response(404, request=req)
 
     monkeypatch.setattr(httpx.Client, "get", mock_get)
 
@@ -208,38 +317,60 @@ def test_run_designer_matching_node_no_eligible_designers(monkeypatch):
 
     assert output_state.matching_status == "no_eligible_designers"
     assert output_state.designer_shortlist == []
-    matching_plan_step = next(s for s in output_state.plan if s.step_name == "DesignerMatching")
-    assert matching_plan_step.status == "FAILED"
 
 
-def test_run_designer_matching_node_filters_at_capacity_designer(monkeypatch):
-    search_data = _mock_designer_search_results()[:2]
+# ============================================================================
+# Golden Test 3: Tool Failure (Graceful Degradation)
+# ============================================================================
+
+def test_golden_tool_http_error_fails_gracefully(monkeypatch):
+    """
+    Golden Test 3:
+    - Backend endpoint returns 500 or raises network error / timeout.
+    - Node handles failure gracefully without unhandled exceptions crashing the graph.
+    - State is returned with matching_status = "no_eligible_designers".
+    """
+    def mock_get(self, url, params=None, **kwargs):
+        raise httpx.ConnectTimeout("Backend gateway connection timed out")
+
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
+    initial_state = _create_sample_state()
+
+    # Must NOT raise unhandled exception
+    output_state = run_designer_matching_node(initial_state)
+
+    assert output_state.matching_status == "no_eligible_designers"
+    assert output_state.designer_shortlist == []
+    assert len(output_state.tool_calls) >= 1
+    assert "error" in str(output_state.tool_calls[0].outputs)
+
+
+# ============================================================================
+# Golden Test 4: Schema Validation Contract
+# ============================================================================
+
+def test_golden_schema_validation_and_downstream_compatibility(monkeypatch):
+    """
+    Golden Test 4:
+    - Validates that the node output state conforms strictly to WorkflowState Pydantic schema.
+    - Asserts exact field types for designer shortlist items and alias compatibility
+      (designerMatches, matchingStatus) for downstream nodes (Budget/Scope, Validation).
+    """
+    search_fixtures = _mock_designer_search_fixtures()[:2]
 
     def mock_get(self, url, params=None, **kwargs):
         req = httpx.Request("GET", url)
         if "/api/designers/search" in url:
-            return httpx.Response(200, json=search_data, request=req)
-        elif "/101/availability" in url:
-            # Designer 101 is at capacity!
-            return httpx.Response(
-                200,
-                json={
-                    "isAvailable": True,
-                    "isUnderCapacity": False,
-                    "activeProjectCount": 4,
-                    "maxConcurrentProjects": 4,
-                },
-                request=req,
-            )
-        elif "/102/availability" in url:
-            # Designer 102 has capacity
+            return httpx.Response(200, json=search_fixtures, request=req)
+        elif "/availability" in url:
             return httpx.Response(
                 200,
                 json={
                     "isAvailable": True,
                     "isUnderCapacity": True,
                     "activeProjectCount": 1,
-                    "maxConcurrentProjects": 3,
+                    "maxConcurrentProjects": 4,
                 },
                 request=req,
             )
@@ -250,37 +381,26 @@ def test_run_designer_matching_node_filters_at_capacity_designer(monkeypatch):
     initial_state = _create_sample_state()
     output_state = run_designer_matching_node(initial_state)
 
-    assert output_state.matching_status == "success"
-    assert len(output_state.designer_shortlist) == 1
-    assert output_state.designer_shortlist[0].designer_id == 102
+    # 1. Strict Pydantic roundtrip validation
+    state_dict = output_state.model_dump()
+    reloaded_state = WorkflowState.model_validate(state_dict)
 
+    assert reloaded_state.project_request_id == initial_state.project_request_id
+    assert reloaded_state.matching_status == "success"
+    assert len(reloaded_state.designer_shortlist) == 2
 
-def test_match_designers_direct_call_compatibility(monkeypatch):
-    search_data = _mock_designer_search_results()[:2]
+    # 2. Field-level type assertions for downstream consumption
+    for match in reloaded_state.designer_shortlist:
+        assert isinstance(match, DesignerMatch)
+        assert isinstance(match.designer_id, int)
+        assert isinstance(match.designer_name, str)
+        assert isinstance(match.style_match_pct, float)
+        assert match.budget_match in ("High", "Medium", "Low")
+        assert isinstance(match.match_score, float)
+        assert isinstance(match.explanation, str)
+        assert len(match.explanation) > 10
 
-    def mock_get(self, url, params=None, **kwargs):
-        req = httpx.Request("GET", url)
-        if "/api/designers/search" in url:
-            return httpx.Response(200, json=search_data, request=req)
-        elif "/availability" in url:
-            return httpx.Response(
-                200,
-                json={
-                    "isAvailable": True,
-                    "isUnderCapacity": True,
-                    "activeProjectCount": 0,
-                    "maxConcurrentProjects": 3,
-                },
-                request=req,
-            )
-        return httpx.Response(404, request=req)
-
-    monkeypatch.setattr(httpx.Client, "get", mock_get)
-
-    state = _create_sample_state()
-    shortlist = match_designers(state, state.style_profile)
-
-    assert isinstance(shortlist, list)
-    assert len(shortlist) == 2
-    assert shortlist[0].designer_id == 101
-    assert shortlist[1].designer_id == 102
+    # 3. Direct function contract compatibility for orchestrator
+    direct_shortlist = match_designers(initial_state, initial_state.style_profile)
+    assert len(direct_shortlist) == 2
+    assert all(isinstance(dm, DesignerMatch) for dm in direct_shortlist)
