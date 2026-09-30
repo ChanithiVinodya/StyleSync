@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/project_request_api.dart';
+import '../services/auth_api.dart';
 import '../models/project_request.dart';
 import 'create_project_request_screen.dart';
 import 'request_detail_screen.dart';
+import 'login_screen.dart';
 
 class ProjectRequestListScreen extends StatefulWidget {
   const ProjectRequestListScreen({Key? key}) : super(key: key);
@@ -137,7 +139,19 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
             icon: const Icon(Icons.refresh),
             onPressed: _fetchRequests,
             tooltip: 'Refresh',
-          )
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () {
+              AuthApiService.logout();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const ClientLoginScreen()),
+                (route) => false,
+              );
+            },
+          ),
         ],
       ),
       body: Column(

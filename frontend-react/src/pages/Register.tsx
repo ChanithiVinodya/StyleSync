@@ -10,7 +10,7 @@ export const Register: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'Client' | 'Designer'>('Client');
+  const [role, setRole] = useState<'Client' | 'Designer'>('Designer');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

@@ -4,6 +4,7 @@ import 'modules/designers/designers_page.dart';
 import 'screens/project_request_list_screen.dart';
 import 'modules/quotes_contracts/quotes_contracts_page.dart';
 import 'modules/project_execution/project_execution_page.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const StyleSyncApp());
@@ -30,7 +31,7 @@ class StyleSyncApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       scrollBehavior: AppScrollBehavior(),
       theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-      home: const RootShell(),
+      home: const ClientLoginScreen(),
     );
   }
 }
