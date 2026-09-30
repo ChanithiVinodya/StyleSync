@@ -251,15 +251,16 @@ def test_golden_happy_path_shortlists_top_2_to_3_with_grounded_explanations(monk
 
 
 # ============================================================================
-# Golden Test 2: No Eligible Designers
+# Golden Test 2: No Eligible Designers (Hard Filters: Published & Capacity)
 # ============================================================================
 
-def test_golden_no_eligible_designers_sets_status_without_fabricating(monkeypatch):
+def test_golden_no_eligible_designers_when_none_published_or_under_capacity(monkeypatch):
     """
     Golden Test 2:
-    - Zero style overlap or all candidates at capacity upstream -> empty search results.
+    - Hard filters only: when no designer in the system is BOTH ListingStatus = Published
+      AND IsUnderCapacity = True, search_designers() returns an empty list [].
     - Node sets matching_status = "no_eligible_designers" and designer_shortlist = [].
-    - Does NOT fabricate candidate matches.
+    - Does NOT fabricate or hallucinate any candidate matches.
     """
     def mock_get(self, url, params=None, **kwargs):
         req = httpx.Request("GET", url)
@@ -267,12 +268,7 @@ def test_golden_no_eligible_designers_sets_status_without_fabricating(monkeypatc
 
     monkeypatch.setattr(httpx.Client, "get", mock_get)
 
-    initial_state = _create_sample_state(
-        style_profile=StyleProfile(
-            primary_style="Gothic Baroque",
-            style_tags=["Gothic", "Baroque"],
-        )
-    )
+    initial_state = _create_sample_state()
     output_state = run_designer_matching_node(initial_state)
 
     assert output_state.matching_status == "no_eligible_designers"
@@ -317,6 +313,94 @@ def test_golden_all_candidates_over_capacity_filtered_out(monkeypatch):
 
     assert output_state.matching_status == "no_eligible_designers"
     assert output_state.designer_shortlist == []
+
+
+# ============================================================================
+# Golden Test 2b: Zero Style Overlap (Soft Component: Not a Hard Exclusion)
+# ============================================================================
+
+def test_golden_zero_style_overlap_designer_still_returned_with_honest_explanation(monkeypatch):
+    """
+    Golden Test 2b:
+    - Style overlap is only 40% of the weighted match score, NOT a hard exclusion filter.
+    - A designer with 0% style tag overlap who IS Published and under capacity is still
+      returned by search_designers() with a lower matchScore (from budget, rating, availability).
+    - Assert that:
+      1. matchingStatus is "success" (NOT "no_eligible_designers").
+      2. The low-overlap designer is present in the shortlist.
+      3. The node's generated explanation honestly reflects the 0% style fit without positive spin.
+    """
+    zero_overlap_designer = {
+        "designerId": 205,
+        "matchScore": 0.55,  # 0% style (0.00) + 90% budget (0.27) + 4.5 rating (0.18) + avail (0.10)
+        "scoreBreakdown": {
+            "styleTagOverlapPct": 0.0,
+            "budgetRangeOverlapPct": 0.90,
+            "pastRatingNormalized": 0.90,
+            "availabilityBonus": 1.0,
+            "matchScore": 0.55,
+        },
+        "displayName": "Vikram Seth",
+        "bio": "Gothic and Baroque architectural specialist",
+        "styleTags": ["Gothic", "Baroque"],
+        "serviceCategories": ["Architecture"],
+        "priceRangeMin": 150000.0,
+        "priceRangeMax": 450000.0,
+        "ratePerSqFt": 350.0,
+        "isAvailable": True,
+        "maxConcurrentProjects": 3,
+        "activeProjectCount": 1,
+        "remainingCapacity": 2,
+        "isUnderCapacity": True,
+        "averageRating": 4.5,
+        "listingStatus": 1,
+        "featuredPortfolioImageUrl": None,
+    }
+
+    def mock_get(self, url, params=None, **kwargs):
+        req = httpx.Request("GET", url)
+        if "/api/designers/search" in url:
+            return httpx.Response(200, json=[zero_overlap_designer], request=req)
+        elif "/availability" in url:
+            return httpx.Response(
+                200,
+                json={
+                    "isAvailable": True,
+                    "isUnderCapacity": True,
+                    "activeProjectCount": 1,
+                    "maxConcurrentProjects": 3,
+                },
+                request=req,
+            )
+        return httpx.Response(404, request=req)
+
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
+    # Client requested Scandinavian, designer has Gothic/Baroque
+    initial_state = _create_sample_state(
+        style_profile=StyleProfile(
+            primary_style="Scandinavian",
+            style_tags=["Scandinavian"],
+        )
+    )
+    output_state = run_designer_matching_node(initial_state)
+
+    # 1. Matching status must be success because the candidate is published & under capacity
+    assert output_state.matching_status == "success"
+    assert len(output_state.designer_shortlist) == 1
+
+    # 2. Candidate is present with accurate score & 0% style match
+    candidate_match = output_state.designer_shortlist[0]
+    assert candidate_match.designer_id == 205
+    assert candidate_match.designer_name == "Vikram Seth"
+    assert candidate_match.match_score == 0.55
+    assert candidate_match.style_match_pct == 0.0
+
+    # 3. Explanation honestly states the 0% style alignment without fabricating fit
+    assert "0% direct style alignment" in candidate_match.explanation
+    assert "Vikram Seth is a 55% overall match" in candidate_match.explanation
+    assert "4.5/5.0" in candidate_match.explanation
+    assert "confirmed active bandwidth" in candidate_match.explanation
 
 
 # ============================================================================

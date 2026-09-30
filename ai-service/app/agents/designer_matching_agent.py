@@ -73,6 +73,8 @@ def _generate_explanation(candidate: dict[str, Any], availability: dict[str, Any
             clauses.append(f"{style_overlap}% style alignment with {', '.join(style_tags)}")
         else:
             clauses.append(f"{style_overlap}% style alignment")
+    else:
+        clauses.append("0% direct style alignment with requested styles")
 
     # Grounded budget match explanation
     price_min = candidate.get("priceRangeMin", 0.0)
@@ -81,6 +83,8 @@ def _generate_explanation(candidate: dict[str, Any], availability: dict[str, Any
         clauses.append(f"strong budget alignment covering the LKR {price_min:,.0f} - {price_max:,.0f} price range")
     elif budget_overlap > 0:
         clauses.append("strong alignment with your requested budget parameters")
+    else:
+        clauses.append("low budget alignment with requested price range")
 
     # Grounded rating explanation
     if avg_rating is not None and float(avg_rating) > 0:
