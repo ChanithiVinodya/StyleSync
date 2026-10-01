@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/project_request.dart';
 import '../services/project_request_api.dart';
 import 'create_project_request_screen.dart';
+import '../widgets/smooth_mouse_scroll.dart';
 
 class RequestDetailScreen extends StatefulWidget {
   final String requestId;
@@ -16,6 +17,7 @@ class RequestDetailScreen extends StatefulWidget {
 
 class _RequestDetailScreenState extends State<RequestDetailScreen> {
   final _apiService = ProjectRequestApiService();
+  final ScrollController _scrollController = ScrollController();
   ProjectRequestModel? _request;
   bool _isLoading = true;
 
@@ -31,6 +33,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
   void initState() {
     super.initState();
     _loadDetails();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadDetails() async {
@@ -91,8 +99,12 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
           : _request == null
               ? const Center(child: Text('Failed to load request details.'))
               : SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   padding: const EdgeInsets.all(16),
-                  child: Column(
+                  child: SmoothMouseScroll(
+                    controller: _scrollController,
+                    child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Status Banner
@@ -332,6 +344,7 @@ class _RequestDetailScreenState extends State<RequestDetailScreen> {
                     ],
                   ),
                 ),
+              ),
     );
   }
 

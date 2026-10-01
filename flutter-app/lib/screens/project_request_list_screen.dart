@@ -5,6 +5,7 @@ import '../models/project_request.dart';
 import 'create_project_request_screen.dart';
 import 'request_detail_screen.dart';
 import 'login_screen.dart';
+import '../widgets/smooth_mouse_scroll.dart';
 
 class ProjectRequestListScreen extends StatefulWidget {
   const ProjectRequestListScreen({Key? key}) : super(key: key);
@@ -17,6 +18,7 @@ class ProjectRequestListScreen extends StatefulWidget {
 class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
   final _apiService = ProjectRequestApiService();
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
 
   List<ProjectRequestModel> _requests = [];
   bool _isLoading = true;
@@ -41,6 +43,13 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
   void initState() {
     super.initState();
     _fetchRequests();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchRequests() async {
@@ -299,10 +308,14 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
                             ],
                           ),
                         )
-                      : ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: _requests.length,
-                          itemBuilder: (context, index) {
+                      : SmoothMouseScroll(
+                          controller: _scrollController,
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                            padding: const EdgeInsets.all(12),
+                            itemCount: _requests.length,
+                            itemBuilder: (context, index) {
                             final req = _requests[index];
                             final mainPhoto = req.photos.isNotEmpty
                                 ? req.photos.first.photoUrl
@@ -509,6 +522,7 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
                             );
                           },
                         ),
+                      ),
             ),
           ),
         ],

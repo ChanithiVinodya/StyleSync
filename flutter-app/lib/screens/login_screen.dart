@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_api.dart';
 import '../main.dart';
+import '../widgets/smooth_mouse_scroll.dart';
 
 class ClientLoginScreen extends StatefulWidget {
   const ClientLoginScreen({super.key});
@@ -13,6 +14,7 @@ class _ClientLoginScreenState extends State<ClientLoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController(text: 'client@stylesync.com');
   final _passwordController = TextEditingController(text: 'Client@2026!');
+  final ScrollController _scrollController = ScrollController();
   bool _obscurePassword = true;
   bool _isLoading = false;
   String? _errorMessage;
@@ -21,6 +23,7 @@ class _ClientLoginScreenState extends State<ClientLoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -82,11 +85,15 @@ class _ClientLoginScreenState extends State<ClientLoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Form(
-                key: _formKey,
+            child: SmoothMouseScroll(
+              controller: _scrollController,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 420),
+                child: Form(
+                  key: _formKey,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -334,6 +341,7 @@ class _ClientLoginScreenState extends State<ClientLoginScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

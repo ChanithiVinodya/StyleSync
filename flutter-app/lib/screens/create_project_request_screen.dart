@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/project_request_api.dart';
 import '../models/project_request.dart';
 import 'project_request_list_screen.dart';
+import '../widgets/smooth_mouse_scroll.dart';
 
 class CreateProjectRequestScreen extends StatefulWidget {
   final ProjectRequestModel? existingDraft;
@@ -18,6 +19,7 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
   final _formKey = GlobalKey<FormState>();
   final _apiService = ProjectRequestApiService();
   final ImagePicker _picker = ImagePicker();
+  final ScrollController _scrollController = ScrollController();
 
   bool _isLoading = false;
 
@@ -80,6 +82,7 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
     _roomSizeController.dispose();
     _budgetController.dispose();
     _descriptionController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -345,12 +348,13 @@ class _CreateProjectRequestScreenState extends State<CreateProjectRequestScreen>
                 ],
               ),
             )
-          : Scrollbar(
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+          : SingleChildScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+              child: SmoothMouseScroll(
+                controller: _scrollController,
                 child: Form(
                   key: _formKey,
                   child: Column(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/project_request_api.dart';
 import '../models/project_request.dart';
 import '../models/style_analysis_result.dart';
+import '../widgets/smooth_mouse_scroll.dart';
 
 class StyleAnalysisResultScreen extends StatefulWidget {
   final String requestId;
@@ -14,6 +15,7 @@ class StyleAnalysisResultScreen extends StatefulWidget {
 
 class _StyleAnalysisResultScreenState extends State<StyleAnalysisResultScreen> {
   final _apiService = ProjectRequestApiService();
+  final ScrollController _scrollController = ScrollController();
   ProjectRequestModel? _request;
   bool _isLoading = true;
   int _selectedPhotoIdx = 0; // tracks active thumbnail in the photo gallery
@@ -22,6 +24,12 @@ class _StyleAnalysisResultScreenState extends State<StyleAnalysisResultScreen> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -611,9 +619,13 @@ class _StyleAnalysisResultScreenState extends State<StyleAnalysisResultScreen> {
           : _request == null
               ? const Center(child: Text('Request not found.', style: TextStyle(color: Colors.white)))
               : SingleChildScrollView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
                   padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: SmoothMouseScroll(
+                    controller: _scrollController,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // ── Status Lifecycle Header ──
                       _buildStatusHeader(_request!.status),
@@ -654,6 +666,7 @@ class _StyleAnalysisResultScreenState extends State<StyleAnalysisResultScreen> {
                     ],
                   ),
                 ),
+              ),
     );
   }
 }
