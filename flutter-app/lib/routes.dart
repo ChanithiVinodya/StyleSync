@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'screens/home/home_screen.dart';
-import 'screens/designers/browse_designers_screen.dart';
 import 'screens/designers/designer_profile_screen.dart';
 import 'screens/requests/new_request_screen.dart';
-import 'screens/requests/request_history_screen.dart';
 import 'screens/quotes/quote_detail_screen.dart';
 import 'screens/quotes/contract_status_screen.dart';
 import 'screens/progress/project_timeline_screen.dart';
@@ -34,13 +32,13 @@ class AppRoutes {
 
     // Handle exact named routes
     if (uri.path == home) {
-      return MaterialPageRoute(builder: (_) => const HomeScreen());
+      return MaterialPageRoute(builder: (_) => const HomeScreen(initialTab: 0));
     } else if (uri.path == designers) {
-      return MaterialPageRoute(builder: (_) => const BrowseDesignersScreen());
+      return MaterialPageRoute(builder: (_) => const HomeScreen(initialTab: 1));
+    } else if (uri.path == requests) {
+      return MaterialPageRoute(builder: (_) => const HomeScreen(initialTab: 2));
     } else if (uri.path == newRequest) {
       return MaterialPageRoute(builder: (_) => const NewRequestScreen());
-    } else if (uri.path == requests) {
-      return MaterialPageRoute(builder: (_) => const RequestHistoryScreen());
     } else if (uri.path == profile) {
       return MaterialPageRoute(builder: (_) => const ProfileScreen());
     } else if (uri.path == messages) {

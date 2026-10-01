@@ -2,16 +2,21 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../routes.dart';
+import '../designers/browse_designers_screen.dart';
+import '../requests/request_history_screen.dart';
+import '../quotes/quote_detail_screen.dart';
+import '../progress/project_timeline_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final int initialTab;
+  const HomeScreen({super.key, this.initialTab = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
-  int _currentIndex = 0;
+  late int _currentIndex;
   bool _isLoading = false;
   int _searchPlaceholderIndex = 0;
   late AnimationController _shimmerController;
@@ -90,6 +95,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialTab;
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -103,24 +109,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   void _onBottomNavTapped(int index) {
-    if (index == 0) {
-      setState(() => _currentIndex = 0);
-      return;
-    }
-    switch (index) {
-      case 1:
-        Navigator.of(context).pushNamed(AppRoutes.designers);
-        break;
-      case 2:
-        Navigator.of(context).pushNamed(AppRoutes.requests);
-        break;
-      case 3:
-        Navigator.of(context).pushNamed(AppRoutes.quoteDetailPath('q-804'));
-        break;
-      case 4:
-        Navigator.of(context).pushNamed(AppRoutes.progressPath('proj-101'));
-        break;
-    }
+    setState(() => _currentIndex = index);
   }
 
   void _showFilterModal() {
@@ -172,7 +161,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _onBottomNavTapped(1);
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF231713),
                     foregroundColor: Colors.white,
@@ -222,60 +214,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       body: SafeArea(
         child: Stack(
           children: [
-            RefreshIndicator(
-              color: terracotta,
-              onRefresh: () async {
-                setState(() => _isLoading = true);
-                await Future.delayed(const Duration(milliseconds: 700));
-                setState(() {
-                  _isLoading = false;
-                  _searchPlaceholderIndex = (_searchPlaceholderIndex + 1) % _searchPlaceholders.length;
-                });
-              },
-              child: AnimatedCrossFade(
-                duration: const Duration(milliseconds: 350),
-                crossFadeState: _isLoading ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-                firstChild: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 100),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 1. Top Brand Header & Action Icons
-                      _buildHeader(isDark, textEspresso, terracotta, honeyAmber),
-                      const SizedBox(height: 18),
+            // Persistent Tab Body using IndexedStack
+            Positioned.fill(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: [
+                  // Tab 0: Luxury Home Feed
+                  _buildHomeFeed(isDark, textEspresso, terracotta, honeyAmber),
 
-                      // 2. Greeting Row
-                      _buildGreetingRow(isDark, textEspresso),
-                      const SizedBox(height: 16),
+                  // Tab 1: Designers Screen
+                  _buildTabWrapper(const BrowseDesignersScreen()),
 
-                      // 3. Search & Style Discovery Bar
-                      _buildSearchBar(isDark, textEspresso),
-                      const SizedBox(height: 22),
+                  // Tab 2: Requests Screen
+                  _buildTabWrapper(const RequestHistoryScreen()),
 
-                      // 4. Unboxed Architectural Hero Section
-                      _buildUnboxedHero(context, isDark, textEspresso, terracotta),
-                      const SizedBox(height: 32),
+                  // Tab 3: Quotes Screen
+                  _buildTabWrapper(const QuoteDetailScreen(id: 'q-804')),
 
-                      // 5. Categories Section (Horizontal Snapping)
-                      _buildCategoriesSection(isDark, textEspresso, terracotta),
-                      const SizedBox(height: 32),
-
-                      // 6. Project Activity Carousel (Status & Metrics)
-                      _buildProjectActivitySection(context, isDark, textEspresso, terracotta),
-                      const SizedBox(height: 30),
-
-                      // 7. Quick-Access Shortcut Cards (Dual Grid)
-                      _buildShortcutGrid(context, isDark, textEspresso, terracotta),
-                      const SizedBox(height: 30),
-
-                      // 8. Matched Designers Carousel
-                      _buildMatchedDesignersSection(context, isDark, textEspresso, terracotta),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
-                secondChild: _buildSkeletonLoading(isDark),
+                  // Tab 4: Progress Screen
+                  _buildTabWrapper(const ProjectTimelineScreen(projectId: 'proj-101')),
+                ],
               ),
             ),
 
@@ -288,6 +246,75 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTabWrapper(Widget child) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 78),
+      child: child,
+    );
+  }
+
+  // ==========================================
+  // HOME DASHBOARD FEED
+  // ==========================================
+  Widget _buildHomeFeed(bool isDark, Color textEspresso, Color terracotta, Color honeyAmber) {
+    return RefreshIndicator(
+      color: terracotta,
+      onRefresh: () async {
+        setState(() => _isLoading = true);
+        await Future.delayed(const Duration(milliseconds: 700));
+        setState(() {
+          _isLoading = false;
+          _searchPlaceholderIndex = (_searchPlaceholderIndex + 1) % _searchPlaceholders.length;
+        });
+      },
+      child: AnimatedCrossFade(
+        duration: const Duration(milliseconds: 350),
+        crossFadeState: _isLoading ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+        firstChild: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 1. Top Brand Header & Action Icons
+              _buildHeader(isDark, textEspresso, terracotta, honeyAmber),
+              const SizedBox(height: 18),
+
+              // 2. Greeting Row
+              _buildGreetingRow(isDark, textEspresso),
+              const SizedBox(height: 16),
+
+              // 3. Search & Style Discovery Bar
+              _buildSearchBar(isDark, textEspresso),
+              const SizedBox(height: 22),
+
+              // 4. Unboxed Architectural Hero Section (Full-bleed seamless gradient)
+              _buildUnboxedHero(context, isDark, textEspresso, terracotta),
+              const SizedBox(height: 32),
+
+              // 5. Categories Section (Horizontal Snapping)
+              _buildCategoriesSection(isDark, textEspresso, terracotta),
+              const SizedBox(height: 32),
+
+              // 6. Project Activity Carousel (Status & Metrics)
+              _buildProjectActivitySection(context, isDark, textEspresso, terracotta),
+              const SizedBox(height: 30),
+
+              // 7. Quick-Access Shortcut Cards (Dual Grid)
+              _buildShortcutGrid(context, isDark, textEspresso, terracotta),
+              const SizedBox(height: 30),
+
+              // 8. Matched Designers Carousel
+              _buildMatchedDesignersSection(context, isDark, textEspresso, terracotta),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+        secondChild: _buildSkeletonLoading(isDark),
       ),
     );
   }
@@ -362,7 +389,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Direct Messages Icon Button with Badge
             _buildCircularIconButton(
               icon: Icons.chat_bubble_outline_rounded,
               badgeCount: '2',
@@ -371,8 +397,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               onTap: () => Navigator.of(context).pushNamed(AppRoutes.messages),
             ),
             const SizedBox(width: 8),
-
-            // Notification Bell with Badge
             _buildCircularIconButton(
               icon: Icons.notifications_none_rounded,
               badgeCount: '3',
@@ -388,8 +412,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               },
             ),
             const SizedBox(width: 8),
-
-            // Profile Avatar with Ring & Status Badge
             GestureDetector(
               onTap: () => Navigator.of(context).pushNamed(AppRoutes.profile),
               child: Stack(
@@ -590,155 +612,156 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   // ==========================================
-  // SECTION 4: UNBOXED ARCHITECTURAL HERO
+  // SECTION 4: UNBOXED ARCHITECTURAL HERO (SEAMLESS FULL-BLEED)
   // ==========================================
   Widget _buildUnboxedHero(BuildContext context, bool isDark, Color textEspresso, Color terracotta) {
+    final bgColor = isDark ? const Color(0xFF1E1613) : const Color(0xFFF7F1EA);
+
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 255),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26),
-        color: isDark ? const Color(0xFF1E1613) : const Color(0xFFF7F1EA),
+        color: bgColor,
       ),
-      child: Stack(
-        children: [
-          // Background Interior Image with soft gradient fade towards left & bottom
-          Positioned(
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 220,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(26),
-                bottomRight: Radius.circular(26),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(26),
+        child: Stack(
+          children: [
+            // Full-width background image aligned to the right
+            Positioned.fill(
+              child: Image.network(
+                'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
+                fit: BoxFit.cover,
+                alignment: Alignment.centerRight,
               ),
-              child: Stack(
-                fit: StackFit.expand,
+            ),
+
+            // Continuous horizontal gradient across the entire container (eliminates all vertical lines)
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.centerLeft,
+                    end: Alignment.centerRight,
+                    colors: [
+                      bgColor,
+                      bgColor.withValues(alpha: 0.98),
+                      bgColor.withValues(alpha: 0.85),
+                      bgColor.withValues(alpha: 0.35),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.38, 0.55, 0.78, 1.0],
+                  ),
+                ),
+              ),
+            ),
+
+            // Subtle vertical bottom scrim for text legibility
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
+                    colors: [
+                      bgColor.withValues(alpha: 0.5),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.4],
+                  ),
+                ),
+              ),
+            ),
+
+            // Foreground Content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Image.network(
-                    'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
-                    fit: BoxFit.cover,
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                        colors: [
-                          isDark ? const Color(0xFF1E1613) : const Color(0xFFF7F1EA),
-                          (isDark ? const Color(0xFF1E1613) : const Color(0xFFF7F1EA)).withValues(alpha: 0.85),
-                          (isDark ? const Color(0xFF1E1613) : const Color(0xFFF7F1EA)).withValues(alpha: 0.0),
-                        ],
-                        stops: const [0.0, 0.45, 1.0],
-                      ),
+                  Text(
+                    'Where your space\nfinds its style.',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 27,
+                      fontWeight: FontWeight.w800,
+                      height: 1.15,
+                      color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
                     ),
                   ),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.bottomCenter,
-                        end: Alignment.topCenter,
-                        colors: [
-                          (isDark ? const Color(0xFF1E1613) : const Color(0xFFF7F1EA)).withValues(alpha: 0.6),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.5],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Upload photos. Get matched with a designer.',
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      height: 1.3,
+                      fontWeight: FontWeight.w400,
+                      color: isDark ? const Color(0xFFB5A49B) : const Color(0xFF6E5D53),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // CTA Button
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pushNamed(AppRoutes.newRequest),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF231713),
+                      foregroundColor: Colors.white,
+                      elevation: 3,
+                      shadowColor: Colors.black.withValues(alpha: 0.2),
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30),
                       ),
                     ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Start a request',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward_rounded, size: 16),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Social Proof: 3 Overlapping Avatars + Micro metric
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 58,
+                        height: 24,
+                        child: Stack(
+                          children: [
+                            _buildMiniAvatar('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', 0),
+                            _buildMiniAvatar('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', 16),
+                            _buildMiniAvatar('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80', 32),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Matched in ~24h  •  1,400+ styled',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? const Color(0xFFB5A49B) : const Color(0xFF6E5D53),
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-          ),
-
-          // Left Foreground Content (Unboxed Editorial Style)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Where your space\nfinds its style.',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 27,
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
-                    color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Upload photos. Get matched with a designer.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.3,
-                    fontWeight: FontWeight.w400,
-                    color: isDark ? const Color(0xFFB5A49B) : const Color(0xFF6E5D53),
-                  ),
-                ),
-                const SizedBox(height: 18),
-
-                // CTA Button
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pushNamed(AppRoutes.newRequest),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF231713),
-                    foregroundColor: Colors.white,
-                    elevation: 3,
-                    shadowColor: Colors.black.withValues(alpha: 0.2),
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Start a request',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                      ),
-                      SizedBox(width: 8),
-                      Icon(Icons.arrow_forward_rounded, size: 16),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Social Proof: 3 Overlapping Avatars + Micro metric
-                Row(
-                  children: [
-                    SizedBox(
-                      width: 58,
-                      height: 24,
-                      child: Stack(
-                        children: [
-                          _buildMiniAvatar('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80', 0),
-                          _buildMiniAvatar('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', 16),
-                          _buildMiniAvatar('https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=150&q=80', 32),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        'Matched in ~24h  •  1,400+ styled',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? const Color(0xFFB5A49B) : const Color(0xFF6E5D53),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -795,7 +818,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
             ),
             GestureDetector(
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.designers),
+              onTap: () => _onBottomNavTapped(1),
               child: Row(
                 children: [
                   Text(
@@ -825,70 +848,73 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             separatorBuilder: (_, __) => const SizedBox(width: 14),
             itemBuilder: (context, index) {
               final cat = _categories[index];
-              return Container(
-                width: 142,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(22),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        cat['imageUrl'],
-                        fit: BoxFit.cover,
+              return GestureDetector(
+                onTap: () => _onBottomNavTapped(1),
+                child: Container(
+                  width: 142,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(22),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 5),
                       ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withValues(alpha: 0.65),
-                            ],
-                            stops: const [0.4, 1.0],
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(22),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Image.network(
+                          cat['imageUrl'],
+                          fit: BoxFit.cover,
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withValues(alpha: 0.65),
+                              ],
+                              stops: const [0.4, 1.0],
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: 12,
-                        right: 12,
-                        bottom: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.94),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 6,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              cat['title'],
-                              style: const TextStyle(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF231713),
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.94),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Text(
+                                cat['title'],
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF231713),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );
@@ -951,7 +977,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             scrollDirection: Axis.horizontal,
             clipBehavior: Clip.none,
             children: [
-              // Card 1: Requests Pending
               _buildActivityCard(
                 context: context,
                 isDark: isDark,
@@ -962,11 +987,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 subtitle: 'Reviewing photos & measurements',
                 progressText: '65% matched',
                 progressValue: 0.65,
-                onTap: () => Navigator.of(context).pushNamed(AppRoutes.requests),
+                onTap: () => _onBottomNavTapped(2),
               ),
               const SizedBox(width: 14),
-
-              // Card 2: Quotes Awaiting
               _buildActivityCard(
                 context: context,
                 isDark: isDark,
@@ -977,11 +1000,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 subtitle: 'Tribeca Suite • \$14,500 package',
                 progressText: 'Ready for signature',
                 progressValue: 0.90,
-                onTap: () => Navigator.of(context).pushNamed(AppRoutes.quoteDetailPath('q-804')),
+                onTap: () => _onBottomNavTapped(3),
               ),
               const SizedBox(width: 14),
-
-              // Card 3: In Progress
               _buildActivityCard(
                 context: context,
                 isDark: isDark,
@@ -992,7 +1013,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 subtitle: 'Phase 2 of 4 • Living room styling',
                 progressText: 'Milestone due Oct 12',
                 progressValue: 0.50,
-                onTap: () => Navigator.of(context).pushNamed(AppRoutes.progressPath('proj-101')),
+                onTap: () => _onBottomNavTapped(4),
               ),
             ],
           ),
@@ -1128,10 +1149,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   Widget _buildShortcutGrid(BuildContext context, bool isDark, Color textEspresso, Color terracotta) {
     return Row(
       children: [
-        // Card 1: Contract Status
         Expanded(
           child: GestureDetector(
-            onTap: () => Navigator.of(context).pushNamed(AppRoutes.contractStatusPath('c-401')),
+            onTap: () => _onBottomNavTapped(3),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1210,11 +1230,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
         const SizedBox(width: 14),
-
-        // Card 2: Project Timeline
         Expanded(
           child: GestureDetector(
-            onTap: () => Navigator.of(context).pushNamed(AppRoutes.progressPath('proj-101')),
+            onTap: () => _onBottomNavTapped(4),
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -1329,7 +1347,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               ],
             ),
             GestureDetector(
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.designers),
+              onTap: () => _onBottomNavTapped(1),
               child: Text(
                 'View All',
                 style: TextStyle(
@@ -1660,21 +1678,18 @@ class _StyleSyncMonogramPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // Gold outer swirl
     final goldPaint = Paint()
       ..color = const Color(0xFFC89758)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round;
 
-    // White/Ivory inner interlocking swirl
     final ivoryPaint = Paint()
       ..color = const Color(0xFFFAF7F2)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round;
 
-    // Draw upper loop (Gold)
     final pathGold = Path();
     pathGold.moveTo(w * 0.75, h * 0.28);
     pathGold.cubicTo(w * 0.75, h * 0.12, w * 0.32, h * 0.12, w * 0.32, h * 0.38);
@@ -1682,7 +1697,6 @@ class _StyleSyncMonogramPainter extends CustomPainter {
     pathGold.cubicTo(w * 0.72, h * 0.92, w * 0.38, h * 0.94, w * 0.25, h * 0.78);
     canvas.drawPath(pathGold, goldPaint);
 
-    // Draw inner interlocking subtle sparkle line (Ivory)
     final pathIvory = Path();
     pathIvory.moveTo(w * 0.32, h * 0.28);
     pathIvory.cubicTo(w * 0.32, h * 0.44, w * 0.68, h * 0.46, w * 0.68, h * 0.62);
