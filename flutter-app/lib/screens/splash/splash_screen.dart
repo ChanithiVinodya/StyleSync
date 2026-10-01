@@ -1,6 +1,9 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../providers/auth/auth_provider.dart';
+import '../../routes.dart';
 
 /// Complete, self-contained Flutter implementation of the ultra-luxury
 /// "Style Sync — Design Marketplace" Opening Splash Screen in Dark Salon Theme.
@@ -14,7 +17,7 @@ import 'package:google_fonts/google_fonts.dart';
 /// - Stately editorial typography ("STYLE SYNC" + "DESIGN MARKETPLACE")
 /// - 3px thickened gold hairline progress bar
 /// - "ENTER →" pill action button and replay sequence trigger
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   final VoidCallback? onEnter;
   final VoidCallback? onSkip;
 
@@ -25,11 +28,12 @@ class SplashScreen extends StatefulWidget {
   });
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with TickerProviderStateMixin {
+
   // Choreography Animation Controllers
   late AnimationController _handwritingController;
   late AnimationController _fadeContentController;
@@ -108,6 +112,19 @@ class _SplashScreenState extends State<SplashScreen>
     _progressController.forward();
   }
 
+  void _handleProceed() {
+    if (widget.onEnter != null) {
+      widget.onEnter!();
+      return;
+    }
+    final authState = ref.read(authProvider);
+    if (authState.isAuthenticated) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.home);
+    } else {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+    }
+  }
+
   void _replaySequence() {
     setState(() {
       _isCompleted = false;
@@ -131,294 +148,353 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFEFE7DC),
-      body: Stack(
-        children: [
-          // 1. Warm Champagne & Sand Atmospheric Background (#EFE7DC -> #E4D8C7 -> #D5C6B1)
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Color(0xFFEFE7DC), // Top
-                    Color(0xFFE4D8C7), // Middle
-                    Color(0xFFD5C6B1), // Bottom
-                  ],
-                  stops: [0.0, 0.5, 1.0],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final double screenWidth = constraints.maxWidth;
+          final double screenHeight = constraints.maxHeight;
+
+          // Responsive sizing calculations
+          final bool isShortScreen = screenHeight < 620;
+          final double contentMaxWidth = math.min(screenWidth * 0.90, 420.0);
+          final double logoSize = isShortScreen
+              ? (screenHeight * 0.20).clamp(80.0, 130.0)
+              : (screenWidth * 0.38).clamp(110.0, 146.0);
+          final double haloSize = (logoSize * 1.75).clamp(150.0, 260.0);
+          final double progressBarWidth = (contentMaxWidth * 0.65).clamp(140.0, 210.0);
+
+          final safePadding = MediaQuery.of(context).padding;
+          final double availableHeight = math.max(
+            screenHeight - safePadding.top - safePadding.bottom,
+            100.0,
+          );
+
+          return Stack(
+            children: [
+              // 1. Warm Champagne & Sand Atmospheric Background (#EFE7DC -> #E4D8C7 -> #D5C6B1)
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Color(0xFFEFE7DC), // Top
+                        Color(0xFFE4D8C7), // Middle
+                        Color(0xFFD5C6B1), // Bottom
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          // 2. Flowing Golden Silk Texture (Soft luminous luxury blend)
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.40,
-              child: Image.asset(
-                'assets/images/splash_silk_bg.jpg',
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
-              ),
-            ),
-          ),
-
-          // 3. Soft Gradient Vignette & Blending Overlay
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFFEFE7DC).withValues(alpha: 0.70),
-                    Colors.transparent,
-                    const Color(0xFFD5C6B1).withValues(alpha: 0.75),
-                  ],
-                  stops: const [0.0, 0.35, 1.0],
+              // 2. Flowing Golden Silk Texture (Soft luminous luxury blend)
+              Positioned.fill(
+                child: Opacity(
+                  opacity: 0.40,
+                  child: Image.asset(
+                    'assets/images/splash_silk_bg.jpg',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          // 4. Slow Upward Floating Gold Particles
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _particleController,
-              builder: (context, child) {
-                return CustomPaint(
-                  painter: GoldParticlesPainter(_particleController.value),
-                );
-              },
-            ),
-          ),
-
-          // 5. Central Ambient Backlight Aura for the Monogram
-          Align(
-            alignment: const Alignment(0, -0.22),
-            child: Container(
-              width: 250,
-              height: 250,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFFFF9EE).withValues(alpha: 0.7),
-                    const Color(0xFFE8C47F).withValues(alpha: 0.22),
-                    Colors.transparent,
-                  ],
-                  stops: const [0.0, 0.45, 0.8],
+              // 3. Soft Gradient Vignette & Blending Overlay
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFFEFE7DC).withValues(alpha: 0.70),
+                        Colors.transparent,
+                        const Color(0xFFD5C6B1).withValues(alpha: 0.75),
+                      ],
+                      stops: const [0.0, 0.35, 1.0],
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          // 4. Main Foreground Content Area
-          SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-
-                const Spacer(flex: 3),
-
-                // Center Stage: Two-Tone Monogram Logo with Handwriting Animation
-                AnimatedBuilder(
-                  animation: _handwritingProgress,
+              // 4. Slow Upward Floating Gold Particles
+              Positioned.fill(
+                child: AnimatedBuilder(
+                  animation: _particleController,
                   builder: (context, child) {
                     return CustomPaint(
-                      size: const Size(146, 146),
-                      painter: MonogramHandwritingPainter(
-                        progress: _handwritingProgress.value,
-                      ),
+                      painter: GoldParticlesPainter(_particleController.value),
                     );
                   },
                 ),
+              ),
 
-                const SizedBox(height: 36),
-
-                // Editorial Brand Typography: "STYLE SYNC" & "YOUR STYLE, PERFECTLY IN SYNC"
-                AnimatedBuilder(
-                  animation: _textFadeAnimation,
-                  builder: (context, child) {
-                    return Opacity(
-                      opacity: _textFadeAnimation.value,
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(left: 10.0),
-                            child: Text(
-                              'STYLE SYNC',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.cormorantGaramond(
-                                fontSize: 29,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 10.0,
-                                height: 1.1,
-                                color: const Color(0xFF241710),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // Hairline Accent Divider
-                          Container(
-                            width: 36,
-                            height: 1,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.transparent,
-                                  const Color(0xFF8C6E4E).withValues(alpha: 0.45),
-                                  Colors.transparent,
-                                ],
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 13),
-
-                          // Italicized Subtitle: "YOUR STYLE, PERFECTLY IN SYNC"
-                          Padding(
-                            padding: const EdgeInsets.only(left: 2.2),
-                            child: Text(
-                              'YOUR STYLE, PERFECTLY IN SYNC',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.cormorantGaramond(
-                                fontSize: 12.0,
-                                fontStyle: FontStyle.italic,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 2.2,
-                                color: const Color(0xFF6F5943).withValues(alpha: 0.95),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+              // 5. Central Ambient Backlight Aura for the Monogram
+              Align(
+                alignment: const Alignment(0, -0.22),
+                child: Container(
+                  width: haloSize,
+                  height: haloSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFFFF9EE).withValues(alpha: 0.7),
+                        const Color(0xFFE8C47F).withValues(alpha: 0.22),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.45, 0.8],
+                    ),
+                  ),
                 ),
+              ),
 
-                const Spacer(flex: 4),
-
-                // Bottom Section: Hairline Progress Bar & Enter Action
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                  child: Column(
-                    children: [
-                      // Thickened (3px) Golden Progress Bar
-                      AnimatedBuilder(
-                        animation: _progressAnimation,
-                        builder: (context, child) {
-                          return Container(
-                            width: 210,
-                            height: 3.0,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2A1F17).withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(2.0),
+              // 6. Main Foreground Content Area - Responsive Layout
+              SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 420.0,
+                    ),
+                    child: SingleChildScrollView(
+                      physics: const ClampingScrollPhysics(),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: availableHeight,
+                        ),
+                        child: IntrinsicHeight(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20.0,
+                              vertical: 16.0,
                             ),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: Container(
-                                width: 210 * _progressAnimation.value,
-                                height: 3.0,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(2.0),
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF8A6E4B),
-                                      Color(0xFFE2C48B),
-                                      Color(0xFFFFFFFF),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFECC47F).withValues(alpha: 0.6),
-                                      blurRadius: 6,
-                                      spreadRadius: 1,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const SizedBox(height: 8),
+
+                                // Center Content: Logo & Typography
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(height: isShortScreen ? 12 : 28),
+
+                                    // Center Stage: Two-Tone Monogram Logo with Handwriting Animation
+                                    AnimatedBuilder(
+                                      animation: _handwritingProgress,
+                                      builder: (context, child) {
+                                        return CustomPaint(
+                                          size: Size(logoSize, logoSize),
+                                          painter: MonogramHandwritingPainter(
+                                            progress: _handwritingProgress.value,
+                                          ),
+                                        );
+                                      },
+                                    ),
+
+                                    SizedBox(height: isShortScreen ? 20 : 36),
+
+                                    // Editorial Brand Typography: "STYLE SYNC" & "YOUR STYLE, PERFECTLY IN SYNC"
+                                    AnimatedBuilder(
+                                      animation: _textFadeAnimation,
+                                      builder: (context, child) {
+                                        return Opacity(
+                                          opacity: _textFadeAnimation.value,
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(left: 8.0),
+                                                  child: Text(
+                                                    'STYLE SYNC',
+                                                    textAlign: TextAlign.center,
+                                                    style: GoogleFonts.cormorantGaramond(
+                                                      fontSize: 29,
+                                                      fontWeight: FontWeight.w400,
+                                                      letterSpacing: 10.0,
+                                                      height: 1.1,
+                                                      color: const Color(0xFF241710),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 14),
+
+                                              // Hairline Accent Divider
+                                              Container(
+                                                width: 36,
+                                                height: 1,
+                                                decoration: BoxDecoration(
+                                                  gradient: LinearGradient(
+                                                    colors: [
+                                                      Colors.transparent,
+                                                      const Color(0xFF8C6E4E).withValues(alpha: 0.45),
+                                                      Colors.transparent,
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+
+                                              const SizedBox(height: 13),
+
+                                              // Italicized Subtitle: "YOUR STYLE, PERFECTLY IN SYNC"
+                                              FittedBox(
+                                                fit: BoxFit.scaleDown,
+                                                child: Padding(
+                                                  padding: const EdgeInsets.only(left: 2.2),
+                                                  child: Text(
+                                                    'YOUR STYLE, PERFECTLY IN SYNC',
+                                                    textAlign: TextAlign.center,
+                                                    style: GoogleFonts.cormorantGaramond(
+                                                      fontSize: 12.0,
+                                                      fontStyle: FontStyle.italic,
+                                                      fontWeight: FontWeight.w600,
+                                                      letterSpacing: 2.2,
+                                                      color: const Color(0xFF6F5943).withValues(alpha: 0.95),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
 
-                      const SizedBox(height: 28),
+                                // Bottom Section: Hairline Progress Bar & Enter Action
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    SizedBox(height: isShortScreen ? 16 : 28),
 
-                      // "GET STARTED →" Dark Acrylic Pill Button
-                      AnimatedOpacity(
-                        duration: const Duration(milliseconds: 500),
-                        opacity: _isCompleted ? 1.0 : 0.0,
-                        child: GestureDetector(
-                          onTap: _isCompleted ? widget.onEnter : null,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 28,
-                              vertical: 12,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2A1F17),
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.15),
-                                width: 1.0,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.22),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'GET STARTED',
-                                  style: TextStyle(
-                                    fontFamily: 'Arial',
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.w600,
-                                    letterSpacing: 2.0,
-                                    color: Color(0xFFFAF7F2),
-                                  ),
-                                ),
-                                SizedBox(width: 8),
-                                Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 14,
-                                  color: Color(0xFFFAF7F2),
+                                    // Thickened (3px) Golden Progress Bar
+                                    AnimatedBuilder(
+                                      animation: _progressAnimation,
+                                      builder: (context, child) {
+                                        return Container(
+                                          width: progressBarWidth,
+                                          height: 3.0,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2A1F17).withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(2.0),
+                                          ),
+                                          child: Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Container(
+                                              width: progressBarWidth * _progressAnimation.value,
+                                              height: 3.0,
+                                              decoration: BoxDecoration(
+                                                borderRadius: BorderRadius.circular(2.0),
+                                                gradient: const LinearGradient(
+                                                  colors: [
+                                                    Color(0xFF8A6E4B),
+                                                    Color(0xFFE2C48B),
+                                                    Color(0xFFFFFFFF),
+                                                  ],
+                                                ),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: const Color(0xFFECC47F).withValues(alpha: 0.6),
+                                                    blurRadius: 6,
+                                                    spreadRadius: 1,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+
+                                    SizedBox(height: isShortScreen ? 18 : 28),
+
+                                    // "GET STARTED →" Dark Acrylic Pill Button
+                                    AnimatedOpacity(
+                                      duration: const Duration(milliseconds: 500),
+                                      opacity: _isCompleted ? 1.0 : 0.0,
+                                      child: GestureDetector(
+                                        onTap: _isCompleted ? _handleProceed : null,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 28,
+                                            vertical: 12,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF2A1F17),
+                                            borderRadius: BorderRadius.circular(24),
+                                            border: Border.all(
+                                              color: Colors.white.withValues(alpha: 0.15),
+                                              width: 1.0,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withValues(alpha: 0.22),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4),
+                                              ),
+                                            ],
+                                          ),
+                                          child: const FittedBox(
+                                            fit: BoxFit.scaleDown,
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  'GET STARTED',
+                                                  style: TextStyle(
+                                                    fontFamily: 'Arial',
+                                                    fontSize: 11.5,
+                                                    fontWeight: FontWeight.w600,
+                                                    letterSpacing: 2.0,
+                                                    color: Color(0xFFFAF7F2),
+                                                  ),
+                                                ),
+                                                SizedBox(width: 8),
+                                                Icon(
+                                                  Icons.arrow_forward_rounded,
+                                                  size: 14,
+                                                  color: Color(0xFFFAF7F2),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 12),
+
+                                    // Minimal Replay Icon
+                                    IconButton(
+                                      onPressed: _replaySequence,
+                                      icon: const Icon(
+                                        Icons.refresh_rounded,
+                                        size: 18,
+                                        color: Color(0xFF6F5E4C),
+                                      ),
+                                      splashRadius: 20,
+                                      tooltip: 'Replay Sequence',
+                                    ),
+                                    const SizedBox(height: 8),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 16),
-
-                      // Minimal Replay Icon
-                      IconButton(
-                        onPressed: _replaySequence,
-                        icon: const Icon(
-                          Icons.refresh_rounded,
-                          size: 18,
-                          color: Color(0xFF6F5E4C),
-                        ),
-                        splashRadius: 20,
-                        tooltip: 'Replay Sequence',
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-
-                const SizedBox(height: 18),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }

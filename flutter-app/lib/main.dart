@@ -1,18 +1,21 @@
-// State management: Provider chosen for lightweight, clean reactivity across client state (ADR candidate)
-// TODO: wire up login/JWT storage (bypassing auth check for skeleton pass — client is pre-authenticated)
+// State management: Riverpod for app-wide Auth & API state, with Provider for local client preferences
 
 import 'package:flutter/material.dart';
-import 'splash_screen.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as legacy_provider;
 import 'routes.dart';
+import 'screens/splash/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
-    MultiProvider(
+    legacy_provider.MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppStateProvider()),
+        legacy_provider.ChangeNotifierProvider(create: (_) => AppStateProvider()),
       ],
-      child: const StyleSyncApp(),
+      child: const ProviderScope(
+        child: StyleSyncApp(),
+      ),
     ),
   );
 }
@@ -71,7 +74,7 @@ class StyleSyncApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appState = Provider.of<AppStateProvider>(context);
+    final appState = legacy_provider.Provider.of<AppStateProvider>(context);
 
     // StyleSync warm terracotta & organic architecture palette inspired by interior styling
     const primaryTerracotta = Color(0xFF8C4A3E);
@@ -154,12 +157,7 @@ class StyleSyncApp extends StatelessWidget {
           ),
         ),
       ),
-      home: Builder(
-        builder: (context) => SplashScreen(
-          onEnter: () => Navigator.of(context).pushReplacementNamed(AppRoutes.home),
-          onSkip: () => Navigator.of(context).pushReplacementNamed(AppRoutes.home),
-        ),
-      ),
+      home: const SplashScreen(),
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }

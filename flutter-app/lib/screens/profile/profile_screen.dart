@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart' as legacy_provider;
 import '../../main.dart';
+import '../../providers/auth/auth_provider.dart';
 import '../../routes.dart';
 
 /// Modern Profile & Settings Screen for StyleSync
 /// Implements user profile presentation, activity counters, modern aesthetics,
 /// and comprehensive Light/Dark/System theme preferences.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final appState = Provider.of<AppStateProvider>(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authUser = ref.watch(currentUserProvider);
+    final appState = legacy_provider.Provider.of<AppStateProvider>(context);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -108,7 +111,7 @@ class ProfileScreen extends StatelessWidget {
                           Row(
                             children: [
                               Text(
-                                appState.clientName,
+                                authUser?.name.isNotEmpty == true ? authUser!.name : appState.clientName,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -125,7 +128,7 @@ class ProfileScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            appState.clientEmail,
+                            authUser?.email.isNotEmpty == true ? authUser!.email : appState.clientEmail,
                             style: TextStyle(
                               fontSize: 12,
                               color: subtitleColor,
@@ -139,7 +142,7 @@ class ProfileScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
-                              'PRIVATE CLIENT TIER',
+                              '${authUser?.role.displayName.toUpperCase() ?? 'CLIENT'} TIER',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
@@ -432,12 +435,15 @@ class ProfileScreen extends StatelessWidget {
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFB3261E),
                       ),
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(ctx);
-                        // TODO: wire up logout / JWT token revocation
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Signed out (Mock token cleared)')),
-                        );
+                        await ref.read(authProvider.notifier).logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushNamedAndRemoveUntil(
+                            AppRoutes.login,
+                            (route) => false,
+                          );
+                        }
                       },
                       child: const Text('Sign Out'),
                     ),

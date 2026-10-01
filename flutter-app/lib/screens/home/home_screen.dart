@@ -1,21 +1,23 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../providers/auth/auth_provider.dart';
 import '../../routes.dart';
 import '../designers/browse_designers_screen.dart';
 import '../requests/request_history_screen.dart';
 import '../quotes/quote_detail_screen.dart';
 import '../progress/project_timeline_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final int initialTab;
   const HomeScreen({super.key, this.initialTab = 0});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
   late int _currentIndex;
   bool _isLoading = false;
   int _searchPlaceholderIndex = 0;
@@ -521,6 +523,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   // SECTION 2: GREETING ROW
   // ==========================================
   Widget _buildGreetingRow(bool isDark, Color textEspresso) {
+    final authUser = ref.watch(currentUserProvider);
+    final String clientName = authUser?.name.isNotEmpty == true
+        ? authUser!.name.trim().split(' ').first
+        : _mockDashboardSummary['clientName'];
+
     return Row(
       children: [
         Text(
@@ -532,7 +539,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
         Text(
-          _mockDashboardSummary['clientName'],
+          clientName,
           style: GoogleFonts.playfairDisplay(
             fontSize: 17.5,
             fontWeight: FontWeight.w800,
@@ -1114,14 +1121,19 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      progressText,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? const Color(0xFFB5A49B) : const Color(0xFF6E5D53),
+                    Expanded(
+                      child: Text(
+                        progressText,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFFB5A49B) : const Color(0xFF6E5D53),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const SizedBox(width: 4),
                     const Icon(Icons.arrow_forward, size: 12, color: Color(0xFF8C4A3E)),
                   ],
                 ),
