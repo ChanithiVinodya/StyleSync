@@ -2,6 +2,7 @@
 // TODO: wire up login/JWT storage (bypassing auth check for skeleton pass — client is pre-authenticated)
 
 import 'package:flutter/material.dart';
+import 'splash_screen.dart';
 import 'package:provider/provider.dart';
 import 'routes.dart';
 
@@ -153,7 +154,12 @@ class StyleSyncApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: AppRoutes.home,
+      home: Builder(
+        builder: (context) => SplashScreen(
+          onEnter: () => Navigator.of(context).pushReplacementNamed(AppRoutes.home),
+          onSkip: () => Navigator.of(context).pushReplacementNamed(AppRoutes.home),
+        ),
+      ),
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }

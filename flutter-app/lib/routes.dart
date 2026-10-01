@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/splash/splash_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/designers/designer_profile_screen.dart';
 import 'screens/requests/new_request_screen.dart';
@@ -9,6 +10,7 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/messages/messages_screen.dart';
 
 class AppRoutes {
+  static const String splash = '/splash';
   static const String home = '/';
   static const String designers = '/designers';
   static const String designerProfile = '/designers/:id';
@@ -31,7 +33,14 @@ class AppRoutes {
     final uri = Uri.parse(settings.name ?? '/');
 
     // Handle exact named routes
-    if (uri.path == home) {
+    if (uri.path == splash) {
+      return MaterialPageRoute(
+        builder: (context) => SplashScreen(
+          onEnter: () => Navigator.of(context).pushReplacementNamed(home),
+          onSkip: () => Navigator.of(context).pushReplacementNamed(home),
+        ),
+      );
+    } else if (uri.path == home) {
       return MaterialPageRoute(builder: (_) => const HomeScreen(initialTab: 0));
     } else if (uri.path == designers) {
       return MaterialPageRoute(builder: (_) => const HomeScreen(initialTab: 1));
