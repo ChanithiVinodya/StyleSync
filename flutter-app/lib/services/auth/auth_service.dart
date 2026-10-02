@@ -42,7 +42,7 @@ class AuthService {
           'email': email.trim(),
           'password': password,
           'confirmPassword': confirmPassword,
-          'role': role.backendValue,
+          'role': role.displayName,
         },
       );
 
