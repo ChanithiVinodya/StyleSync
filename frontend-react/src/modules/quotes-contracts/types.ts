@@ -32,9 +32,29 @@ export interface Contract {
   status: string;
   totalAmount: number;
   terms?: string;
+  termsSummary?: string;
   signedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface AgentQuoteItemDraft {
+  description: string;
+  category: string;
+  quantity: number;
+  unitCost: number;
+}
+
+export interface AgentBudgetScopeResponse {
+  scopeSummary?: string;
+  scope_summary?: string;
+  items: AgentQuoteItemDraft[];
+  notes?: string;
+  estimatedTotal?: number;
+  estimated_total?: number;
+  withinBudget?: boolean;
+  within_budget?: boolean;
+  source?: string;
 }
 
 export interface PagedResult<T> {

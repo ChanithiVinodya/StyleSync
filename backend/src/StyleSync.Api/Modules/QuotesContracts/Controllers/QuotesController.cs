@@ -158,9 +158,10 @@ namespace StyleSync.Api.Controllers
             if (agentResult is null || agentResult.Items.Count == 0)
                 return StatusCode(502, new { message = "AI service returned an empty draft." });
 
+            var quoteId = Guid.NewGuid();
             var quote = new Quote
             {
-                Id = Guid.NewGuid(),
+                Id = quoteId,
                 ProjectRequestId = dto.ProjectRequestId,
                 DesignerId = dto.DesignerId,
                 Status = QuoteStatus.Draft,
@@ -170,6 +171,7 @@ namespace StyleSync.Api.Controllers
                 Items = agentResult.Items.Select(i => new QuoteItem
                 {
                     Id = Guid.NewGuid(),
+                    QuoteId = quoteId,
                     Description = i.Description,
                     Category = Enum.TryParse<QuoteItemCategory>(i.Category, true, out var cat) ? cat : QuoteItemCategory.Other,
                     Quantity = i.Quantity,
@@ -183,6 +185,50 @@ namespace StyleSync.Api.Controllers
             await _db.SaveChangesAsync();
 
             return CreatedAtAction(nameof(GetById), new { id = quote.Id }, ToResponseDto(quote));
+        }
+
+        // POST /api/quotes/draft-preview
+        // Calls the Python Budget/Scope Agent to preview the draft scope and cost breakdown
+        // without saving to the database.
+        [HttpPost("draft-preview")]
+        public async Task<ActionResult<AgentBudgetScopeResponse>> DraftPreview(
+            DraftQuoteFromAgentDto dto,
+            [FromServices] IHttpClientFactory httpClientFactory)
+        {
+            var client = httpClientFactory.CreateClient("AiService");
+
+            var agentRequest = new AgentBudgetScopeRequest
+            {
+                RoomType = dto.RoomType,
+                RoomSizeSqft = dto.RoomSizeSqft,
+                BudgetMin = dto.BudgetMin,
+                BudgetMax = dto.BudgetMax,
+                StyleProfile = dto.StyleProfile,
+                StyleConfidence = dto.StyleConfidence,
+                Preferences = dto.Preferences
+            };
+
+            HttpResponseMessage agentHttpResponse;
+            try
+            {
+                agentHttpResponse = await client.PostAsJsonAsync("/agents/budget-scope", agentRequest);
+            }
+            catch (HttpRequestException ex)
+            {
+                return StatusCode(502, new { message = $"Couldn't reach the AI service at {client.BaseAddress}. Is it running? ({ex.Message})" });
+            }
+
+            if (!agentHttpResponse.IsSuccessStatusCode)
+            {
+                var errBody = await agentHttpResponse.Content.ReadAsStringAsync();
+                return StatusCode(502, new { message = $"AI service returned {(int)agentHttpResponse.StatusCode}: {errBody}" });
+            }
+
+            var agentResult = await agentHttpResponse.Content.ReadFromJsonAsync<AgentBudgetScopeResponse>();
+            if (agentResult is null || agentResult.Items.Count == 0)
+                return StatusCode(502, new { message = "AI service returned an empty draft." });
+
+            return Ok(agentResult);
         }
 
         // PUT /api/quotes/{id}
@@ -207,25 +253,22 @@ namespace StyleSync.Api.Controllers
                     return BadRequest(new { message = "A quote needs at least one line item." });
 
                 _db.QuoteItems.RemoveRange(quote.Items);
-                quote.Items.Clear();
 
-                foreach (var i in dto.Items)
+                var newItems = dto.Items.Select(i => new QuoteItem
                 {
-                    var item = new QuoteItem
-                    {
-                        Id = Guid.NewGuid(),
-                        QuoteId = quote.Id,
-                        Description = i.Description,
-                        Category = i.Category,
-                        Quantity = i.Quantity,
-                        UnitCost = i.UnitCost,
-                        LineTotal = i.Quantity * i.UnitCost
-                    };
-                    _db.Entry(item).State = EntityState.Added;
-                    quote.Items.Add(item);
-                }
+                    Id = Guid.NewGuid(),
+                    QuoteId = quote.Id,
+                    Description = i.Description,
+                    Category = i.Category,
+                    Quantity = i.Quantity,
+                    UnitCost = i.UnitCost,
+                    LineTotal = i.Quantity * i.UnitCost
+                }).ToList();
 
-                quote.TotalCost = quote.Items.Sum(i => i.LineTotal);
+                _db.QuoteItems.AddRange(newItems);
+
+                quote.TotalCost = newItems.Sum(i => i.LineTotal);
+                quote.Items = newItems;
                 quote.IsAiGenerated = false;
             }
 
@@ -239,9 +282,10 @@ namespace StyleSync.Api.Controllers
             {
                 await _db.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
-                return Conflict(new { message = "This quote was just updated elsewhere. Please refresh and try again." });
+                var entityName = ex.Entries.FirstOrDefault()?.Entity.GetType().Name ?? "Unknown";
+                return Conflict(new { message = $"Concurrency on {entityName}: {ex.Message}" });
             }
 
             return Ok(ToResponseDto(quote));

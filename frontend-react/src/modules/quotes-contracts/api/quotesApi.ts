@@ -1,4 +1,4 @@
-import type { Quote, PagedResult, Contract } from "../types";
+import type { Quote, PagedResult, Contract, AgentBudgetScopeResponse } from "../types";
 import type { QuoteFormPayload } from "../components/QuoteFormModal";
 import type { AiDraftPayload } from "../components/AiDraftModal";
 import { addMockContract } from "./contractsApi";
@@ -258,6 +258,41 @@ export async function deleteQuote(id: string): Promise<null> {
   }
 }
 
+export async function previewQuoteFromAgent(payload: AiDraftPayload): Promise<AgentBudgetScopeResponse> {
+  try {
+    const res = await fetch(`${API_BASE}/api/quotes/draft-preview`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return await handle<AgentBudgetScopeResponse>(res);
+  } catch {
+    // Deterministic fallback mirroring budget_scope_agent.py
+    const targetBudget = (payload.budgetMin + payload.budgetMax) / 2 || payload.budgetMin || (payload.roomSizeSqft * 800);
+    const split = [
+      { category: "Design", pct: 0.10, desc: `Design — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} concept & planning` },
+      { category: "Labor", pct: 0.30, desc: `Labor — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} installation & craftsmanship` },
+      { category: "Materials", pct: 0.35, desc: `Materials — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} fixtures & finishes` },
+      { category: "Furniture", pct: 0.25, desc: `Furniture — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} curated styling` },
+    ];
+    const items = split.map((s) => ({
+      description: s.desc,
+      category: s.category,
+      quantity: 1,
+      unitCost: Math.round((targetBudget * s.pct) / 100) * 100,
+    }));
+    const total = items.reduce((sum, it) => sum + it.unitCost * it.quantity, 0);
+    return {
+      scopeSummary: `${payload.styleProfile} ${payload.roomType.toLowerCase()} refresh, ${payload.roomSizeSqft.toFixed(0)} sq ft.`,
+      items,
+      notes: "Fallback estimate — generated using deterministic category ratios (Design 10%, Labor 30%, Materials 35%, Furniture 25%).",
+      estimatedTotal: total,
+      withinBudget: payload.budgetMax > 0 ? (total >= payload.budgetMin && total <= payload.budgetMax) : true,
+      source: "fallback",
+    };
+  }
+}
+
 export async function draftQuoteFromAgent(payload: AiDraftPayload): Promise<Quote> {
   try {
     const res = await fetch(`${API_BASE}/api/quotes/draft-from-agent`, {
@@ -268,20 +303,36 @@ export async function draftQuoteFromAgent(payload: AiDraftPayload): Promise<Quot
     return await handle<Quote>(res);
   } catch {
     const quotes = getLocalQuotes();
-    const estBudget = payload.budgetMax || payload.budgetMin || 350000;
+    const targetBudget = (payload.budgetMin + payload.budgetMax) / 2 || payload.budgetMin || (payload.roomSizeSqft * 800);
+    const split = [
+      { category: "Design", pct: 0.10, desc: `Design — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} work` },
+      { category: "Labor", pct: 0.30, desc: `Labor — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} work` },
+      { category: "Materials", pct: 0.35, desc: `Materials — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} work` },
+      { category: "Furniture", pct: 0.25, desc: `Furniture — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} work` },
+    ];
+    const items = split.map((s, idx) => {
+      const unitCost = Math.round((targetBudget * s.pct) / 100) * 100;
+      return {
+        id: `ai-item-${idx}-${Date.now()}`,
+        description: s.desc,
+        category: s.category,
+        quantity: 1,
+        unitCost,
+        totalCost: unitCost,
+      };
+    });
+    const totalCost = items.reduce((sum, it) => sum + it.totalCost, 0);
+
     const newQuote: Quote = {
       id: `q-ai-${Date.now().toString().slice(-4)}`,
       projectRequestId: payload.projectRequestId || crypto.randomUUID(),
-      designerId: crypto.randomUUID(),
-      scopeSummary: `AI Generated Scope: ${payload.preferences || payload.roomType || "Complete Room Redesign & Styling"}`,
+      designerId: payload.designerId || crypto.randomUUID(),
+      scopeSummary: `${payload.styleProfile} ${payload.roomType.toLowerCase()} refresh, ${payload.roomSizeSqft.toFixed(0)} sq ft.`,
+      notes: "Fallback estimate — generated without a live LLM call, split across standard category ratios. (agent source: fallback)",
       isAiGenerated: true,
       status: "Draft",
-      totalCost: estBudget,
-      items: [
-        { id: "ai-1", description: "Design Concept & 3D Spatial Rendering", category: "Design", quantity: 1, unitCost: Math.round(estBudget * 0.25) },
-        { id: "ai-2", description: "Material & Furniture Sourcing", category: "Sourcing", quantity: 1, unitCost: Math.round(estBudget * 0.50) },
-        { id: "ai-3", description: "Contractor Coordination & On-site Setup", category: "Execution", quantity: 1, unitCost: Math.round(estBudget * 0.25) },
-      ],
+      totalCost,
+      items,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

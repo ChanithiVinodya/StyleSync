@@ -3,7 +3,7 @@ import { listQuotes, createQuote, updateQuote, updateQuoteStatus, acceptQuote, d
 import StatusBadge from "../components/StatusBadge";
 import QuoteFormModal, { type QuoteFormPayload } from "../components/QuoteFormModal";
 import AiDraftModal, { type AiDraftPayload } from "../components/AiDraftModal";
-import type { Quote } from "../types";
+import type { Quote, QuoteItem } from "../types";
 import "../styles/theme.css";
 
 const STATUS_OPTIONS = ["Draft", "Submitted", "ClientReview", "RevisionRequested", "Accepted", "Rejected"];
@@ -120,8 +120,24 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
     refresh();
   }
 
-  async function handleAiDraft(payload: AiDraftPayload) {
-    await draftQuoteFromAgent(payload);
+  const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
+
+  async function handleAiDraft(
+    payload: AiDraftPayload,
+    finalQuote?: { scopeSummary: string; notes: string; items: QuoteItem[] }
+  ) {
+    if (finalQuote && finalQuote.items.length > 0) {
+      await createQuote({
+        projectRequestId: payload.projectRequestId ?? crypto.randomUUID(),
+        designerId: payload.designerId ?? crypto.randomUUID(),
+        scopeSummary: finalQuote.scopeSummary,
+        notes: finalQuote.notes,
+        isAiGenerated: true,
+        items: finalQuote.items,
+      });
+    } else {
+      await draftQuoteFromAgent(payload);
+    }
     setAiModalOpen(false);
     refresh();
   }
@@ -136,7 +152,22 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
           <div className="qc-page__subtitle">Draft, review, and turn accepted quotes into contracts.</div>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="qc-btn qc-btn--ghost" onClick={() => setAiModalOpen(true)}>Generate with AI</button>
+          <button
+            className="qc-btn"
+            style={{
+              background: "linear-gradient(135deg, #C48A36 0%, #D97706 100%)",
+              color: "#ffffff",
+              border: "none",
+              fontWeight: 600,
+              boxShadow: "0 2px 8px rgba(196, 138, 54, 0.35)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6
+            }}
+            onClick={() => setAiModalOpen(true)}
+          >
+            <span>✨</span> Generate with AI
+          </button>
           <button className="qc-btn qc-btn--primary" onClick={() => setModalOpen(true)}>New quote</button>
         </div>
       </div>
@@ -163,70 +194,89 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
       </div>
 
       <div className="qc-table-card">
-        <table className="qc-table">
-          <thead>
-            <tr>
-              <th>Scope</th>
-              <th>Status</th>
-              <th>Items</th>
-              <th>Total</th>
-              <th>Updated</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={6} className="qc-table-empty">Loading quotes…</td></tr>
-            )}
-            {!loading && error && (
-              <tr><td colSpan={6} className="qc-table-empty" style={{ color: "var(--qc-danger)" }}>{error}</td></tr>
-            )}
-            {!loading && !error && (!quotes || quotes.length === 0) && (
-              <tr><td colSpan={6} className="qc-table-empty">No quotes yet. Create one to get started.</td></tr>
-            )}
-            {!loading && !error && quotes?.map((q) => {
-              const statusStr = getStatusStr(q.status);
-              return (
-                <tr key={q.id}>
-                  <td>
-                    <div style={{ fontWeight: 500 }}>{q.scopeSummary || "Untitled scope"}</div>
-                    {q.isAiGenerated && (
-                      <div style={{ fontSize: 11.5, color: "var(--qc-muted)" }}>AI-drafted, not yet revised</div>
-                    )}
-                  </td>
-                  <td><StatusBadge status={q.status} /></td>
-                  <td>{q.items?.length ?? 0}</td>
-                  <td className="qc-money">{formatMoney(q.totalCost)}</td>
-                  <td style={{ color: "var(--qc-muted)", fontSize: 12.5 }}>
-                    {q.updatedAt ? new Date(q.updatedAt).toLocaleDateString() : "—"}
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}>
-                      {(statusStr === "Draft" || statusStr === "RevisionRequested") && (
-                        <button className="qc-btn qc-btn--ghost" onClick={() => setEditingQuote(q)}>Edit</button>
+        <div className="qc-table-responsive">
+          <table className="qc-table">
+            <thead>
+              <tr>
+                <th style={{ minWidth: 260 }}>Scope</th>
+                <th style={{ width: 100 }}>Status</th>
+                <th style={{ width: 80, textAlign: "center" }}>Items</th>
+                <th style={{ width: 130 }}>Total</th>
+                <th style={{ width: 110 }}>Updated</th>
+                <th style={{ textAlign: "right", minWidth: 210, paddingRight: 20 }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr><td colSpan={6} className="qc-table-empty">Loading quotes…</td></tr>
+              )}
+              {!loading && error && (
+                <tr><td colSpan={6} className="qc-table-empty" style={{ color: "var(--qc-danger)" }}>{error}</td></tr>
+              )}
+              {!loading && !error && (!quotes || quotes.length === 0) && (
+                <tr><td colSpan={6} className="qc-table-empty">No quotes yet. Create one or generate with AI to get started.</td></tr>
+              )}
+              {!loading && !error && quotes?.map((q) => {
+                const statusStr = getStatusStr(q.status);
+                return (
+                  <tr key={q.id}>
+                    <td>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontWeight: 600 }}>{q.scopeSummary || "Untitled scope"}</span>
+                        {q.isAiGenerated && (
+                          <span className="qc-ai-tag">✨ AI Draft</span>
+                        )}
+                      </div>
+                      {q.notes && (
+                        <div style={{ fontSize: 11.5, color: "var(--qc-muted)", marginTop: 2, maxWidth: 360, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {q.notes}
+                        </div>
                       )}
-                      {statusStr === "Draft" && (
-                        <button className="qc-btn qc-btn--ghost" onClick={() => handleAdvance(q)}>Submit</button>
-                      )}
-                      {(statusStr === "Submitted" || statusStr === "ClientReview") && (
-                        <>
-                          <button className="qc-btn qc-btn--primary" onClick={() => handleAccept(q)}>Accept</button>
-                          <button className="qc-btn qc-btn--danger" onClick={() => handleDelete(q)}>Delete</button>
-                        </>
-                      )}
-                      {statusStr === "Accepted" && onGoToContracts && (
-                        <button className="qc-btn qc-btn--ghost" onClick={onGoToContracts}>View Contract</button>
-                      )}
-                      {statusStr === "Draft" && (
-                        <button className="qc-btn qc-btn--danger" onClick={() => handleDelete(q)}>Delete</button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                    </td>
+                    <td><StatusBadge status={q.status} /></td>
+                    <td style={{ textAlign: "center" }}>
+                      <button
+                        type="button"
+                        className="qc-btn qc-btn--ghost qc-btn--sm"
+                        style={{ padding: "2px 8px", fontSize: 12 }}
+                        onClick={() => setViewingQuote(q)}
+                        title="View line items"
+                      >
+                        {q.items?.length ?? 0} item{(q.items?.length ?? 0) === 1 ? "" : "s"}
+                      </button>
+                    </td>
+                    <td className="qc-money">{formatMoney(q.totalCost)}</td>
+                    <td style={{ color: "var(--qc-muted)", fontSize: 12.5, whiteSpace: "nowrap" }}>
+                      {q.updatedAt ? new Date(q.updatedAt).toLocaleDateString() : "—"}
+                    </td>
+                    <td style={{ textAlign: "right", paddingRight: 20 }}>
+                      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", alignItems: "center", flexWrap: "nowrap" }}>
+                        {(statusStr === "Draft" || statusStr === "RevisionRequested") && (
+                          <button className="qc-btn qc-btn--ghost qc-btn--sm" onClick={() => setEditingQuote(q)}>Edit</button>
+                        )}
+                        {statusStr === "Draft" && (
+                          <button className="qc-btn qc-btn--ghost qc-btn--sm" onClick={() => handleAdvance(q)}>Submit</button>
+                        )}
+                        {(statusStr === "Submitted" || statusStr === "ClientReview") && (
+                          <>
+                            <button className="qc-btn qc-btn--primary qc-btn--sm" onClick={() => handleAccept(q)}>Accept</button>
+                            <button className="qc-btn qc-btn--danger qc-btn--sm" onClick={() => handleDelete(q)}>Delete</button>
+                          </>
+                        )}
+                        {statusStr === "Accepted" && onGoToContracts && (
+                          <button className="qc-btn qc-btn--ghost qc-btn--sm" onClick={onGoToContracts}>View Contract</button>
+                        )}
+                        {statusStr === "Draft" && (
+                          <button className="qc-btn qc-btn--danger qc-btn--sm" onClick={() => handleDelete(q)}>Delete</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
 
         <div className="qc-pagination">
           <span>{totalCount} quote{totalCount === 1 ? "" : "s"}</span>
@@ -237,6 +287,79 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
           </div>
         </div>
       </div>
+
+      {/* Quote Details View Modal */}
+      {viewingQuote && (
+        <div className="qc-modal-backdrop" onMouseDown={() => setViewingQuote(null)}>
+          <div className="qc-modal qc-modal--lg" onMouseDown={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div className="qc-modal__title" style={{ margin: 0 }}>Quote Details</div>
+                  {viewingQuote.isAiGenerated && <span className="qc-ai-tag">✨ AI Draft</span>}
+                  <StatusBadge status={viewingQuote.status} />
+                </div>
+                <div style={{ fontSize: 13, color: "var(--qc-muted)", marginTop: 4 }}>
+                  {viewingQuote.scopeSummary}
+                </div>
+              </div>
+              <button type="button" className="qc-icon-btn" onClick={() => setViewingQuote(null)}>✕</button>
+            </div>
+
+            {viewingQuote.notes && (
+              <div style={{ background: "var(--qc-surface-sunken)", padding: "10px 14px", borderRadius: 8, fontSize: 12.5, marginBottom: 16, borderLeft: "3px solid var(--qc-primary)" }}>
+                <strong>Notes:</strong> {viewingQuote.notes}
+              </div>
+            )}
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Itemized Cost Breakdown</div>
+              <div style={{ border: "1px solid var(--qc-border)", borderRadius: 8, overflow: "hidden" }}>
+                <table className="qc-table" style={{ margin: 0 }}>
+                  <thead>
+                    <tr>
+                      <th>Category</th>
+                      <th>Description</th>
+                      <th style={{ textAlign: "right" }}>Quantity</th>
+                      <th style={{ textAlign: "right" }}>Unit Cost</th>
+                      <th style={{ textAlign: "right" }}>Line Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(viewingQuote.items || []).map((item, idx) => (
+                      <tr key={item.id || idx}>
+                        <td>
+                          <span className={`qc-category-badge qc-cat--${item.category || "Other"}`}>
+                            {item.category}
+                          </span>
+                        </td>
+                        <td>{item.description}</td>
+                        <td style={{ textAlign: "right" }}>{item.quantity}</td>
+                        <td style={{ textAlign: "right" }}>{formatMoney(item.unitCost)}</td>
+                        <td style={{ textAlign: "right", fontWeight: 600 }}>
+                          {formatMoney((item.quantity || 1) * (item.unitCost || 0))}
+                        </td>
+                      </tr>
+                    ))}
+                    <tr style={{ background: "var(--qc-surface-sunken)" }}>
+                      <td colSpan={4} style={{ fontWeight: 700, textAlign: "right" }}>Total Cost:</td>
+                      <td style={{ fontWeight: 700, textAlign: "right", color: "var(--qc-primary)", fontSize: 15 }}>
+                        {formatMoney(viewingQuote.totalCost)}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+              <button type="button" className="qc-btn qc-btn--ghost" onClick={() => setViewingQuote(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {modalOpen && (
         <QuoteFormModal onSubmit={handleCreate} onClose={() => setModalOpen(false)} />
