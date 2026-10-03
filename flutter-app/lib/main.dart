@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:provider/provider.dart' as legacy_provider;
 import 'routes.dart';
-import 'screens/splash/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,7 +13,7 @@ void main() {
         legacy_provider.ChangeNotifierProvider(create: (_) => AppStateProvider()),
       ],
       child: const ProviderScope(
-        child: StyleSyncApp(),
+        child: StyleSyncApp(),  
       ),
     ),
   );
@@ -81,11 +80,11 @@ class StyleSyncApp extends StatelessWidget {
     const deepEspresso = Color(0xFF241611);
     const canvasCream = Color(0xFFFAF7F2);
 
-    // Dark Mode Palette: Roasted espresso, terracotta glow, and warm ivory text
-    const darkBg = Color(0xFF191210);
-    const darkSurface = Color(0xFF261D19);
+    // Dark Mode Palette: Web app matching (#12100E background, #1A1715 surface, #2E2824 border, #FAF8F5 text)
+    const darkBg = Color(0xFF12100E);
+    const darkSurface = Color(0xFF1A1715);
     const darkTerracotta = Color(0xFFD48270);
-    const darkText = Color(0xFFFAF6F2);
+    const darkText = Color(0xFFFAF8F5);
 
     return MaterialApp(
       title: 'StyleSync',
@@ -124,7 +123,7 @@ class StyleSyncApp extends StatelessWidget {
           ),
         ),
       ),
-      // Dark Theme (Luxury Espresso & Bronze Glow)
+      // Dark Theme (Matches StyleSync Web App Dark Mode)
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
@@ -153,11 +152,11 @@ class StyleSyncApp extends StatelessWidget {
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
-            side: const BorderSide(color: Color(0xFF382C27)),
+            side: const BorderSide(color: Color(0xFF2E2824)),
           ),
         ),
       ),
-      home: const SplashScreen(),
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }

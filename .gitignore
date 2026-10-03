@@ -52,3 +52,5 @@ Thumbs.db
 *.iws
 *.swp
 devtools_options.yaml
+*.zip
+
