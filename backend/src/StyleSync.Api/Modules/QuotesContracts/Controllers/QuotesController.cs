@@ -341,7 +341,8 @@ namespace StyleSync.Api.Controllers
                 ClientId = resolvedClientId,
                 TotalAmount = quote.TotalCost,
                 TermsSummary = string.IsNullOrWhiteSpace(quote.ScopeSummary) ? "Interior Design Contract" : quote.ScopeSummary,
-                Status = ContractStatus.Draft
+                Status = ContractStatus.Draft,
+                Quote = quote
             };
 
             _db.Contracts.Add(contract);
@@ -409,7 +410,8 @@ namespace StyleSync.Api.Controllers
             SignedAt = c.SignedAt,
             TermsSummary = c.TermsSummary,
             CreatedAt = c.CreatedAt,
-            UpdatedAt = c.UpdatedAt
+            UpdatedAt = c.UpdatedAt,
+            Quote = c.Quote == null ? null : ToResponseDto(c.Quote)
         };
     }
 }

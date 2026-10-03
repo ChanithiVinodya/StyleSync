@@ -33,9 +33,12 @@ export interface Contract {
   totalAmount: number;
   terms?: string;
   termsSummary?: string;
+  startDate?: string;
+  endDate?: string;
   signedAt?: string;
   createdAt?: string;
   updatedAt?: string;
+  quote?: Quote;
 }
 
 export interface AgentQuoteItemDraft {

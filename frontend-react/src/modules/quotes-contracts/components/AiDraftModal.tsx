@@ -409,7 +409,7 @@ export default function AiDraftModal({ onSubmit, onClose }: AiDraftModalProps) {
                       <span className="qc-spinner" /> Consulting Agent…
                     </span>
                   ) : (
-                    "Preview Draft 👁️"
+                    "Preview Draft "
                   )}
                 </button>
                 <button
@@ -430,7 +430,7 @@ export default function AiDraftModal({ onSubmit, onClose }: AiDraftModalProps) {
                       <span className="qc-spinner" /> Drafting with AI…
                     </span>
                   ) : (
-                    "Draft Quote with AI ✨"
+                    "Draft Quote with AI "
                   )}
                 </button>
               </div>
@@ -582,7 +582,7 @@ export default function AiDraftModal({ onSubmit, onClose }: AiDraftModalProps) {
                       Saving Quote…
                     </span>
                   ) : (
-                    "Save as Draft Quote ✨ (Draft OK)"
+                    "Save as Draft Quote (Draft OK)"
                   )}
                 </button>
               </div>

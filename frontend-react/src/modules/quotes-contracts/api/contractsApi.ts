@@ -1,4 +1,5 @@
 import type { Contract, PagedResult } from "../types";
+import { getLocalQuotes } from "./quotesApi";
 
 const RAW_API_BASE = import.meta.env?.VITE_API_BASE_URL ?? "http://localhost:5000";
 const API_BASE = RAW_API_BASE.replace(/\/api\/?$/, "");
@@ -6,9 +7,16 @@ const API_BASE = RAW_API_BASE.replace(/\/api\/?$/, "");
 const CONTRACT_STORAGE_KEY = "stylesync_contracts_store";
 
 function getLocalContracts(): Contract[] {
+  const quotes = getLocalQuotes();
   const data = localStorage.getItem(CONTRACT_STORAGE_KEY);
   if (data) {
-    try { return JSON.parse(data); } catch { /* ignore */ }
+    try {
+      const list: Contract[] = JSON.parse(data);
+      return list.map((c) => ({
+        ...c,
+        quote: c.quote || quotes.find((q) => q.id === c.quoteId),
+      }));
+    } catch { /* ignore */ }
   }
   const defaults: Contract[] = [
     {
@@ -19,7 +27,9 @@ function getLocalContracts(): Contract[] {
       clientId: "client-123",
       status: "PendingSignature",
       totalAmount: 520000.00,
+      termsSummary: "Executive Penthouse Interior Fitout & Custom Joinery",
       terms: "Standard StyleSync Interior Design & Installation Contract. 50% deposit, 50% upon final signoff.",
+      quote: quotes.find((q) => q.id === "q-100"),
       createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
       updatedAt: new Date(Date.now() - 86400000).toISOString()
     },
@@ -32,7 +42,9 @@ function getLocalContracts(): Contract[] {
       status: "Active",
       signedAt: new Date(Date.now() - 86400000 * 5).toISOString(),
       totalAmount: 380000.00,
+      termsSummary: "Kitchen Makeover & Quartz Countertops Installation",
       terms: "Kitchen Makeover Contract with guaranteed delivery timeline.",
+      quote: quotes.find((q) => q.id === "q-099"),
       createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
       updatedAt: new Date(Date.now() - 86400000 * 5).toISOString()
     }
@@ -80,7 +92,13 @@ export async function listContracts({
     params.set("pageSize", String(pageSize));
 
     const res = await fetch(`${API_BASE}/api/contracts?${params.toString()}`);
-    return await handle<PagedResult<Contract>>(res);
+    const data = await handle<PagedResult<Contract>>(res);
+    const quotes = getLocalQuotes();
+    const items = (data.items || []).map((c) => ({
+      ...c,
+      quote: c.quote || quotes.find((q) => q.id === c.quoteId),
+    }));
+    return { ...data, items };
   } catch {
     let contracts = getLocalContracts();
     if (status) {
@@ -102,7 +120,12 @@ export async function listContracts({
 export async function getContract(id: string): Promise<Contract> {
   try {
     const res = await fetch(`${API_BASE}/api/contracts/${id}`);
-    return await handle<Contract>(res);
+    const contract = await handle<Contract>(res);
+    if (!contract.quote && contract.quoteId) {
+      const quotes = getLocalQuotes();
+      contract.quote = quotes.find((q) => q.id === contract.quoteId);
+    }
+    return contract;
   } catch {
     const contracts = getLocalContracts();
     const found = contracts.find((c) => c.id === id);

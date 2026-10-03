@@ -99,9 +99,6 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
     try {
       await acceptQuote(quote.id);
       await refresh();
-      if (onGoToContracts) {
-        onGoToContracts();
-      }
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to accept quote.");
     }
@@ -166,7 +163,7 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
             }}
             onClick={() => setAiModalOpen(true)}
           >
-            <span>✨</span> Generate with AI
+            <span></span> Generate with AI
           </button>
           <button className="qc-btn qc-btn--primary" onClick={() => setModalOpen(true)}>New quote</button>
         </div>
@@ -262,9 +259,6 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
                             <button className="qc-btn qc-btn--primary qc-btn--sm" onClick={() => handleAccept(q)}>Accept</button>
                             <button className="qc-btn qc-btn--danger qc-btn--sm" onClick={() => handleDelete(q)}>Delete</button>
                           </>
-                        )}
-                        {statusStr === "Accepted" && onGoToContracts && (
-                          <button className="qc-btn qc-btn--ghost qc-btn--sm" onClick={onGoToContracts}>View Contract</button>
                         )}
                         {statusStr === "Draft" && (
                           <button className="qc-btn qc-btn--danger qc-btn--sm" onClick={() => handleDelete(q)}>Delete</button>

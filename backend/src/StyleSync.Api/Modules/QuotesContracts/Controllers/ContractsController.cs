@@ -33,7 +33,10 @@ namespace StyleSync.Api.Controllers
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            var query = _db.Contracts.AsQueryable();
+            var query = _db.Contracts
+                .Include(c => c.Quote)
+                .ThenInclude(q => q!.Items)
+                .AsQueryable();
             if (status.HasValue) query = query.Where(c => c.Status == status.Value);
             if (designerId.HasValue) query = query.Where(c => c.DesignerId == designerId.Value);
             if (clientId.HasValue) query = query.Where(c => c.ClientId == clientId.Value);
@@ -61,7 +64,10 @@ namespace StyleSync.Api.Controllers
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<ContractResponseDto>> GetById(Guid id)
         {
-            var contract = await _db.Contracts.FirstOrDefaultAsync(c => c.Id == id);
+            var contract = await _db.Contracts
+                .Include(c => c.Quote)
+                .ThenInclude(q => q!.Items)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (contract is null) return NotFound(new { message = $"Contract {id} was not found." });
             return Ok(ToResponseDto(contract));
         }
@@ -72,7 +78,10 @@ namespace StyleSync.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<ContractResponseDto>> Update(Guid id, UpdateContractDto dto)
         {
-            var contract = await _db.Contracts.FirstOrDefaultAsync(c => c.Id == id);
+            var contract = await _db.Contracts
+                .Include(c => c.Quote)
+                .ThenInclude(q => q!.Items)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (contract is null) return NotFound(new { message = $"Contract {id} was not found." });
 
             if (contract.Status is ContractStatus.Completed or ContractStatus.Cancelled)
@@ -94,7 +103,10 @@ namespace StyleSync.Api.Controllers
         [HttpPost("{id:guid}/sign")]
         public async Task<ActionResult<ContractResponseDto>> Sign(Guid id, SignContractDto dto)
         {
-            var contract = await _db.Contracts.FirstOrDefaultAsync(c => c.Id == id);
+            var contract = await _db.Contracts
+                .Include(c => c.Quote)
+                .ThenInclude(q => q!.Items)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (contract is null) return NotFound(new { message = $"Contract {id} was not found." });
 
             if (contract.Status is ContractStatus.Completed or ContractStatus.Cancelled)
@@ -114,7 +126,10 @@ namespace StyleSync.Api.Controllers
         [HttpPost("{id:guid}/cancel")]
         public async Task<ActionResult<ContractResponseDto>> Cancel(Guid id)
         {
-            var contract = await _db.Contracts.FirstOrDefaultAsync(c => c.Id == id);
+            var contract = await _db.Contracts
+                .Include(c => c.Quote)
+                .ThenInclude(q => q!.Items)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (contract is null) return NotFound(new { message = $"Contract {id} was not found." });
 
             if (contract.Status == ContractStatus.Completed)
@@ -144,7 +159,30 @@ namespace StyleSync.Api.Controllers
             SignedAt = c.SignedAt,
             TermsSummary = c.TermsSummary,
             CreatedAt = c.CreatedAt,
-            UpdatedAt = c.UpdatedAt
+            UpdatedAt = c.UpdatedAt,
+            Quote = c.Quote == null ? null : new QuoteResponseDto
+            {
+                Id = c.Quote.Id,
+                ProjectRequestId = c.Quote.ProjectRequestId,
+                DesignerId = c.Quote.DesignerId,
+                Status = c.Quote.Status,
+                IsAiGenerated = c.Quote.IsAiGenerated,
+                ScopeSummary = c.Quote.ScopeSummary,
+                Notes = c.Quote.Notes,
+                TotalCost = c.Quote.TotalCost,
+                CreatedAt = c.Quote.CreatedAt,
+                UpdatedAt = c.Quote.UpdatedAt,
+                ContractId = c.Id,
+                Items = c.Quote.Items?.Select(i => new QuoteItemResponseDto
+                {
+                    Id = i.Id,
+                    Description = i.Description,
+                    Category = i.Category,
+                    Quantity = i.Quantity,
+                    UnitCost = i.UnitCost,
+                    LineTotal = i.LineTotal
+                }).ToList() ?? new List<QuoteItemResponseDto>()
+            }
         };
     }
 }

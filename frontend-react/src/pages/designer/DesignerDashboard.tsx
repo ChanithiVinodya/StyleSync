@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../auth/authService';
-import { Palette, LogOut, FileText } from 'lucide-react';
+import { Palette, LogOut, FileCheck } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { GlassThemeToggle } from '../../components/GlassThemeToggle';
 
@@ -52,12 +52,12 @@ export const DesignerDashboard: React.FC = () => {
           >
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-[#C48A36]" />
-                <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">Quotes & Contracts Studio</h3>
+                <FileCheck className="w-5 h-5 text-[#C48A36]" />
+                <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">Contracts Studio</h3>
               </div>
-              <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">Draft, revise, generate with AI, and manage quote submissions</p>
+              <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">Review binding legal agreements, signed contracts, and submitted quote specifications</p>
             </div>
-            <span className="px-3 py-1.5 text-xs font-semibold bg-[#1C1917] dark:bg-[#FAF8F5] text-[#FAF8F5] dark:text-[#1C1917] rounded-xl group-hover:scale-105 transition">Manage Quotes &rarr;</span>
+            <span className="px-3 py-1.5 text-xs font-semibold bg-[#1C1917] dark:bg-[#FAF8F5] text-[#FAF8F5] dark:text-[#1C1917] rounded-xl group-hover:scale-105 transition">View Contracts &rarr;</span>
           </Link>
         </div>
 

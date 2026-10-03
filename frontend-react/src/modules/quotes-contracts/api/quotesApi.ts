@@ -9,12 +9,46 @@ const API_BASE = RAW_API_BASE.replace(/\/api\/?$/, "");
 // Fallback in-memory quote store
 const STORAGE_KEY = "stylesync_quotes_store";
 
-function getLocalQuotes(): Quote[] {
+export function getLocalQuotes(): Quote[] {
   const data = localStorage.getItem(STORAGE_KEY);
   if (data) {
     try { return JSON.parse(data); } catch { /* ignore */ }
   }
   const defaults: Quote[] = [
+    {
+      id: "q-100",
+      projectRequestId: "req-000",
+      designerId: "des-001",
+      scopeSummary: "Executive Penthouse Interior Fitout & Custom Joinery",
+      isAiGenerated: false,
+      status: "Accepted",
+      totalCost: 520000.00,
+      notes: "Seismic-rated structural mounting. Includes 3-year commercial workmanship warranty.",
+      items: [
+        { id: "item-10", description: "Custom Walnut Executive Desk & Matching Credenza", category: "Furniture", quantity: 1, unitCost: 260000, totalCost: 260000 },
+        { id: "item-11", description: "Acoustic Slat Wood Wall Paneling & Insulation", category: "Carpentry", quantity: 1, unitCost: 140000, totalCost: 140000 },
+        { id: "item-12", description: "Architectural LED Linear Track Lighting System", category: "Electrical", quantity: 4, unitCost: 30000, totalCost: 120000 }
+      ],
+      createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000).toISOString()
+    },
+    {
+      id: "q-099",
+      projectRequestId: "req-099",
+      designerId: "des-003",
+      scopeSummary: "Kitchen Makeover & Quartz Countertops Installation",
+      isAiGenerated: true,
+      status: "Accepted",
+      totalCost: 380000.00,
+      notes: "Food-safe, scratch-resistant quartz surface with 10-year manufacturer warranty.",
+      items: [
+        { id: "item-20", description: "Calacatta Gold Engineered Quartz Countertop & Splashback", category: "Carpentry", quantity: 1, unitCost: 230000, totalCost: 230000 },
+        { id: "item-21", description: "Soft-close Cabinet Door Refacing & Matte Black Handles", category: "Carpentry", quantity: 1, unitCost: 95000, totalCost: 95000 },
+        { id: "item-22", description: "Dual Under-mount Composite Granite Sink & Brass Mixer Tap", category: "Plumbing", quantity: 1, unitCost: 55000, totalCost: 55000 }
+      ],
+      createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+      updatedAt: new Date(Date.now() - 86400000 * 5).toISOString()
+    },
     {
       id: "q-101",
       projectRequestId: "req-001",
@@ -23,6 +57,7 @@ function getLocalQuotes(): Quote[] {
       isAiGenerated: true,
       status: "ClientReview",
       totalCost: 450000.00,
+      notes: "Includes premium Italian hardware and 2-year warranty.",
       items: [
         { id: "item-1", description: "Custom Oak Coffee Table & TV Unit", category: "Furniture", quantity: 1, unitCost: 220000, totalCost: 220000 },
         { id: "item-2", description: "Ambient Recessed Lighting Installation", category: "Electrical", quantity: 4, unitCost: 35000, totalCost: 140000 },
@@ -238,8 +273,10 @@ export async function acceptQuote(id: string, clientId?: string): Promise<any> {
       status: "Draft",
       totalAmount: updated.totalCost,
       terms: `Official Contract for ${updated.scopeSummary}. 50% upfront, 50% upon final signoff.`,
+      termsSummary: updated.scopeSummary,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      quote: updated,
     });
 
     return updated;

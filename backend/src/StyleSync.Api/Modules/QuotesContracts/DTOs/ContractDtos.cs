@@ -36,5 +36,6 @@ namespace StyleSync.Api.DTOs
         public string? TermsSummary { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
+        public QuoteResponseDto? Quote { get; set; }
     }
 }

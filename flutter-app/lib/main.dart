@@ -15,7 +15,34 @@ class StyleSyncApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'StyleSync',
-      theme: ThemeData(colorSchemeSeed: Colors.teal, useMaterial3: true),
+      debugShowCheckedModeBanner: false,
+      themeMode: ThemeMode.dark,
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF12100E),
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFC48A36),
+          secondary: Color(0xFFD97706),
+          surface: Color(0xFF1A1715),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF161411),
+          indicatorColor: const Color(0xFF2E2721),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const TextStyle(color: Color(0xFFE8A849), fontSize: 12, fontWeight: FontWeight.w600);
+            }
+            return const TextStyle(color: Color(0xFFA8A29E), fontSize: 12);
+          }),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: Color(0xFFE8A849));
+            }
+            return const IconThemeData(color: Color(0xFFA8A29E));
+          }),
+        ),
+        useMaterial3: true,
+      ),
       home: const RootShell(),
     );
   }
@@ -29,7 +56,8 @@ class RootShell extends StatefulWidget {
 }
 
 class _RootShellState extends State<RootShell> {
-  int _index = 0;
+  // Set default tab to Quotes & Contracts (Student 3) for immediate preview
+  int _index = 2;
 
   // Each tab is owned by a different student - see module comments.
   static const _pages = [
@@ -42,6 +70,7 @@ class _RootShellState extends State<RootShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF12100E),
       body: SafeArea(child: _pages[_index]),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,

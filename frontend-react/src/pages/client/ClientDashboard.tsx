@@ -53,11 +53,11 @@ export const ClientDashboard: React.FC = () => {
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <FileText className="w-5 h-5 text-[#C48A36]" />
-                <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">Quotes & Contracts Portal</h3>
+                <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">Quotes Portal</h3>
               </div>
-              <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">Review cost breakdowns, accept/reject quotes, and sign contracts</p>
+              <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">Review itemized cost breakdowns, scope estimation, and accept or reject quotes</p>
             </div>
-            <span className="px-3 py-1.5 text-xs font-semibold bg-[#1C1917] dark:bg-[#FAF8F5] text-[#FAF8F5] dark:text-[#1C1917] rounded-xl group-hover:scale-105 transition">View Portal &rarr;</span>
+            <span className="px-3 py-1.5 text-xs font-semibold bg-[#1C1917] dark:bg-[#FAF8F5] text-[#FAF8F5] dark:text-[#1C1917] rounded-xl group-hover:scale-105 transition">View Quotes &rarr;</span>
           </Link>
         </div>
 
