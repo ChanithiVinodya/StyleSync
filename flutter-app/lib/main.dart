@@ -157,7 +157,7 @@ class StyleSyncApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const SplashScreen(),
+      initialRoute: AppRoutes.splash,
       onGenerateRoute: AppRoutes.onGenerateRoute,
     );
   }
