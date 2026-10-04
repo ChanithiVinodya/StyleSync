@@ -32,7 +32,7 @@ class DesignersApiService {
       throw Exception('Unexpected response format');
     } catch (e) {
       // Offline fallback: filter in-memory fallback seed designers
-      return _filterFallbackListings(params);
+      return filterFallbackListings(params);
     }
   }
 
@@ -46,9 +46,9 @@ class DesignersApiService {
       }
       throw Exception('Unexpected profile format');
     } catch (e) {
-      final found = _fallbackProfiles.firstWhere(
+      final found = fallbackProfiles.firstWhere(
         (p) => p.id == id,
-        orElse: () => _fallbackProfiles.first,
+        orElse: () => fallbackProfiles.first,
       );
       return found;
     }
@@ -66,9 +66,9 @@ class DesignersApiService {
       }
       throw Exception('Unexpected portfolio format');
     } catch (e) {
-      final profile = _fallbackProfiles.firstWhere(
+      final profile = fallbackProfiles.firstWhere(
         (p) => p.id == id,
-        orElse: () => _fallbackProfiles.first,
+        orElse: () => fallbackProfiles.first,
       );
       return profile.portfolioItems;
     }
@@ -106,9 +106,9 @@ class DesignersApiService {
       throw Exception('Unexpected match score format');
     } catch (e) {
       // Deterministic offline calculation
-      final profile = _fallbackProfiles.firstWhere(
+      final profile = fallbackProfiles.firstWhere(
         (p) => p.id == designerId,
-        orElse: () => _fallbackProfiles.first,
+        orElse: () => fallbackProfiles.first,
       );
 
       // 1. Style tag overlap
@@ -162,9 +162,9 @@ class DesignersApiService {
     }
   }
 
-  PagedResult<DesignerSummary> _filterFallbackListings(
+  static PagedResult<DesignerSummary> filterFallbackListings(
       DesignerQueryParameters query) {
-    var filtered = _fallbackProfiles
+    var filtered = fallbackProfiles
         .where((p) => p.listingStatus == ListingStatus.published)
         .toList();
 
@@ -264,7 +264,7 @@ class DesignersApiService {
     );
   }
 
-  static final List<DesignerProfile> _fallbackProfiles = [
+  static final List<DesignerProfile> fallbackProfiles = [
     DesignerProfile(
       id: 1,
       userId: 101,

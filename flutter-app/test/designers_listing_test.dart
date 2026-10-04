@@ -4,6 +4,15 @@ import 'package:stylesync/modules/designers/models/designer_summary.dart';
 import 'package:stylesync/modules/designers/models/paged_result.dart';
 import 'package:stylesync/modules/designers/widgets/designer_card.dart';
 import 'package:stylesync/modules/designers/screens/designer_listing_screen.dart';
+import 'package:stylesync/modules/designers/services/designers_api_service.dart';
+import 'package:stylesync/shared/api/api_client.dart';
+
+class FakeDesignersApiService extends DesignersApiService {
+  @override
+  Future<PagedResult<DesignerSummary>> getListings(DesignerQueryParameters params) async {
+    return DesignersApiService.filterFallbackListings(params);
+  }
+}
 
 void main() {
   group('Designer Models & DTO Deserialization', () {
@@ -177,9 +186,11 @@ void main() {
   group('DesignerListingScreen Widget Tests', () {
     testWidgets('Renders screen header, style chips, and listings',
         (tester) async {
+      final service = FakeDesignersApiService();
+
       await tester.pumpWidget(
-        const MaterialApp(
-          home: DesignerListingScreen(),
+        MaterialApp(
+          home: DesignerListingScreen(apiService: service),
         ),
       );
 
@@ -187,6 +198,7 @@ void main() {
       expect(find.text('Interior Designers'), findsOneWidget);
 
       // Pump to settle async load
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       expect(find.text('Tropical Modernism'), findsWidgets);
