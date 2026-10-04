@@ -36,11 +36,11 @@ Copy-Item .env.example .env      # fill in real keys locally, never commit .env
 ## Run the service
 
 ```bash
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8050
 ```
 
-- Health check: `http://localhost:8000/health`
-- Interactive docs: `http://localhost:8000/docs` — the easiest way to try
+- Health check: `http://localhost:8050/health`
+- Interactive docs: `http://localhost:8050/docs` — the easiest way to try
   the endpoint on any OS: click **POST /workflow/run → Try it out**, edit
   the sample JSON, and click **Execute**.
 - Or from the command line (this will currently return a 500 error with

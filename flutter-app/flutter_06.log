@@ -1,0 +1,84 @@
+Flutter crash report.
+Please report a bug at https://github.com/flutter/flutter/issues.
+
+## command
+
+flutter run -d chrome
+
+## exception
+
+ProcessException: ProcessException: An Application Control policy has blocked this file (at ../../runtime/bin/process_win.cc:577)
+  Command: C:\flutter\bin\cache\artifacts\engine\windows-x64\impellerc.exe --sksl --iplr --json --sl=build\flutter_assets\shaders/ink_sparkle.frag --spirv=build\flutter_assets\shaders/ink_sparkle.frag.spirv --input=C:\flutter\packages\flutter\lib\src\material\shaders\ink_sparkle.frag --input-type=frag --include=C:\flutter\packages\flutter\lib\src\material\shaders --include=C:\flutter\bin\cache\artifacts\engine\windows-x64\shader_lib
+
+```
+#0      _ProcessImpl._start (dart:io-patch/process_patch.dart:411:33)
+#1      Process.start (dart:io-patch/process_patch.dart:42:20)
+#2      _runNonInteractiveProcess (dart:io-patch/process_patch.dart:613:18)
+#3      Process.run (dart:io-patch/process_patch.dart:56:12)
+#4      LocalProcessManager.run (package:process/src/interface/local_process_manager.dart:72:22)
+#5      ErrorHandlingProcessManager.run.<anonymous closure> (package:flutter_tools/src/base/error_handling_io.dart:1217:26)
+#6      _run (package:flutter_tools/src/base/error_handling_io.dart:1050:22)
+#7      ErrorHandlingProcessManager.run (package:flutter_tools/src/base/error_handling_io.dart:1215:12)
+#8      ShaderCompiler.compileShader (package:flutter_tools/src/build_system/tools/shader_compiler.dart:195:56)
+#9      writeBundle.<anonymous closure> (package:flutter_tools/src/bundle_builder.dart:227:46)
+<asynchronous suspension>
+#10     Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
+<asynchronous suspension>
+#11     writeBundle (package:flutter_tools/src/bundle_builder.dart:171:3)
+<asynchronous suspension>
+#12     WebDevFS.update (package:flutter_tools/src/isolated/devfs_web.dart:342:9)
+<asynchronous suspension>
+#13     ResidentWebRunner._updateDevFS (package:flutter_tools/src/isolated/resident_web_runner.dart:804:35)
+<asynchronous suspension>
+#14     ResidentWebRunner.run.<anonymous closure> (package:flutter_tools/src/isolated/resident_web_runner.dart:330:41)
+<asynchronous suspension>
+#15     asyncGuard.<anonymous closure> (package:flutter_tools/src/base/async_guard.dart:108:24)
+<asynchronous suspension>
+```
+
+## flutter doctor
+
+```
+[32m[✓][39m Flutter (Channel stable, 3.44.9, on Microsoft Windows [Version 10.0.26200.9457], locale en-US) [259ms]
+    [32m•[39m Flutter version 3.44.9 on channel stable at C:\flutter
+    [32m•[39m Upstream repository https://github.com/flutter/flutter.git
+    [32m•[39m Framework revision 6b182d2c75 (8 weeks ago), 2026-08-05 10:04:07 -0700
+    [32m•[39m Engine revision 5a2a6a42cc
+    [32m•[39m Dart version 3.12.2
+    [32m•[39m DevTools version 2.57.0
+    [32m•[39m Feature flags: enable-web, enable-linux-desktop, enable-macos-desktop, enable-windows-desktop,
+      enable-android, enable-ios, cli-animations, enable-native-assets, enable-swift-package-manager,
+      omit-legacy-version-file, enable-lldb-debugging, enable-uiscene-migration
+
+[32m[✓][39m Windows Version (Windows 11 or higher, 25H2, 2009) [726ms]
+
+[33m[!][39m Android toolchain - develop for Android devices (Android SDK version 36.1.0) [279ms]
+    [32m•[39m Android SDK at C:\Users\Chani\AppData\Local\Android\sdk
+    [32m•[39m Emulator version 36.4.9.0 (build_id 14788078) (CL:N/A)
+    [31m✗[39m cmdline-tools component is missing.
+      Try installing or updating Android Studio.
+      Alternatively, download the tools from https://developer.android.com/studio#command-line-tools-only and
+      make sure to set the ANDROID_HOME environment variable.
+      See https://developer.android.com/studio/command-line for more details.
+    [31m✗[39m Android license status unknown.
+      Run `flutter doctor --android-licenses` to accept the SDK licenses.
+      See https://flutter.dev/to/windows-android-setup for more details.
+
+[32m[✓][39m Chrome - develop for the web [103ms]
+    [32m•[39m Chrome at C:\Program Files\Google\Chrome\Application\chrome.exe
+
+[32m[✓][39m Visual Studio - develop Windows apps (Visual Studio Build Tools 2026 18.3.2) [102ms]
+    [32m•[39m Visual Studio at C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools
+    [32m•[39m Visual Studio Build Tools 2026 version 18.3.11520.95
+    [32m•[39m Windows 10 SDK version 10.0.26100.0
+
+[32m[✓][39m Connected device (3 available) [149ms]
+    [32m•[39m Windows (desktop) • windows • windows-x64    • Microsoft Windows [Version 10.0.26200.9457]
+    [32m•[39m Chrome (web)      • chrome  • web-javascript • Google Chrome 154.0.8037.58
+    [32m•[39m Edge (web)        • edge    • web-javascript • Microsoft Edge 154.0.4258.37
+
+[32m[✓][39m Network resources [647ms]
+    [32m•[39m All expected network resources are available.
+
+[33m![39m Doctor found issues in 1 category.
+```
