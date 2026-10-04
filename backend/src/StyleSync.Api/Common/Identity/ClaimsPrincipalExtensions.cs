@@ -4,14 +4,14 @@ namespace StyleSync.Api.Common.Identity;
 
 public static class ClaimsPrincipalExtensions
 {
-    public static int? GetUserId(this ClaimsPrincipal principal)
+    public static Guid? GetUserId(this ClaimsPrincipal principal)
     {
         var claim = principal.FindFirst(ClaimTypes.NameIdentifier) 
                     ?? principal.FindFirst("sub") 
                     ?? principal.FindFirst("userId")
                     ?? principal.FindFirst("id");
 
-        if (claim != null && int.TryParse(claim.Value, out var userId))
+        if (claim != null && Guid.TryParse(claim.Value, out var userId))
         {
             return userId;
         }
@@ -21,9 +21,9 @@ public static class ClaimsPrincipalExtensions
 
     public static bool IsAdmin(this ClaimsPrincipal principal)
     {
-        return principal.IsInRole(UserRole.Administrator.ToString()) 
-               || principal.IsInRole("Administrator") 
-               || principal.IsInRole("Admin");
+        return principal.IsInRole(UserRole.Admin.ToString()) 
+               || principal.IsInRole("Admin") 
+               || principal.IsInRole("Administrator");
     }
 
     public static bool IsDesigner(this ClaimsPrincipal principal)

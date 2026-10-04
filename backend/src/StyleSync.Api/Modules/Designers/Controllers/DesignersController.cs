@@ -129,7 +129,7 @@ public class DesignersController : ControllerBase
     /// Designer creates their own profile.
     /// </summary>
     [HttpPost]
-    [Authorize(Roles = "Designer,Administrator")]
+    [Authorize(Roles = "Designer,Administrator,Admin")]
     [ProducesResponseType(typeof(DesignerProfileResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -187,7 +187,7 @@ public class DesignersController : ControllerBase
     /// Designer edits own profile; Admin can override ListingStatus and MaxConcurrentProjects.
     /// </summary>
     [HttpPut("{id:int}")]
-    [Authorize(Roles = "Designer,Administrator")]
+    [Authorize(Roles = "Designer,Administrator,Admin")]
     [ProducesResponseType(typeof(DesignerProfileResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -225,7 +225,7 @@ public class DesignersController : ControllerBase
     /// Soft delete only: Administrator sets ListingStatus = Archived.
     /// </summary>
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Administrator")]
+    [Authorize(Roles = "Administrator,Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -249,7 +249,7 @@ public class DesignersController : ControllerBase
     /// Designer adds a portfolio item to their own profile.
     /// </summary>
     [HttpPost("{id:int}/portfolio")]
-    [Authorize(Roles = "Designer,Administrator")]
+    [Authorize(Roles = "Designer,Administrator,Admin")]
     [ProducesResponseType(typeof(PortfolioItemResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -298,7 +298,7 @@ public class DesignersController : ControllerBase
     /// Designer removes their own portfolio item.
     /// </summary>
     [HttpDelete("{id:int}/portfolio/{itemId:int}")]
-    [Authorize(Roles = "Designer,Administrator")]
+    [Authorize(Roles = "Designer,Administrator,Admin")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

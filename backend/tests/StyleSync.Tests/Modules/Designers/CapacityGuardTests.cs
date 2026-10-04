@@ -50,7 +50,7 @@ public class CapacityGuardTests
         var designer = new DesignerProfile
         {
             Id = 1,
-            UserId = 101,
+            UserId = Guid.NewGuid(),
             DisplayName = "At-Capacity Designer",
             Bio = "Bio",
             MaxConcurrentProjects = 3,
@@ -83,7 +83,7 @@ public class CapacityGuardTests
         var designer = new DesignerProfile
         {
             Id = 1,
-            UserId = 101,
+            UserId = Guid.NewGuid(),
             DisplayName = "Available Designer",
             Bio = "Bio",
             MaxConcurrentProjects = 3,
@@ -117,7 +117,7 @@ public class CapacityGuardTests
         var designerAtCapacity = new DesignerProfile
         {
             Id = 1,
-            UserId = 101,
+            UserId = Guid.NewGuid(),
             DisplayName = "Available But Busy",
             Bio = "Bio",
             MaxConcurrentProjects = 2,
@@ -128,7 +128,7 @@ public class CapacityGuardTests
         var designerFree = new DesignerProfile
         {
             Id = 2,
-            UserId = 102,
+            UserId = Guid.NewGuid(),
             DisplayName = "Available And Free",
             Bio = "Bio",
             MaxConcurrentProjects = 3,
@@ -162,7 +162,7 @@ public class CapacityGuardTests
         var designer = new DesignerProfile
         {
             Id = 1,
-            UserId = 101,
+            UserId = Guid.NewGuid(),
             DisplayName = "Designer A",
             Bio = "Bio",
             MaxConcurrentProjects = 2,
@@ -196,7 +196,7 @@ public class CapacityGuardTests
             MaxConcurrentProjects = 4 // Admin raises limit
         };
 
-        var updatedProfile = await designerService.UpdateProfileAsync(designer.Id, currentUserId: 999, isAdmin: true, updateRequest);
+        var updatedProfile = await designerService.UpdateProfileAsync(designer.Id, currentUserId: Guid.NewGuid(), isAdmin: true, updateRequest);
 
         // DTO immediately reflects new capacity and under-capacity status
         Assert.Equal(4, updatedProfile.MaxConcurrentProjects);
@@ -225,7 +225,7 @@ public class CapacityGuardTests
         var designer = new DesignerProfile
         {
             Id = 42,
-            UserId = 101,
+            UserId = Guid.NewGuid(),
             DisplayName = "Availability Test Designer",
             Bio = "Bio",
             MaxConcurrentProjects = 3,

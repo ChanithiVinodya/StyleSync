@@ -58,7 +58,7 @@ public class DesignerPerformanceTests
             var designer = new DesignerProfile
             {
                 Id = i,
-                UserId = 1000 + i,
+                UserId = Guid.NewGuid(),
                 DisplayName = $"Studio Benchmark {i}",
                 Bio = $"Architectural & interior studio specializing in bespoke spatial design and custom furniture #{i}.",
                 StyleTags = styles,

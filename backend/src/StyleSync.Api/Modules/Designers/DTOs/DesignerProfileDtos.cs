@@ -60,7 +60,7 @@ public class UpdateDesignerProfileRequest
 public class DesignerProfileResponse
 {
     public int Id { get; set; }
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
     public string DisplayName { get; set; } = default!;
     public string Bio { get; set; } = default!;
     public List<string> StyleTags { get; set; } = new();

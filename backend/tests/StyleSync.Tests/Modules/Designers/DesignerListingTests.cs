@@ -28,7 +28,7 @@ public class DesignerListingTests
         var designer1 = new DesignerProfile
         {
             Id = 1,
-            UserId = 101,
+            UserId = Guid.NewGuid(),
             DisplayName = "Studio Alpha",
             Bio = "Minimalist and Japandi specialist",
             StyleTags = new() { "Minimalist", "Japandi" },
@@ -45,7 +45,7 @@ public class DesignerListingTests
         var designer2 = new DesignerProfile
         {
             Id = 2,
-            UserId = 102,
+            UserId = Guid.NewGuid(),
             DisplayName = "Studio Beta",
             Bio = "Industrial & Contemporary spaces",
             StyleTags = new() { "Industrial", "Contemporary" },
@@ -62,7 +62,7 @@ public class DesignerListingTests
         var designer3 = new DesignerProfile
         {
             Id = 3,
-            UserId = 103,
+            UserId = Guid.NewGuid(),
             DisplayName = "Studio Gamma",
             Bio = "Luxury classical estates",
             StyleTags = new() { "Luxury", "Classic" },
@@ -79,7 +79,7 @@ public class DesignerListingTests
         var designer4Draft = new DesignerProfile
         {
             Id = 4,
-            UserId = 104,
+            UserId = Guid.NewGuid(),
             DisplayName = "Studio Delta (Draft)",
             Bio = "Not yet published",
             StyleTags = new() { "Minimalist" },

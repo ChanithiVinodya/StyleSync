@@ -29,7 +29,7 @@ public class DesignerCrudTests
         return new DesignerService(context, guard);
     }
 
-    private static ClaimsPrincipal CreateClaimsPrincipal(int userId, string role)
+    private static ClaimsPrincipal CreateClaimsPrincipal(Guid userId, string role)
     {
         var claims = new List<Claim>
         {
@@ -58,7 +58,8 @@ public class DesignerCrudTests
             IsAvailable = true
         };
 
-        var response = await service.CreateProfileAsync(currentUserId: 10, isAdmin: false, request);
+        var currentUserId = Guid.NewGuid();
+        var response = await service.CreateProfileAsync(currentUserId: currentUserId, isAdmin: false, request);
 
         Assert.NotNull(response);
         Assert.Equal("Test Studio", response.DisplayName);
@@ -81,7 +82,7 @@ public class DesignerCrudTests
         };
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.CreateProfileAsync(currentUserId: 11, isAdmin: false, request));
+            service.CreateProfileAsync(currentUserId: Guid.NewGuid(), isAdmin: false, request));
     }
 
     [Fact]
@@ -90,9 +91,10 @@ public class DesignerCrudTests
         using var context = CreateInMemoryDbContext();
         var service = CreateDesignerService(context);
 
+        var ownerId = Guid.NewGuid();
         var profile = new DesignerProfile
         {
-            UserId = 10,
+            UserId = ownerId,
             DisplayName = "Original Name",
             Bio = "Original Bio",
             PriceRangeMin = 100000m,
@@ -115,7 +117,7 @@ public class DesignerCrudTests
             ListingStatus = ListingStatus.Published
         };
 
-        var updated = await service.UpdateProfileAsync(profile.Id, currentUserId: 10, isAdmin: false, updateRequest);
+        var updated = await service.UpdateProfileAsync(profile.Id, currentUserId: ownerId, isAdmin: false, updateRequest);
 
         Assert.Equal("Updated Studio Name", updated.DisplayName);
         Assert.Equal(ListingStatus.Published, updated.ListingStatus);
@@ -127,9 +129,11 @@ public class DesignerCrudTests
         using var context = CreateInMemoryDbContext();
         var service = CreateDesignerService(context);
 
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
         var profile = new DesignerProfile
         {
-            UserId = 10,
+            UserId = ownerId,
             DisplayName = "Designer 10's Profile",
             Bio = "Bio",
             PriceRangeMin = 100000m,
@@ -147,9 +151,9 @@ public class DesignerCrudTests
             PriceRangeMax = 200000m
         };
 
-        // User 20 attempts to update user 10's profile
+        // Other user attempts to update owner's profile
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            service.UpdateProfileAsync(profile.Id, currentUserId: 20, isAdmin: false, updateRequest));
+            service.UpdateProfileAsync(profile.Id, currentUserId: otherUserId, isAdmin: false, updateRequest));
     }
 
     [Fact]
@@ -160,7 +164,7 @@ public class DesignerCrudTests
 
         var profile = new DesignerProfile
         {
-            UserId = 10,
+            UserId = Guid.NewGuid(),
             DisplayName = "Designer Profile",
             Bio = "Bio",
             PriceRangeMin = 100000m,
@@ -183,7 +187,7 @@ public class DesignerCrudTests
             ListingStatus = ListingStatus.Suspended // Admin sets Suspended
         };
 
-        var updated = await service.UpdateProfileAsync(profile.Id, currentUserId: 99, isAdmin: true, updateRequest);
+        var updated = await service.UpdateProfileAsync(profile.Id, currentUserId: Guid.NewGuid(), isAdmin: true, updateRequest);
 
         Assert.Equal(5, updated.MaxConcurrentProjects);
         Assert.Equal(ListingStatus.Suspended, updated.ListingStatus);
@@ -197,7 +201,7 @@ public class DesignerCrudTests
 
         var profile = new DesignerProfile
         {
-            UserId = 10,
+            UserId = Guid.NewGuid(),
             DisplayName = "To Be Archived",
             Bio = "Bio",
             ListingStatus = ListingStatus.Published
@@ -219,9 +223,11 @@ public class DesignerCrudTests
         using var context = CreateInMemoryDbContext();
         var service = CreateDesignerService(context);
 
+        var ownerId = Guid.NewGuid();
+        var otherUserId = Guid.NewGuid();
         var profile = new DesignerProfile
         {
-            UserId = 10,
+            UserId = ownerId,
             DisplayName = "Designer Studio",
             Bio = "Bio"
         };
@@ -238,16 +244,16 @@ public class DesignerCrudTests
         };
 
         // Add item as owner
-        var createdItem = await service.AddPortfolioItemAsync(profile.Id, currentUserId: 10, isAdmin: false, itemRequest);
+        var createdItem = await service.AddPortfolioItemAsync(profile.Id, currentUserId: ownerId, isAdmin: false, itemRequest);
         Assert.NotNull(createdItem);
         Assert.Equal("Modern Villa Living Room", createdItem.Title);
 
         // Another user cannot delete it
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            service.DeletePortfolioItemAsync(profile.Id, createdItem.Id, currentUserId: 20, isAdmin: false));
+            service.DeletePortfolioItemAsync(profile.Id, createdItem.Id, currentUserId: otherUserId, isAdmin: false));
 
         // Owner deletes it
-        var deleted = await service.DeletePortfolioItemAsync(profile.Id, createdItem.Id, currentUserId: 10, isAdmin: false);
+        var deleted = await service.DeletePortfolioItemAsync(profile.Id, createdItem.Id, currentUserId: ownerId, isAdmin: false);
         Assert.True(deleted);
 
         var items = await service.GetPortfolioItemsAsync(profile.Id, publicOnly: false);

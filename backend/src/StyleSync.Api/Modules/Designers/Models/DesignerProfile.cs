@@ -5,7 +5,7 @@ namespace StyleSync.Api.Modules.Designers.Models;
 
 public class DesignerProfile : BaseEntity
 {
-    public int UserId { get; set; }
+    public Guid UserId { get; set; }
     public AppUser User { get; set; } = default!;
 
     public string DisplayName { get; set; } = default!;

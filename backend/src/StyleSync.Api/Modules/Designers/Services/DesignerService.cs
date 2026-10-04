@@ -150,7 +150,7 @@ public class DesignerService : IDesignerService
         return MapToResponse(profile, activeProjects, _capacityGuard.IsUnderCapacity(profile, activeProjects), includeUnpublished);
     }
 
-    public async Task<DesignerProfileResponse> CreateProfileAsync(int currentUserId, bool isAdmin, CreateDesignerProfileRequest request)
+    public async Task<DesignerProfileResponse> CreateProfileAsync(Guid currentUserId, bool isAdmin, CreateDesignerProfileRequest request)
     {
         if (request.PriceRangeMin > request.PriceRangeMax)
         {
@@ -194,7 +194,7 @@ public class DesignerService : IDesignerService
         return MapToResponse(profile, 0, isUnderCapacity: true, includeUnpublished: true);
     }
 
-    public async Task<DesignerProfileResponse> UpdateProfileAsync(int id, int currentUserId, bool isAdmin, UpdateDesignerProfileRequest request)
+    public async Task<DesignerProfileResponse> UpdateProfileAsync(int id, Guid currentUserId, bool isAdmin, UpdateDesignerProfileRequest request)
     {
         if (request.PriceRangeMin > request.PriceRangeMax)
         {
@@ -284,7 +284,7 @@ public class DesignerService : IDesignerService
         return true;
     }
 
-    public async Task<PortfolioItemResponse> AddPortfolioItemAsync(int designerId, int currentUserId, bool isAdmin, CreatePortfolioItemRequest request)
+    public async Task<PortfolioItemResponse> AddPortfolioItemAsync(int designerId, Guid currentUserId, bool isAdmin, CreatePortfolioItemRequest request)
     {
         var profile = await _context.DesignerProfiles.FirstOrDefaultAsync(d => d.Id == designerId);
         if (profile == null)
@@ -333,7 +333,7 @@ public class DesignerService : IDesignerService
         return items.Select(MapPortfolioItem).ToList();
     }
 
-    public async Task<bool> DeletePortfolioItemAsync(int designerId, int itemId, int currentUserId, bool isAdmin)
+    public async Task<bool> DeletePortfolioItemAsync(int designerId, int itemId, Guid currentUserId, bool isAdmin)
     {
         var item = await _context.PortfolioItems
             .Include(p => p.DesignerProfile)

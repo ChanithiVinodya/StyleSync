@@ -160,7 +160,7 @@ public class MatchScoreEngineTests
         var designerA = new DesignerProfile
         {
             Id = 1,
-            UserId = 101,
+            UserId = Guid.NewGuid(),
             DisplayName = "Designer A (Busy)",
             Bio = "Bio",
             StyleTags = new() { "Modern", "Minimalist" },
@@ -176,7 +176,7 @@ public class MatchScoreEngineTests
         var designerB = new DesignerProfile
         {
             Id = 2,
-            UserId = 102,
+            UserId = Guid.NewGuid(),
             DisplayName = "Designer B (Available)",
             Bio = "Bio",
             StyleTags = new() { "Modern", "Minimalist" },
@@ -192,7 +192,7 @@ public class MatchScoreEngineTests
         var designerC = new DesignerProfile
         {
             Id = 3,
-            UserId = 103,
+            UserId = Guid.NewGuid(),
             DisplayName = "Designer C (Draft)",
             Bio = "Bio",
             StyleTags = new() { "Modern", "Minimalist" },
@@ -247,7 +247,7 @@ public class MatchScoreEngineTests
         var designer = new DesignerProfile
         {
             Id = 5,
-            UserId = 105,
+            UserId = Guid.NewGuid(),
             DisplayName = "Test Studio",
             Bio = "Bio",
             StyleTags = new() { "Tropical Modernism", "Minimalist", "Japandi" },
