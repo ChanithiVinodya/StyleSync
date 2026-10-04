@@ -16,6 +16,24 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() ?? new JwtSettings();
 
+// ---- Project Requests Module ----
+var requestRules = builder.Configuration.GetSection("RequestRules").Get<StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules>() ?? new StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules();
+builder.Services.AddSingleton(requestRules);
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestStatusService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
+var azureBlobConn = builder.Configuration.GetConnectionString("AzureBlobStorage");
+if (!string.IsNullOrEmpty(azureBlobConn) && !azureBlobConn.Contains("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase))
+{
+    builder.Services.AddScoped<StyleSync.Api.Common.Storage.IFileStorage, StyleSync.Api.Common.Storage.AzureBlobStorageService>();
+}
+else
+{
+    builder.Services.AddScoped<StyleSync.Api.Common.Storage.IFileStorage, StyleSync.Api.Common.Storage.LocalFileStorageService>();
+}
+
+
 // ---- Services ----
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -51,6 +69,10 @@ builder.Services.AddSwaggerGen(options =>
             Array.Empty<string>()
         }
     });
+
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
+    options.IncludeXmlComments(xmlPath);
 });
 
 // DbContext
@@ -58,6 +80,8 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Identity & Auth Services
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -125,6 +149,18 @@ else
 
 app.UseCors("AllowFrontend");
 
+var uploadsDir = Path.Combine(app.Environment.ContentRootPath, "uploads");
+if (!Directory.Exists(uploadsDir))
+{
+    Directory.CreateDirectory(uploadsDir);
+}
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
+    RequestPath = "/uploads"
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -133,6 +169,9 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestampUtc = 
 
 // Seed initial Admin user idempotently
 await DbSeeder.SeedAdminUserAsync(app.Services, app.Configuration);
+
+// Seed component 2
+await StyleSync.Api.Modules.ProjectRequests.Configuration.ProjectRequestsSeeder.SeedAsync(app.Services);
 
 app.Run();
 

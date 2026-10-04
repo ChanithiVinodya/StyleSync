@@ -3,6 +3,7 @@ backend/**/bin/
 backend/**/obj/
 backend/**/*.user
 backend/**/appsettings.*.local.json
+backend/**/uploads/
 *.trx
 
 # ==== Node / React ====
