@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/designer_summary.dart';
 
 class DesignerFilterSheet extends StatefulWidget {
@@ -90,7 +91,13 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final sheetBg = isDark ? const Color(0xFF1E1A17) : const Color(0xFFFAF7F2);
+    final cardBorder = isDark ? const Color(0xFF332B25) : const Color(0xFFEDE5DC);
+    final textPrimary = isDark ? const Color(0xFFFAF8F5) : const Color(0xFF241611);
+    final textSecondary = isDark ? const Color(0xFFA89F91) : const Color(0xFF706558);
+    const accentTerracotta = Color(0xFF8C4A3E);
 
     return DraggableScrollableSheet(
       initialChildSize: 0.85,
@@ -101,72 +108,96 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           decoration: BoxDecoration(
-            color: theme.scaffoldBackgroundColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            color: sheetBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
           child: Column(
             children: [
-              // Sheet Handle
+              // Sheet Drag Pill Handle
               Container(
-                width: 40,
-                height: 4,
+                width: 44,
+                height: 4.5,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade400,
-                  borderRadius: BorderRadius.circular(2),
+                  color: isDark ? const Color(0xFF4A3E35) : const Color(0xFFD6C9BC),
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
               const SizedBox(height: 16),
 
-              // Header
+              // Sheet Header
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Filter & Sort Designers',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
+                    'Filter Studios',
+                    style: GoogleFonts.playfairDisplay(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: textPrimary,
                     ),
                   ),
                   TextButton(
                     onPressed: _resetFilters,
-                    child: const Text('Reset All'),
+                    child: Text(
+                      'Reset All',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        color: accentTerracotta,
+                      ),
+                    ),
                   ),
                 ],
               ),
-              const Divider(),
+              Divider(color: cardBorder, height: 1),
 
               Expanded(
                 child: ListView(
                   controller: scrollController,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   children: [
-                    // Sort By Section
+                    // 1. Sort By
                     Text(
-                      'Sort By',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      'Sort Directory By',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
                       value: _selectedSort,
                       decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 10),
+                        filled: true,
+                        fillColor: isDark ? const Color(0xFF26201B) : Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: cardBorder),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: cardBorder),
                         ),
                       ),
+                      dropdownColor: sheetBg,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: textPrimary,
+                      ),
                       items: const [
-                        DropdownMenuItem(
-                            value: 'newest', child: Text('Newest Studios')),
-                        DropdownMenuItem(
-                            value: 'rating', child: Text('Highest Rating')),
-                        DropdownMenuItem(
-                            value: 'price_asc',
-                            child: Text('Price: Low to High')),
-                        DropdownMenuItem(
-                            value: 'price_desc',
-                            child: Text('Price: High to Low')),
+                        DropdownMenuItem(value: 'newest', child: Text('Newest Listings')),
+                        DropdownMenuItem(value: 'rating', child: Text('Highest Client Rating')),
+                        DropdownMenuItem(value: 'price_low_high', child: Text('Rate: Low to High')),
+                        DropdownMenuItem(value: 'price_high_low', child: Text('Rate: High to Low')),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedSort = val);
@@ -174,42 +205,81 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Availability Toggle
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text(
-                        'Open Capacity Only',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    // 2. Style Aesthetic Selection
+                    Text(
+                      'Design Aesthetic',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: textPrimary,
                       ),
-                      subtitle: const Text(
-                        'Only show designers currently accepting projects',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                      value: _availableOnly,
-                      onChanged: (val) => setState(() => _availableOnly = val),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: DesignerFilterSheet.popularStyles.map((style) {
+                        final isSelected = _selectedStyle.toLowerCase() == style.toLowerCase();
+                        return ChoiceChip(
+                          label: Text(style),
+                          selected: isSelected,
+                          showCheckmark: false,
+                          avatar: isSelected
+                              ? const Icon(Icons.check_circle_rounded, size: 14, color: Colors.white)
+                              : null,
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                            color: isSelected
+                                ? Colors.white
+                                : (isDark ? const Color(0xFFD6CFC7) : const Color(0xFF4A4036)),
+                          ),
+                          selectedColor: accentTerracotta,
+                          backgroundColor: isDark ? const Color(0xFF26201B) : Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: isSelected ? accentTerracotta : cardBorder,
+                            ),
+                          ),
+                          onSelected: (selected) {
+                            setState(() => _selectedStyle = selected ? style : 'All');
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
 
-                    // Budget Range Section
+                    // 3. Budget Range Inputs
                     Text(
                       'Project Budget Range (LKR)',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        color: textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
                           child: TextField(
                             controller: _minBudgetController,
                             keyboardType: TextInputType.number,
+                            style: GoogleFonts.plusJakartaSans(fontSize: 13, color: textPrimary),
                             decoration: InputDecoration(
                               labelText: 'Min Budget',
                               hintText: 'e.g. 100000',
                               prefixText: 'LKR ',
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF26201B) : Colors.white,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: cardBorder),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: cardBorder),
                               ),
                             ),
                           ),
@@ -219,12 +289,20 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
                           child: TextField(
                             controller: _maxBudgetController,
                             keyboardType: TextInputType.number,
+                            style: GoogleFonts.plusJakartaSans(fontSize: 13, color: textPrimary),
                             decoration: InputDecoration(
                               labelText: 'Max Budget',
-                              hintText: 'e.g. 500000',
+                              hintText: 'e.g. 800000',
                               prefixText: 'LKR ',
+                              filled: true,
+                              fillColor: isDark ? const Color(0xFF26201B) : Colors.white,
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: cardBorder),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(color: cardBorder),
                               ),
                             ),
                           ),
@@ -233,50 +311,54 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
                     ),
                     const SizedBox(height: 20),
 
-                    // Style Tags Section
-                    Text(
-                      'Design Aesthetics & Style',
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
+                    // 4. Availability Switch
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF26201B) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: cardBorder),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: DesignerFilterSheet.popularStyles.map((style) {
-                        final isSelected = _selectedStyle.toLowerCase() ==
-                            style.toLowerCase();
-                        return FilterChip(
-                          label: Text(style),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              _selectedStyle = selected ? style : 'All';
-                            });
-                          },
-                        );
-                      }).toList(),
+                      child: SwitchListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                        activeColor: accentTerracotta,
+                        title: Text(
+                          'Accepting Projects Only',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: textPrimary,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Filter out studios currently at maximum capacity',
+                          style: GoogleFonts.plusJakartaSans(fontSize: 11, color: textSecondary),
+                        ),
+                        value: _availableOnly,
+                        onChanged: (val) => setState(() => _availableOnly = val),
+                      ),
                     ),
                     const SizedBox(height: 24),
                   ],
                 ),
               ),
 
-              // Apply Button
+              // Apply Filters Action Button
               SizedBox(
                 width: double.infinity,
+                height: 52,
                 child: FilledButton(
-                  onPressed: _applyFilters,
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                    backgroundColor: accentTerracotta,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  child: const Text(
+                  onPressed: _applyFilters,
+                  child: Text(
                     'Apply Filters',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),

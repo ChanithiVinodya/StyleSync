@@ -4,18 +4,39 @@ import 'package:stylesync/modules/designers/models/designer_profile.dart';
 import 'package:stylesync/modules/designers/models/designer_summary.dart';
 import 'package:stylesync/modules/designers/models/portfolio_item.dart';
 import 'package:stylesync/modules/designers/screens/designer_profile_screen.dart';
+import 'package:stylesync/modules/designers/services/designers_api_service.dart';
+import 'package:stylesync/shared/api/api_client.dart';
+
+class FakeDesignerProfileApiService extends DesignersApiService {
+  @override
+  Future<DesignerProfile> getProfile(int id) async {
+    return DesignersApiService.fallbackProfiles.firstWhere(
+      (p) => p.id == id,
+      orElse: () => DesignersApiService.fallbackProfiles.first,
+    );
+  }
+
+  @override
+  Future<List<PortfolioItem>> getPortfolioItems(int id) async {
+    final profile = await getProfile(id);
+    return profile.portfolioItems;
+  }
+}
 
 void main() {
   group('DesignerProfileScreen Tests', () {
     testWidgets('Renders full profile details, rating, and portfolio gallery grid',
         (tester) async {
+      final service = FakeDesignerProfileApiService();
+
       await tester.pumpWidget(
-        const MaterialApp(
-          home: DesignerProfileScreen(designerId: 1),
+        MaterialApp(
+          home: DesignerProfileScreen(designerId: 1, apiService: service),
         ),
       );
 
       // Settle data load
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       // Header info
@@ -44,13 +65,15 @@ void main() {
 
     testWidgets('Displays "No ratings yet" when averageRating is null without faking aggregates',
         (tester) async {
-      // In seed data or simulated null rating: Designer 7 has averageRating == null
+      final service = FakeDesignerProfileApiService();
+
       await tester.pumpWidget(
-        const MaterialApp(
-          home: DesignerProfileScreen(designerId: 7),
+        MaterialApp(
+          home: DesignerProfileScreen(designerId: 7, apiService: service),
         ),
       );
 
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       // Profile 7 or fallback with null rating shows "No ratings yet"
@@ -60,12 +83,15 @@ void main() {
 
     testWidgets('Tapping portfolio card opens project detail modal',
         (tester) async {
+      final service = FakeDesignerProfileApiService();
+
       await tester.pumpWidget(
-        const MaterialApp(
-          home: DesignerProfileScreen(designerId: 1),
+        MaterialApp(
+          home: DesignerProfileScreen(designerId: 1, apiService: service),
         ),
       );
 
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       // Ensure item is scrolled into view in SingleChildScrollView

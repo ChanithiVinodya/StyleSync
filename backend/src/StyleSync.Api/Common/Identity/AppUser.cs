@@ -13,6 +13,8 @@ public class AppUser
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = default!;
+    
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
     public string FullName
     {
         get => Name;
