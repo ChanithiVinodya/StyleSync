@@ -28,8 +28,11 @@ public class AppDbContext : DbContext
     // public DbSet<DesignerProfile> DesignerProfiles => Set<DesignerProfile>();
 
     // ---- Module: Project Requests (Student 2) ----
-    // TODO: add your first DbSet here, e.g.
-    // public DbSet<ProjectRequest> ProjectRequests => Set<ProjectRequest>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.ProjectRequest> ProjectRequests => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.ProjectRequest>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.MoodboardImage> MoodboardImages => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.MoodboardImage>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.SuggestedPalette> SuggestedPalettes => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.SuggestedPalette>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestStatusHistory> RequestStatusHistories => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestStatusHistory>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestAuditLog> RequestAuditLogs => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestAuditLog>();
 
     // ---- Module: Quotes & Contracts (Student 3) ----
     // TODO: add your first DbSet here, e.g.
