@@ -43,7 +43,7 @@ class StyleSyncApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const RootShell(),
+      home: const QuotesContractsPage(),
     );
   }
 }

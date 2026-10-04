@@ -19,6 +19,8 @@ class QuoteItem {
       ? totalCost!
       : (quantity * unitCost);
 
+  double get lineTotal => calculatedTotal;
+
   factory QuoteItem.fromJson(Map<String, dynamic> json) {
     return QuoteItem(
       id: json['id']?.toString(),

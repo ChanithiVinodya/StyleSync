@@ -23,9 +23,13 @@ class ContractCard extends StatelessWidget {
     final isCancelled = statusStr == 'cancelled';
     final isSigned = contract.signedAt != null;
     final canCancel = !isCancelled && statusStr != 'completed';
-    final canSign = statusStr == 'draft' || statusStr == 'pendingsignature';
 
-    final shortId = contract.id.length > 8 ? '#${contract.id.substring(0, 6)}' : '#${contract.id}';
+    final shortId = 'ID: ${contract.id.length >= 6 ? contract.id.substring(0, 6) : contract.id}..';
+    final quoteIdStr = contract.quoteId ?? contract.quote?.id;
+    final shortQuoteId = quoteIdStr != null
+        ? (quoteIdStr.length > 8 ? quoteIdStr.substring(0, 8) : quoteIdStr)
+        : null;
+    final quoteItemsCount = contract.quote?.items.length ?? 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -62,7 +66,7 @@ class ContractCard extends StatelessWidget {
                         color: QcTheme.textSubtle,
                         fontSize: 12,
                         fontFamily: 'monospace',
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -71,7 +75,7 @@ class ContractCard extends StatelessWidget {
 
                 // Title (termsSummary or quote scopeSummary)
                 Text(
-                  contract.termsSummary ?? contract.quote?.scopeSummary ?? 'Interior Design Agreement',
+                  contract.termsSummary ?? contract.quote?.scopeSummary ?? 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
                   style: const TextStyle(
                     color: QcTheme.textMain,
                     fontSize: 15.5,
@@ -79,7 +83,60 @@ class ContractCard extends StatelessWidget {
                     height: 1.3,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 8),
+
+                // Linked Quote Tag & AI Draft Tag (Matching Image 2)
+                if (shortQuoteId != null) ...[
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0x1FC48A36),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.description_outlined, size: 13, color: QcTheme.gold),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Quote: $shortQuoteId ($quoteItemsCount items)',
+                              style: const TextStyle(
+                                color: QcTheme.gold,
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (contract.quote?.isAiGenerated == true) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0x1FC48A36),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: const Color(0x66C48A36), width: 0.8),
+                          ),
+                          child: const Text(
+                            'AI DRAFT',
+                            style: TextStyle(
+                              color: QcTheme.gold,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                ] else ...[
+                  const SizedBox(height: 6),
+                ],
 
                 // AMOUNT & SIGNED Row
                 Row(
@@ -102,7 +159,7 @@ class ContractCard extends StatelessWidget {
                           Text(
                             QcTheme.formatCurrency(contract.totalAmount),
                             style: const TextStyle(
-                              color: QcTheme.textMain,
+                              color: QcTheme.gold,
                               fontSize: 14.5,
                               fontWeight: FontWeight.w700,
                             ),
@@ -128,7 +185,7 @@ class ContractCard extends StatelessWidget {
                           Text(
                             isSigned ? QcTheme.formatDate(contract.signedAt) : '—',
                             style: TextStyle(
-                              color: isSigned ? const Color(0xFF34D399) : QcTheme.textSubtle,
+                              color: isSigned ? QcTheme.textMain : QcTheme.textSubtle,
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -157,7 +214,7 @@ class ContractCard extends StatelessWidget {
                     Text(
                       QcTheme.formatDate(contract.updatedAt ?? contract.createdAt),
                       style: const TextStyle(
-                        color: QcTheme.textMuted,
+                        color: QcTheme.textMain,
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                       ),
@@ -166,50 +223,50 @@ class ContractCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
-                // Action Buttons
-                if (canCancel || canSign) ...[
-                  Row(
-                    children: [
-                      if (canSign) ...[
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: onSign,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: QcTheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
+                // Action Buttons (Matching Image 2: "View details" & "Cancel")
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onTap,
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: const Color(0xFF24201D),
+                          foregroundColor: QcTheme.textMain,
+                          side: const BorderSide(color: QcTheme.borderLight, width: 1),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                        ),
+                        child: const Text(
+                          'View details',
+                          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
+                      ),
+                    ),
+                    if (canCancel) ...[
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: onCancel,
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E1414),
+                            foregroundColor: const Color(0xFFF87171),
+                            side: const BorderSide(color: Color(0xFFEF4444), width: 1.2),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 11),
+                          ),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: Color(0xFFF87171),
                             ),
-                            child: const Text('Mark signed', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                           ),
                         ),
-                        const SizedBox(width: 8),
-                      ],
-                      if (canCancel) ...[
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: onCancel,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFF87171),
-                              backgroundColor: const Color(0x1AEF4444),
-                              side: const BorderSide(color: Color(0xFF7F1D1D), width: 1.2),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                            ),
-                            child: const Text(
-                              'Cancel contract',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: Color(0xFFF87171),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ],
-                  ),
-                ],
+                  ],
+                ),
               ],
             ),
           ),

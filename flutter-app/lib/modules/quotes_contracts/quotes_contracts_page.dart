@@ -305,9 +305,6 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
             // Top App Bar
             _buildTopAppBar(),
 
-            // Segmented Switcher (Quotes | Contracts)
-            _buildSegmentedTabSwitcher(),
-
             // Main Content Area
             Expanded(
               child: _activeTab == 0 ? _buildQuotesTab() : _buildContractsTab(),
@@ -315,6 +312,7 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
           ],
         ),
       ),
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -369,7 +367,7 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
                     ),
                   ),
                   Text(
-                    'DESIGN STUDIO',
+                    'DESIGNER',
                     style: TextStyle(
                       color: QcTheme.textSubtle,
                       fontSize: 9.5,
@@ -382,125 +380,102 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
             ],
           ),
 
-          // Right action icons
-          Row(
-            children: [
-              // Connection status indicator
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0x1A10B981),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0x4010B981), width: 0.8),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.wifi, size: 11, color: Color(0xFF34D399)),
-                    SizedBox(width: 4),
-                    Text(
-                      'API Live',
-                      style: TextStyle(color: Color(0xFF34D399), fontSize: 10, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              // Moon / Theme toggle
-              IconButton(
-                icon: const Icon(Icons.nightlight_round, color: QcTheme.gold, size: 20),
-                onPressed: () {},
-                tooltip: 'Theme: Dark',
-              ),
-            ],
+          // Moon / Theme toggle
+          IconButton(
+            icon: const Icon(Icons.nightlight_round, color: QcTheme.gold, size: 20),
+            onPressed: () {},
+            tooltip: 'Theme: Dark',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildSegmentedTabSwitcher() {
+  Widget _buildBottomNavigationBar() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: QcTheme.surfaceSunken,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: QcTheme.border, width: 1),
+      decoration: const BoxDecoration(
+        color: Color(0xFF161411),
+        border: Border(top: BorderSide(color: Color(0xFF24201D), width: 1)),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: InkWell(
-              onTap: () => setState(() => _activeTab = 0),
-              borderRadius: BorderRadius.circular(10),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: _activeTab == 0 ? const Color(0xFF2E2721) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  border: _activeTab == 0 ? Border.all(color: QcTheme.borderLight, width: 1) : null,
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.receipt_long,
-                      size: 15,
-                      color: _activeTab == 0 ? QcTheme.gold : QcTheme.textSubtle,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Quotes',
-                      style: TextStyle(
-                        color: _activeTab == 0 ? QcTheme.textMain : QcTheme.textMuted,
-                        fontSize: 13,
-                        fontWeight: _activeTab == 0 ? FontWeight.w700 : FontWeight.w500,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // Tab 0: Quotes
+            Expanded(
+              child: InkWell(
+                onTap: () => setState(() => _activeTab = 0),
+                borderRadius: BorderRadius.circular(14),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _activeTab == 0 ? const Color(0xFF2E2721) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    border: _activeTab == 0 ? Border.all(color: const Color(0xFF38312B), width: 1) : null,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.description_outlined,
+                        size: 18,
+                        color: _activeTab == 0 ? QcTheme.gold : const Color(0xFF78716C),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        'Quotes',
+                        style: TextStyle(
+                          color: _activeTab == 0 ? QcTheme.gold : const Color(0xFF78716C),
+                          fontSize: 13,
+                          fontWeight: _activeTab == 0 ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: () => setState(() => _activeTab = 1),
-              borderRadius: BorderRadius.circular(10),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: _activeTab == 1 ? const Color(0xFF2E2721) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  border: _activeTab == 1 ? Border.all(color: QcTheme.borderLight, width: 1) : null,
-                ),
-                alignment: Alignment.center,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.verified_outlined,
-                      size: 15,
-                      color: _activeTab == 1 ? QcTheme.gold : QcTheme.textSubtle,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Contracts',
-                      style: TextStyle(
-                        color: _activeTab == 1 ? QcTheme.textMain : QcTheme.textMuted,
-                        fontSize: 13,
-                        fontWeight: _activeTab == 1 ? FontWeight.w700 : FontWeight.w500,
+            const SizedBox(width: 8),
+
+            // Tab 1: Contracts
+            Expanded(
+              child: InkWell(
+                onTap: () => setState(() => _activeTab = 1),
+                borderRadius: BorderRadius.circular(14),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _activeTab == 1 ? const Color(0xFF2E2721) : Colors.transparent,
+                    borderRadius: BorderRadius.circular(14),
+                    border: _activeTab == 1 ? Border.all(color: const Color(0xFF38312B), width: 1) : null,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.assignment_outlined,
+                        size: 18,
+                        color: _activeTab == 1 ? QcTheme.gold : const Color(0xFF78716C),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      Text(
+                        'Contracts',
+                        style: TextStyle(
+                          color: _activeTab == 1 ? QcTheme.gold : const Color(0xFF78716C),
+                          fontSize: 13,
+                          fontWeight: _activeTab == 1 ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -748,11 +723,11 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
       child: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          // Header: "Contracts" title & subtitle
-          Text('Contracts', style: QcTheme.serifTitle(fontSize: 32)),
+          // Header: "Contracts Dashboard" title & subtitle
+          Text('Contracts Dashboard', style: QcTheme.serifTitle(fontSize: 30)),
           const SizedBox(height: 4),
           const Text(
-            'Created automatically when a quote is accepted.',
+            'Review agreements, track signatures, and inspect submitted quote specifications.',
             style: TextStyle(
               color: QcTheme.textMuted,
               fontSize: 13,

@@ -37,18 +37,55 @@ class QuotesContractsService {
   final List<Contract> _localContracts = [];
 
   void _initLocalStore() {
+    final quoteF3 = Quote(
+      id: 'f315971a',
+      projectRequestId: '7c88187a-7133-4fd2',
+      designerId: 'des-001',
+      scopeSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
+      notes: 'testing......',
+      isAiGenerated: false,
+      status: 'Accepted',
+      totalCost: 190000.00,
+      createdAt: DateTime(2026, 9, 29),
+      updatedAt: DateTime(2026, 9, 29),
+      items: [
+        QuoteItem(id: 'i-w1', description: 'Wardrobe', category: 'Furniture', quantity: 1, unitCost: 35000, totalCost: 35000),
+        QuoteItem(id: 'i-w2', description: 'Bed frame', category: 'Furniture', quantity: 1, unitCost: 45000, totalCost: 45000),
+        QuoteItem(id: 'i-w3', description: 'Wall painting', category: 'Materials', quantity: 1, unitCost: 110000, totalCost: 110000),
+      ],
+    );
+
+    final quote91 = Quote(
+      id: '91c8be8d',
+      projectRequestId: '221f6067-dcb9-414f',
+      designerId: 'des-003',
+      scopeSummary: 'Modern living room refresh, 200 sq ft.',
+      notes: 'fallback estimate — generated without a live LLM call, split across standard category ratios.',
+      isAiGenerated: true,
+      status: 'Rejected',
+      totalCost: 200000.00,
+      createdAt: DateTime(2026, 9, 24),
+      updatedAt: DateTime(2026, 9, 24),
+      items: [
+        QuoteItem(id: 'i-f1', description: 'Furniture - modern living room work', category: 'Furniture', quantity: 1, unitCost: 50000, totalCost: 50000),
+        QuoteItem(id: 'i-f2', description: 'Labor - modern living room craftsmanship', category: 'Labor', quantity: 1, unitCost: 60000, totalCost: 60000),
+        QuoteItem(id: 'i-f3', description: 'Materials - wall & flooring finishes', category: 'Materials', quantity: 1, unitCost: 70000, totalCost: 70000),
+        QuoteItem(id: 'i-f4', description: 'Design - space planning & drawings', category: 'Design', quantity: 1, unitCost: 20000, totalCost: 20000),
+      ],
+    );
+
     final defaultQuotes = [
       Quote(
         id: 'q-101',
         projectRequestId: 'req-001',
         designerId: 'des-001',
         scopeSummary: 'Modern bedroom refresh, 200 sq ft.',
-        notes: 'Fallback estimate — generated without a live LLM call',
+        notes: 'fallback estimate — generated without a live LLM call',
         isAiGenerated: false,
         status: 'Draft',
         totalCost: 180000.00,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
+        createdAt: DateTime(2026, 10, 2),
+        updatedAt: DateTime(2026, 10, 2),
         items: [
           QuoteItem(id: 'i-1', description: 'Wall Panel & Minimalist Bed Headboard', category: 'Carpentry', quantity: 1, unitCost: 95000, totalCost: 95000),
           QuoteItem(id: 'i-2', description: 'Warm Cove Lighting & LED Profiles', category: 'Electrical', quantity: 2, unitCost: 25000, totalCost: 50000),
@@ -60,12 +97,12 @@ class QuotesContractsService {
         projectRequestId: 'req-002',
         designerId: 'des-002',
         scopeSummary: 'Minimalist bedroom refresh, 200 sq ft.',
-        notes: 'Fallback estimate — generated without a live LLM call',
+        notes: 'fallback estimate — generated without a live LLM call',
         isAiGenerated: true,
         status: 'Draft',
         totalCost: 150000.00,
-        createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 1)),
+        createdAt: DateTime(2026, 10, 2),
+        updatedAt: DateTime(2026, 10, 2),
         items: [
           QuoteItem(id: 'i-4', description: 'Design — minimalist bedroom concept & planning', category: 'Design', quantity: 1, unitCost: 15000, totalCost: 15000),
           QuoteItem(id: 'i-5', description: 'Labor — minimalist bedroom installation & craftsmanship', category: 'Labor', quantity: 1, unitCost: 45000, totalCost: 45000),
@@ -73,73 +110,42 @@ class QuotesContractsService {
           QuoteItem(id: 'i-7', description: 'Furniture — minimalist bedroom curated styling', category: 'Furniture', quantity: 1, unitCost: 37500, totalCost: 37500),
         ],
       ),
-      Quote(
-        id: 'q-100',
-        projectRequestId: 'req-000',
-        designerId: 'des-001',
-        scopeSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
-        notes: 'Turnkey interior redesign with 3-year warranty.',
-        isAiGenerated: true,
-        status: 'Accepted',
-        totalCost: 190000.00,
-        createdAt: DateTime.now().subtract(const Duration(days: 4)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 4)),
-        items: [
-          QuoteItem(id: 'i-8', description: 'Custom Oak Minimalist Wardrobe', category: 'Furniture', quantity: 1, unitCost: 100000, totalCost: 100000),
-          QuoteItem(id: 'i-9', description: 'Recessed Architectural Lighting', category: 'Electrical', quantity: 4, unitCost: 12500, totalCost: 50000),
-          QuoteItem(id: 'i-10', description: 'Wall panelling & painting', category: 'Materials', quantity: 1, unitCost: 40000, totalCost: 40000),
-        ],
-      ),
-      Quote(
-        id: 'q-099',
-        projectRequestId: 'req-099',
-        designerId: 'des-003',
-        scopeSummary: 'Modern living room refresh, 200 sq ft.',
-        notes: 'Cancelled quote record retained for auditing.',
-        isAiGenerated: false,
-        status: 'Rejected',
-        totalCost: 200000.00,
-        createdAt: DateTime.now().subtract(const Duration(days: 4)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 4)),
-        items: [
-          QuoteItem(id: 'i-11', description: 'Living Room TV Feature Wall', category: 'Carpentry', quantity: 1, unitCost: 120000, totalCost: 120000),
-          QuoteItem(id: 'i-12', description: 'Linear Lighting System', category: 'Electrical', quantity: 2, unitCost: 40000, totalCost: 80000),
-        ],
-      ),
+      quoteF3,
+      quote91,
     ];
 
     _localQuotes.addAll(defaultQuotes);
 
     final defaultContracts = [
       Contract(
-        id: '832394',
-        quoteId: 'q-100',
-        projectRequestId: 'req-000',
+        id: '83239481',
+        quoteId: 'f315971a',
+        projectRequestId: '7c88187a-7133-4fd2',
         designerId: 'des-001',
         clientId: 'client-001',
         status: 'Active',
         totalAmount: 190000.00,
         termsSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
-        terms: 'Standard StyleSync Design & Execution Contract. 50% deposit paid upon signing, 50% upon final handover.',
-        signedAt: DateTime.now().subtract(const Duration(days: 4)),
-        createdAt: DateTime.now().subtract(const Duration(days: 4)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 4)),
-        quote: defaultQuotes[2],
+        terms: 'Official StyleSync Binding Agreement for Minimalist bedroom redesign with furniture, lighting and wall finishing. Payments follow the standard milestone schedule: 50% advance deposit due upon signing, and 50% balance upon final quality inspection and room handover. All work is guaranteed under StyleSync Designer Quality Assurance.',
+        signedAt: DateTime(2026, 9, 29),
+        createdAt: DateTime(2026, 9, 29),
+        updatedAt: DateTime(2026, 9, 29),
+        quote: quoteF3,
       ),
       Contract(
-        id: '39b2de',
-        quoteId: 'q-099',
-        projectRequestId: 'req-099',
+        id: '39b2ded8',
+        quoteId: '91c8be8d',
+        projectRequestId: '221f6067-dcb9-414f',
         designerId: 'des-003',
         clientId: 'client-002',
         status: 'Cancelled',
         totalAmount: 200000.00,
         termsSummary: 'Modern living room refresh, 200 sq ft.',
-        terms: 'Contract was cancelled by client before signature.',
+        terms: 'Official StyleSync Binding Agreement for Modern living room refresh, 200 sq ft. Payments follow the standard milestone schedule: 50% advance deposit due upon signing, and 50% balance upon final quality inspection and room handover. All work is guaranteed under StyleSync Designer Quality Assurance.',
         signedAt: null,
-        createdAt: DateTime.now().subtract(const Duration(days: 4)),
-        updatedAt: DateTime.now().subtract(const Duration(days: 4)),
-        quote: defaultQuotes[3],
+        createdAt: DateTime(2026, 9, 24),
+        updatedAt: DateTime(2026, 9, 24),
+        quote: quote91,
       ),
     ];
 
@@ -563,5 +569,35 @@ class QuotesContractsService {
       return updated;
     }
     throw Exception('Contract not found');
+  }
+
+  Future<Contract?> getContract(String id) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/contracts/$id');
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final decoded = jsonDecode(res.body);
+        return Contract.fromJson(decoded as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[QuotesContractsService] getContract API failed: $e.');
+    }
+    final idx = _localContracts.indexWhere((c) => c.id == id);
+    return idx != -1 ? _localContracts[idx] : null;
+  }
+
+  Future<Quote?> getQuote(String id) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/quotes/$id');
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final decoded = jsonDecode(res.body);
+        return Quote.fromJson(decoded as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[QuotesContractsService] getQuote API failed: $e.');
+    }
+    final idx = _localQuotes.indexWhere((q) => q.id == id);
+    return idx != -1 ? _localQuotes[idx] : null;
   }
 }
