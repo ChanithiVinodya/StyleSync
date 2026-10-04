@@ -110,6 +110,10 @@ void main() {
         expect(find.text('Requests'), findsWidgets);
         expect(find.text('Quotes'), findsWidgets);
         expect(find.text('Progress'), findsWidgets);
+
+        // Drain any pending debounce timers (e.g. 400ms search debounce
+        // from MyRequestsScreen) before the widget tree is disposed.
+        await tester.pump(const Duration(milliseconds: 500));
       },
       createHttpClient: (context) => _MockHttpClient(),
     );
