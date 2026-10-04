@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../models/match_score_breakdown.dart';
 import '../services/designers_api_service.dart';
 
@@ -69,47 +70,58 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
   }
 
   Color _getScoreColor(double score, bool isDark) {
-    if (score >= 0.80) return const Color(0xFF2E7D32); // Deep green
+    if (score >= 0.80) return const Color(0xFF059669); // Emerald
     if (score >= 0.60) return const Color(0xFFD97706); // Warm Amber
     return const Color(0xFFC05621); // Terracotta
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgMain = isDark ? const Color(0xFF14110E) : const Color(0xFFFAF7F2);
+    final cardBorder = isDark ? const Color(0xFF332B25) : const Color(0xFFEDE5DC);
+    final textPrimary = isDark ? const Color(0xFFFAF8F5) : const Color(0xFF241611);
+    final textSecondary = isDark ? const Color(0xFFA89F91) : const Color(0xFF706558);
+    const accentTerracotta = Color(0xFF8C4A3E);
 
     return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF121212) : const Color(0xFFF9F7F5),
+      backgroundColor: bgMain,
       appBar: AppBar(
+        backgroundColor: bgMain,
+        elevation: 0,
+        scrolledUnderElevation: 0,
         title: Text(
           widget.designerDisplayName != null
               ? '${widget.designerDisplayName} - Match Breakdown'
               : 'Match Score Explanation',
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18),
+          style: GoogleFonts.playfairDisplay(
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            color: textPrimary,
+          ),
         ),
-        backgroundColor:
-            isDark ? const Color(0xFF1E1E1E) : const Color(0xFFFAF7F2),
-        elevation: 0,
-        centerTitle: false,
       ),
       body: FutureBuilder<MatchScoreBreakdownResponse>(
         future: _scoreFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(Color(0xFFC05621)),
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(accentTerracotta),
+                    strokeWidth: 2.5,
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   Text(
-                    'Calculating match breakdown...',
-                    style: TextStyle(fontSize: 14, color: Colors.grey),
+                    'Evaluating compatibility parameters...',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -119,32 +131,30 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
           if (snapshot.hasError) {
             return Center(
               child: Padding(
-                padding: const EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline,
+                    const Icon(Icons.error_outline_rounded,
                         size: 48, color: Colors.redAccent),
                     const SizedBox(height: 16),
                     Text(
                       'Failed to load match breakdown.',
-                      style: theme.textTheme.titleMedium,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: textPrimary,
+                      ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      snapshot.error.toString(),
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton.icon(
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: accentTerracotta),
                       onPressed: _loadScore,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Retry'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFC05621),
-                        foregroundColor: Colors.white,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: Text(
+                        'Retry',
+                        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -154,7 +164,7 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
           }
 
           final breakdown = snapshot.data!;
-          return _buildExplanationContent(context, breakdown, isDark);
+          return _buildExplanationContent(context, breakdown, isDark, cardBorder, textPrimary, textSecondary);
         },
       ),
     );
@@ -164,40 +174,34 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
     BuildContext context,
     MatchScoreBreakdownResponse data,
     bool isDark,
+    Color cardBorder,
+    Color textPrimary,
+    Color textSecondary,
   ) {
     final stylePct = (data.styleTagOverlapPct * 100).round();
     final budgetPct = (data.budgetRangeOverlapPct * 100).round();
     final totalPct = (data.matchScore * 100).round();
     final scoreColor = _getScoreColor(data.matchScore, isDark);
+    final cardBg = isDark ? const Color(0xFF1E1A17) : Colors.white;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 1. Overall Match Summary Card
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(22),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: isDark
-                    ? [const Color(0xFF262626), const Color(0xFF1E1E1E)]
-                    : [const Color(0xFFFFFFFF), const Color(0xFFFBF8F5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.black.withOpacity(0.06),
-              ),
+              color: cardBg,
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: cardBorder, width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                  color: isDark ? Colors.black.withOpacity(0.3) : const Color(0xFF241611).withOpacity(0.05),
                   blurRadius: 16,
-                  offset: const Offset(0, 4),
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -210,18 +214,18 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Overall AI Match Score',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.5,
-                            color: isDark ? Colors.grey[400] : Colors.grey[700],
+                          'OVERALL COMPATIBILITY',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: textSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '$totalPct% Match',
-                          style: TextStyle(
+                          style: GoogleFonts.playfairDisplay(
                             fontSize: 32,
                             fontWeight: FontWeight.w800,
                             color: scoreColor,
@@ -230,19 +234,18 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 14, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
                         color: scoreColor.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: scoreColor.withOpacity(0.3)),
                       ),
                       child: Text(
                         _getMatchTier(data.matchScore),
-                        style: TextStyle(
+                        style: GoogleFonts.plusJakartaSans(
                           color: scoreColor,
                           fontWeight: FontWeight.w700,
-                          fontSize: 13,
+                          fontSize: 12,
                         ),
                       ),
                     ),
@@ -253,19 +256,20 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                   borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: data.matchScore.clamp(0.0, 1.0),
-                    minHeight: 10,
+                    minHeight: 8,
                     backgroundColor: isDark
                         ? Colors.white.withOpacity(0.08)
                         : Colors.black.withOpacity(0.06),
                     valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 Text(
-                  'Deterministic weighted score: 40% Style + 30% Budget + 20% Rating + 10% Availability',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  'Deterministic Weighted Formula: 40% Style + 30% Budget + 20% Rating + 10% Availability',
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    color: textSecondary,
+                    fontWeight: FontWeight.w500,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -273,32 +277,36 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
 
           // Section Title
           Text(
-            'Score Breakdown',
-            style: TextStyle(
-              fontSize: 18,
+            'Component Breakdown',
+            style: GoogleFonts.playfairDisplay(
+              fontSize: 19,
               fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white : const Color(0xFF1E1E1E),
+              color: textPrimary,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
           Text(
-            'Plain-language explanation of how your request parameters aligned with this designer.',
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            'Transparent explanation of how your criteria aligned with this studio.',
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 12,
+              color: textSecondary,
             ),
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
 
           // 2. Component 1: Style Match (40% Weight)
           _buildBreakdownCard(
             context: context,
             isDark: isDark,
+            cardBg: cardBg,
+            cardBorder: cardBorder,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
             icon: Icons.palette_outlined,
             iconColor: const Color(0xFF805AD5),
             title: 'Style Compatibility',
@@ -314,21 +322,18 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                       runSpacing: 6,
                       children: widget.styleTags.map((tag) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFF805AD5).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                                color:
-                                    const Color(0xFF805AD5).withOpacity(0.25)),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF805AD5).withOpacity(0.25)),
                           ),
                           child: Text(
                             '# $tag',
-                            style: const TextStyle(
+                            style: GoogleFonts.plusJakartaSans(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF805AD5),
+                              color: const Color(0xFF805AD5),
                             ),
                           ),
                         );
@@ -338,12 +343,16 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                 : null,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // 3. Component 2: Budget Fit (30% Weight)
           _buildBreakdownCard(
             context: context,
             isDark: isDark,
+            cardBg: cardBg,
+            cardBorder: cardBorder,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
             icon: Icons.account_balance_wallet_outlined,
             iconColor: const Color(0xFF2B6CB0),
             title: 'Budget Fit',
@@ -356,22 +365,26 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                     padding: const EdgeInsets.only(top: 8.0),
                     child: Text(
                       'Requested budget: ${_formatCurrency(widget.budgetMin)} - ${_formatCurrency(widget.budgetMax)}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? Colors.grey[400] : Colors.grey[700],
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: textSecondary,
                       ),
                     ),
                   )
                 : null,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // 4. Component 3: Past Rating (20% Weight)
           _buildBreakdownCard(
             context: context,
             isDark: isDark,
+            cardBg: cardBg,
+            cardBorder: cardBorder,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
             icon: Icons.star_outline_rounded,
             iconColor: const Color(0xFFD69E2E),
             title: 'Client Satisfaction Rating',
@@ -383,28 +396,32 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                     padding: const EdgeInsets.only(top: 6.0),
                     child: Text(
                       'New designer on platform; standard 50% baseline applied.',
-                      style: TextStyle(
+                      style: GoogleFonts.plusJakartaSans(
                         fontSize: 11,
                         fontStyle: FontStyle.italic,
-                        color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        color: textSecondary,
                       ),
                     ),
                   )
                 : null,
           ),
 
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
 
           // 5. Component 4: Availability (10% Weight)
           _buildBreakdownCard(
             context: context,
             isDark: isDark,
+            cardBg: cardBg,
+            cardBorder: cardBorder,
+            textPrimary: textPrimary,
+            textSecondary: textSecondary,
             icon: data.availabilityBonus > 0
                 ? Icons.check_circle_outline
                 : Icons.hourglass_empty_rounded,
             iconColor: data.availabilityBonus > 0
-                ? const Color(0xFF38A169)
-                : const Color(0xFFE53E3E),
+                ? const Color(0xFF059669)
+                : const Color(0xFFDC2626),
             title: 'Capacity & Availability',
             weightLabel: '10% Weight',
             plainLanguageExplanation: data.availabilityBonus > 0
@@ -417,60 +434,49 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                 data.availabilityBonus > 0
                     ? 'Designer is active and under maximum concurrent project limit.'
                     : 'Designer is currently occupied with active client commitments.',
-                style: TextStyle(
+                style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  color: textSecondary,
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
 
-          // 6. Read-Only Notice Container
+          // 6. Read-Only Notice
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark
-                  ? Colors.white.withOpacity(0.04)
-                  : Colors.black.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.black.withOpacity(0.06),
-              ),
+              color: isDark ? const Color(0xFF1E1A17) : const Color(0xFFF4EDE4),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: cardBorder),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 20,
-                  color: isDark ? Colors.grey[400] : Colors.grey[600],
-                ),
-                const SizedBox(width: 12),
+                const Icon(Icons.info_outline_rounded, size: 18, color: Color(0xFF8C4A3E)),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         'Read-Only Explanation',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color:
-                              isDark ? Colors.grey[200] : const Color(0xFF1E1E1E),
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: textPrimary,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'This explanation view shows how the StyleSync matching algorithm scored your shortlist. Weights and scores are calculated directly from request criteria and designer profile data.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
+                        'This breakdown shows how the StyleSync deterministic matching algorithm evaluated compatibility between your request and the designer profile.',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 11.5,
+                          height: 1.45,
+                          color: textSecondary,
                         ),
                       ),
                     ],
@@ -479,7 +485,6 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
@@ -489,7 +494,6 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
     if (data.averageRating != null) {
       return 'Rating: ${data.averageRating!.toStringAsFixed(1)} / 5 from past clients';
     }
-    // If averageRating was not provided in DTO but pastRatingNormalized != 0.5, compute from it
     if (data.pastRatingNormalized != 0.5) {
       final computed = (data.pastRatingNormalized * 5.0).toStringAsFixed(1);
       return 'Rating: $computed / 5 from past clients';
@@ -500,6 +504,10 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
   Widget _buildBreakdownCard({
     required BuildContext context,
     required bool isDark,
+    required Color cardBg,
+    required Color cardBorder,
+    required Color textPrimary,
+    required Color textSecondary,
     required IconData icon,
     required Color iconColor,
     required String title,
@@ -510,20 +518,16 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
   }) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark
-              ? Colors.white.withOpacity(0.07)
-              : Colors.black.withOpacity(0.06),
-        ),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+            color: isDark ? Colors.black.withOpacity(0.2) : const Color(0xFF241611).withOpacity(0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -538,52 +542,46 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                   color: iconColor.withOpacity(0.12),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: iconColor, size: 20),
+                child: Icon(icon, color: iconColor, size: 18),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 10),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : const Color(0xFF1E1E1E),
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  title,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: textPrimary,
+                  ),
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withOpacity(0.06)
-                      : Colors.black.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(10),
+                      ? const Color(0xFF2E2620)
+                      : const Color(0xFFF3ECE4),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   weightLabel,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isDark ? Colors.grey[400] : Colors.grey[600],
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                    color: textSecondary,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
             plainLanguageExplanation,
-            style: TextStyle(
-              fontSize: 14,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13,
               fontWeight: FontWeight.w500,
-              height: 1.35,
-              color: isDark ? Colors.grey[200] : const Color(0xFF2D3748),
+              height: 1.4,
+              color: textPrimary,
             ),
           ),
           const SizedBox(height: 12),
