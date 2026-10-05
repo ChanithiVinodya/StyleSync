@@ -13,6 +13,9 @@ class MockRequestsRepository implements RequestsRepository {
   int fetchCount = 0;
   String? mockRoomPhotoUrl;
 
+  String? mockDescription;
+  double? mockRoomSizeSqM;
+
   @override
   Future<RequestDetail> getRequest(String id) async {
     fetchCount++;
@@ -28,6 +31,8 @@ class MockRequestsRepository implements RequestsRepository {
       moodboard: const [],
       statusHistory: const [],
       roomPhotoUrl: mockRoomPhotoUrl,
+      description: mockDescription,
+      roomSizeSqM: mockRoomSizeSqM,
     );
   }
 
@@ -126,5 +131,36 @@ void main() {
     // Because mockRepo sets status to submitted if submitCount > 0
     // "Submit Request" button should disappear because it's no longer a draft
     expect(find.text('Submit Request'), findsNothing);
+  });
+
+  testWidgets('displays Length, Width, and Height correctly when dimensions tag is present', (tester) async {
+    mockRepo.mockDescription = 'My modern living room\n\n[Dimensions: L=15, W=20, H=10]';
+    mockRepo.mockRoomSizeSqM = 300;
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Length'), findsOneWidget);
+    expect(find.text('15 ft'), findsOneWidget);
+    expect(find.text('Width'), findsOneWidget);
+    expect(find.text('20 ft'), findsOneWidget);
+    expect(find.text('Height'), findsOneWidget);
+    expect(find.text('10 ft'), findsOneWidget);
+    expect(find.text('Room Size'), findsOneWidget);
+    expect(find.text('300 sq ft'), findsOneWidget);
+    expect(find.text('My modern living room'), findsOneWidget);
+  });
+
+  testWidgets('displays fallback dashes for Length, Width, and Height when not set and hides Room Size', (tester) async {
+    mockRepo.mockDescription = null;
+    mockRepo.mockRoomSizeSqM = 23; // Even if legacy backend has 23, it should NOT show Room Size if length/width are not entered!
+
+    await tester.pumpWidget(buildScreen());
+    await tester.pumpAndSettle();
+
+    expect(find.text('Length'), findsOneWidget);
+    expect(find.text('Width'), findsOneWidget);
+    expect(find.text('Height'), findsOneWidget);
+    expect(find.text('Room Size'), findsNothing);
   });
 }
