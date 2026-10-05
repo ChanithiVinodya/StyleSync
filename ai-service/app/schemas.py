@@ -51,7 +51,9 @@ class MatchScoreBreakdownDto(BaseModel):
 class DesignerSearchResultDto(BaseModel):
     designer_id: int = Field(alias="designerId")
     match_score: float = Field(alias="matchScore")
-    score_breakdown: MatchScoreBreakdownDto = Field(default_factory=MatchScoreBreakdownDto, alias="scoreBreakdown")
+    score_breakdown: MatchScoreBreakdownDto = Field(
+        default_factory=MatchScoreBreakdownDto, alias="scoreBreakdown"
+    )
     display_name: str = Field(alias="displayName")
     bio: str = Field(default="", alias="bio")
     style_tags: list[str] = Field(default_factory=list, alias="styleTags")
@@ -126,7 +128,8 @@ class WorkflowState(BaseModel):
     # Domain outputs from specialist agents
     style_profile: Optional[StyleProfile] = None
     designer_shortlist: list[DesignerMatch] = Field(default_factory=list, alias="designerMatches")
-    matching_status: str = Field(default="pending", alias="matchingStatus")  # "pending" | "success" | "no_eligible_designers"
+    # "pending" | "success" | "no_eligible_designers"
+    matching_status: str = Field(default="pending", alias="matchingStatus")
     project_scope: Optional[ProjectScope] = None
     validation_result: Optional[ValidationResult] = None
     approval_status: str = "Pending"

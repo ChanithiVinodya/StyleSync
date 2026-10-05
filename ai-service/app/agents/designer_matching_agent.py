@@ -19,12 +19,21 @@ from app.tools import check_designer_availability, search_designers
 
 logger = logging.getLogger("stylesync.designer_matching_agent")
 
-DESIGNER_MATCHING_SYSTEM_PROMPT = """You are the Designer-Matching agent. You never calculate match scores yourself. Call search_designers() to get a ranked, scored list of eligible designers, then call check_designer_availability() to confirm the top candidates. Select the top 2-3 and write a short, plain-language explanation of why each is a good fit, referencing their actual score and its components (style/budget/rating/availability) — do not restate the raw JSON, translate it into a sentence a non-technical client would understand.
+DESIGNER_MATCHING_SYSTEM_PROMPT = """You are the Designer-Matching agent. You never calculate
+match scores yourself. Call search_designers() to get a ranked, scored list of eligible designers,
+then call check_designer_availability() to confirm the top candidates. Select the top 2-3 and write
+a short, plain-language explanation of why each is a good fit, referencing their actual score and its
+components (style/budget/rating/availability) — do not restate the raw JSON, translate it into a sentence
+a non-technical client would understand.
 
 Rules:
-- If search_designers() returns an empty list, set matchingStatus = "no_eligible_designers" and do not fabricate a designer or lower standards to find a match.
-- Never auto-assign a designer — this node only proposes a shortlist; assignment happens only after the client approves later in the workflow.
-- The explanation text must be traceable back to the real score components returned by the tool — no invented reasons ("great communicator", "highly rated" without a rating value) that aren't grounded in the actual tool output.
+- If search_designers() returns an empty list, set matchingStatus = "no_eligible_designers" and do not
+  fabricate a designer or lower standards to find a match.
+- Never auto-assign a designer — this node only proposes a shortlist; assignment happens only after
+  the client approves later in the workflow.
+- The explanation text must be traceable back to the real score components returned by the tool —
+  no invented reasons ("great communicator", "highly rated" without a rating value) that aren't
+  grounded in the actual tool output.
 """
 
 
@@ -80,7 +89,9 @@ def _generate_explanation(candidate: dict[str, Any], availability: dict[str, Any
     price_min = candidate.get("priceRangeMin", 0.0)
     price_max = candidate.get("priceRangeMax", 0.0)
     if budget_overlap > 0 and (price_min > 0 or price_max > 0):
-        clauses.append(f"strong budget alignment covering the LKR {price_min:,.0f} - {price_max:,.0f} price range")
+        clauses.append(
+            f"strong budget alignment covering the LKR {price_min:,.0f} - {price_max:,.0f} price range"
+        )
     elif budget_overlap > 0:
         clauses.append("strong alignment with your requested budget parameters")
     else:
@@ -134,7 +145,9 @@ def run_designer_matching_node(state: WorkflowState) -> WorkflowState:
     if not valid_candidates:
         updated_state.matching_status = "no_eligible_designers"
         updated_state.designer_shortlist = []
-        _update_plan_step(updated_state, "no_eligible_designers", "No eligible designers found matching criteria.")
+        _update_plan_step(
+            updated_state, "no_eligible_designers", "No eligible designers found matching criteria."
+        )
         return updated_state
 
     # 2. Confirm availability for candidate designers using check_designer_availability tool
@@ -188,7 +201,9 @@ def run_designer_matching_node(state: WorkflowState) -> WorkflowState:
     if not shortlisted_matches:
         updated_state.matching_status = "no_eligible_designers"
         updated_state.designer_shortlist = []
-        _update_plan_step(updated_state, "no_eligible_designers", "No available designers with active capacity found.")
+        _update_plan_step(
+            updated_state, "no_eligible_designers", "No available designers with active capacity found."
+        )
         return updated_state
 
     # Successfully shortlisted 2-3 designers
@@ -220,7 +235,9 @@ def _update_plan_step(state: WorkflowState, status: str, result_msg: str) -> Non
     state.plan = updated_plan
 
 
-def match_designers(state: WorkflowState, style_profile: Optional[StyleProfile] = None) -> list[DesignerMatch]:
+def match_designers(
+    state: WorkflowState, style_profile: Optional[StyleProfile] = None
+) -> list[DesignerMatch]:
     """
     Direct function interface for designer matching.
     Returns the shortlisted DesignerMatch items.

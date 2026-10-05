@@ -1,9 +1,8 @@
 import httpx
-import pytest
+
 from app.schemas import (
     DesignerAvailabilityResponseDto,
     DesignerSearchResultDto,
-    MatchScoreBreakdownDto,
 )
 from app.tools import (
     DESIGNER_MATCHING_TOOLS,

@@ -103,7 +103,10 @@ def search_designers(
     budget_min: float = 0.0,
     budget_max: float = 0.0,
 ) -> list[dict[str, Any]]:
-    """HTTP GET to Component 1's search_designers endpoint. Returns the ranked list exactly as returned by the backend."""
+    """
+    HTTP GET to Component 1's search_designers endpoint.
+    Returns the ranked list exactly as returned by the backend.
+    """
     try:
         url = f"{BACKEND_API_BASE_URL}/api/designers/search"
         params: list[tuple[str, str]] = []

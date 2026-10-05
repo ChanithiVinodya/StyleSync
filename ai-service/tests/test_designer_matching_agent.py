@@ -11,7 +11,6 @@ Test Coverage (per assignment brief):
    downstream consumption by Node 3 (Budget/Scope).
 """
 import httpx
-import pytest
 
 from app.agents.designer_matching_agent import (
     DESIGNER_MATCHING_SYSTEM_PROMPT,
@@ -239,7 +238,8 @@ def test_golden_happy_path_shortlists_top_2_to_3_with_grounded_explanations(monk
     # 3. Grounded explanations trace directly to score breakdown components
     for match in output_state.designer_shortlist:
         assert match.explanation != ""
-        assert f"{match.designer_name} is a {round(match.match_score * 100)}% overall match" in match.explanation
+        expected_score_text = f"{match.designer_name} is a {round(match.match_score * 100)}% overall match"
+        assert expected_score_text in match.explanation
         assert "style alignment" in match.explanation
         assert "confirmed active bandwidth" in match.explanation
 

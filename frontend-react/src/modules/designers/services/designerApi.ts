@@ -234,7 +234,7 @@ const SEED_DESIGNERS: DesignerProfile[] = [
   }
 ];
 
-let inMemoryDesigners: DesignerProfile[] = [...SEED_DESIGNERS];
+const inMemoryDesigners: DesignerProfile[] = [...SEED_DESIGNERS];
 
 export const designerApi = {
   async getListings(query: DesignerQueryParameters): Promise<PagedResult<DesignerListingItem>> {
