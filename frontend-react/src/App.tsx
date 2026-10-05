@@ -25,8 +25,8 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public Routes - Website opens directly to Designer/Admin Login */}
-            <Route path="/" element={<Login />} />
+            {/* Public Routes - Website opens directly to Landing Page */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/landing" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
