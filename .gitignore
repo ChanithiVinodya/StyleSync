@@ -19,6 +19,7 @@ flutter-app/.dart_tool/
 flutter-app/.flutter-plugin*
 flutter-app/.metadata
 flutter-app/build/
+flutter-app/emulator_screen.png
 flutter-app/android/
 flutter-app/ios/
 flutter-app/linux/
