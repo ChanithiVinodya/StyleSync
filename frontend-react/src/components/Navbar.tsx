@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { PersonaRole } from '../types';
 import { Logo } from './Logo';
 import { GlassThemeToggle } from './GlassThemeToggle';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../auth/AuthContext';
+import { LogOut, Home, Palette, FileText, Hammer, LayoutDashboard } from 'lucide-react';
 
 interface NavbarProps {
   onOpenPortalModal: (role?: PersonaRole) => void;
@@ -36,6 +38,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [clientMenuOpen, setClientMenuOpen] = useState(false);
+
+  const { user, logout } = useAuth();
 
   const isManualClickRef = React.useRef(false);
   const manualClickTimeoutRef = React.useRef<number | null>(null);
@@ -226,32 +231,117 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-2.5">
-            {/* Secondary CTA: Portals Log In */}
-            <motion.button
-              id="nav-login-btn"
-              onClick={() => onOpenPortalModal('designer')}
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-              className="px-4 py-2 text-sm font-medium text-[#1C1917] dark:text-[#E7E1D7] hover:text-[#000000] dark:hover:text-[#FFFFFF] hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] rounded-full transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#1C1917] dark:focus-visible:ring-[#FAF8F5]"
-            >
-              Log In
-            </motion.button>
+            {user ? (
+              <div className="relative">
+                <button
+                  onClick={() => setClientMenuOpen(!clientMenuOpen)}
+                  className="flex items-center justify-center p-2 rounded-full hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition-colors focus:outline-hidden"
+                  aria-label="User Menu"
+                >
+                  <Menu className="w-5 h-5 text-[#1C1917] dark:text-[#FAF8F5]" />
+                </button>
 
-            {/* PRIMARY CTA: Get Started with spring hover and arrow glide */}
-            <motion.button
-              id="nav-get-started-btn"
-              onClick={onOpenGetStarted}
-              whileHover={{ scale: 1.03, y: -0.5 }}
-              whileTap={{ scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-              className="relative inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-[#FAF8F5] dark:text-[#1C1917] bg-[#1C1917] dark:bg-[#FAF8F5] hover:bg-[#322C27] dark:hover:bg-[#E7E0D3] rounded-full shadow-xs hover:shadow-md transition-shadow group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#1C1917] dark:focus-visible:ring-[#FAF8F5] overflow-hidden"
-            >
-              {/* Subtle light sweep reflection */}
-              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 dark:via-black/5 to-transparent pointer-events-none" />
-              <span>Get Started</span>
-              <ArrowRight className="w-4 h-4 text-[#E7E1D7] dark:text-[#322C27] group-hover:translate-x-1 transition-transform" />
-            </motion.button>
+                <AnimatePresence>
+                  {clientMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-3 w-64 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl shadow-xl z-50 overflow-hidden"
+                    >
+                      <div className="px-4 py-3 border-b border-[#E7E1D7] dark:border-[#2E2824] bg-[#FAF8F5] dark:bg-[#12100E]">
+                        <p className="text-sm font-bold text-[#1C1917] dark:text-[#FAF8F5] truncate">{user.name}</p>
+                        <p className="text-xs text-[#78716C] dark:text-[#A8A29E] truncate">{user.email}</p>
+                      </div>
+                      <div className="p-2 space-y-1">
+                        <Link
+                          to="/client"
+                          onClick={() => setClientMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-[#44403C] dark:text-[#D6D3D1] hover:text-[#1C1917] dark:hover:text-[#FAF8F5] hover:bg-[#EFEAE1] dark:hover:bg-[#201C19] rounded-xl transition-colors"
+                        >
+                          <LayoutDashboard className="w-4 h-4 text-[#C48A36]" />
+                          <span>Client Dashboard</span>
+                        </Link>
+                        <Link
+                          to="/project-requests"
+                          onClick={() => setClientMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-[#44403C] dark:text-[#D6D3D1] hover:text-[#1C1917] dark:hover:text-[#FAF8F5] hover:bg-[#EFEAE1] dark:hover:bg-[#201C19] rounded-xl transition-colors"
+                        >
+                          <Home className="w-4 h-4 text-[#C48A36]" />
+                          <span>New Requests</span>
+                        </Link>
+                        <Link
+                          to="/designers"
+                          onClick={() => setClientMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-[#44403C] dark:text-[#D6D3D1] hover:text-[#1C1917] dark:hover:text-[#FAF8F5] hover:bg-[#EFEAE1] dark:hover:bg-[#201C19] rounded-xl transition-colors"
+                        >
+                          <Palette className="w-4 h-4 text-purple-500" />
+                          <span>Find Designers</span>
+                        </Link>
+                        <Link
+                          to="/quotes-contracts"
+                          onClick={() => setClientMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-[#44403C] dark:text-[#D6D3D1] hover:text-[#1C1917] dark:hover:text-[#FAF8F5] hover:bg-[#EFEAE1] dark:hover:bg-[#201C19] rounded-xl transition-colors"
+                        >
+                          <FileText className="w-4 h-4 text-emerald-500" />
+                          <span>Quotes & Contracts</span>
+                        </Link>
+                        <Link
+                          to="/project-execution"
+                          onClick={() => setClientMenuOpen(false)}
+                          className="flex items-center gap-3 px-3 py-2 text-sm text-[#44403C] dark:text-[#D6D3D1] hover:text-[#1C1917] dark:hover:text-[#FAF8F5] hover:bg-[#EFEAE1] dark:hover:bg-[#201C19] rounded-xl transition-colors"
+                        >
+                          <Hammer className="w-4 h-4 text-blue-500" />
+                          <span>Project Execution</span>
+                        </Link>
+                      </div>
+                      <div className="p-2 border-t border-[#E7E1D7] dark:border-[#2E2824]">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setClientMenuOpen(false);
+                            navigate('/login');
+                          }}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ) : (
+              <>
+                {/* Secondary CTA: Portals Log In */}
+                <motion.button
+                  id="nav-login-btn"
+                  onClick={() => onOpenPortalModal('designer')}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  className="px-4 py-2 text-sm font-medium text-[#1C1917] dark:text-[#E7E1D7] hover:text-[#000000] dark:hover:text-[#FFFFFF] hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] rounded-full transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#1C1917] dark:focus-visible:ring-[#FAF8F5]"
+                >
+                  Log In
+                </motion.button>
+
+                {/* PRIMARY CTA: Get Started with spring hover and arrow glide */}
+                <motion.button
+                  id="nav-get-started-btn"
+                  onClick={onOpenGetStarted}
+                  whileHover={{ scale: 1.03, y: -0.5 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  className="relative inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-[#FAF8F5] dark:text-[#1C1917] bg-[#1C1917] dark:bg-[#FAF8F5] hover:bg-[#322C27] dark:hover:bg-[#E7E0D3] rounded-full shadow-xs hover:shadow-md transition-shadow group focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#1C1917] dark:focus-visible:ring-[#FAF8F5] overflow-hidden"
+                >
+                  <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/10 dark:via-black/5 to-transparent pointer-events-none" />
+                  <span>Get Started</span>
+                  <ArrowRight className="w-4 h-4 text-[#E7E1D7] dark:text-[#322C27] group-hover:translate-x-1 transition-transform" />
+                </motion.button>
+              </>
+            )}
 
             {/* Light/Dark Glass Toggle Button */}
             <GlassThemeToggle />

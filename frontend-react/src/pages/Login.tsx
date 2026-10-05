@@ -36,11 +36,9 @@ export const Login: React.FC = () => {
         return;
       }
 
-      // Strictly Block Client Login on Website - Clients MUST use Mobile App
+      // Route Client to Landing Page which contains the new module dropdown
       if (user.role === 'Client') {
-        logout();
-        setError('Client accounts are managed through the StyleSync Mobile App. Please use the mobile app on your phone.');
-        setIsMobileModalOpen(true);
+        navigate('/');
         return;
       }
     } catch (err: any) {
