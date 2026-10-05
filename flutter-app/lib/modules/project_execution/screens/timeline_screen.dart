@@ -64,10 +64,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
                   } else {
                     await service.updateTimelineEvent(widget.projectId, event.eventId, data);
                   }
-                  if (mounted) Navigator.pop(context);
+                  if (context.mounted) Navigator.pop(context);
                   ref.invalidate(projectTimelineProvider(widget.projectId));
                 } catch (e) {
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                   }
                 }
@@ -99,7 +99,7 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
         await service.deleteTimelineEvent(widget.projectId, event.eventId);
         ref.invalidate(projectTimelineProvider(widget.projectId));
       } catch (e) {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }

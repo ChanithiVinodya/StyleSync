@@ -37,6 +37,14 @@ export const updateTaskStatus = async (id: string, status: string) => {
   const res = await apiClient.patch<Task>(`/tasks/${id}/status`, { status });
   return res.data;
 };
+export const updateTask = async (id: string, data: Partial<Task>) => {
+  const res = await apiClient.put<Task>(`/tasks/${id}`, data);
+  return res.data;
+};
+export const deleteTask = async (id: string) => {
+  const res = await apiClient.delete(`/tasks/${id}`);
+  return res.data;
+};
 
 // Dependencies
 export const getTaskDependencies = async (taskId: string) => {
@@ -55,6 +63,14 @@ export const getMaterials = async (projectId: string) => {
 };
 export const createMaterial = async (data: Partial<Material>) => {
   const res = await apiClient.post<Material>('/materials', data);
+  return res.data;
+};
+export const updateMaterial = async (id: string, data: Partial<Material>) => {
+  const res = await apiClient.put<Material>(`/materials/${id}`, data);
+  return res.data;
+};
+export const deleteMaterial = async (id: string) => {
+  const res = await apiClient.delete(`/materials/${id}`);
   return res.data;
 };
 export const updateMaterialStatus = async (id: string, status: string) => {

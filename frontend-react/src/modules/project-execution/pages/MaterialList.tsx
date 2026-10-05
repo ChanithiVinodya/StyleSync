@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { getMaterials, updateMaterialStatus, createMaterial, getMilestones, getTasks } from '../api';
+import { getMaterials, updateMaterialStatus, createMaterial, getMilestones, getTasks, updateMaterial, deleteMaterial } from '../api';
 import { Material, Milestone, Task } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
-import { PackagePlus, Package, X } from 'lucide-react';
+import { PackagePlus, Package, X, Edit, Trash2 } from 'lucide-react';
 
 export default function MaterialList() {
   const { projectId, userRole } = useOutletContext<{ projectId: string; userRole?: string }>();
@@ -14,6 +14,7 @@ export default function MaterialList() {
   const [error, setError] = useState('');
 
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     milestoneId: '', taskId: '', name: '', description: '', quantity: 1, unit: 'pcs', requiredDate: ''
   });
@@ -55,6 +56,17 @@ export default function MaterialList() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (isClient) return;
+    if (!window.confirm("Are you sure you want to delete this material?")) return;
+    try {
+      await deleteMaterial(id);
+      setMaterials(materials.filter(m => m.materialId !== id));
+    } catch (err: any) {
+      alert("Failed to delete material.");
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isClient) return;
@@ -62,22 +74,52 @@ export default function MaterialList() {
       alert("Please select both a milestone and a task to bind this material to.");
       return;
     }
+
+    const selectedTask = tasks.find(t => t.taskId === formData.taskId);
+    if (selectedTask && formData.requiredDate) {
+      const requiredDate = new Date(formData.requiredDate);
+      const startDate = new Date(selectedTask.startDate);
+      const dueDate = new Date(selectedTask.dueDate);
+      
+      requiredDate.setHours(0,0,0,0);
+      startDate.setHours(0,0,0,0);
+      dueDate.setHours(0,0,0,0);
+
+      if (requiredDate < startDate || requiredDate > dueDate) {
+        alert(`Required date must be within the task's timeline (${startDate.toLocaleDateString()} to ${dueDate.toLocaleDateString()}).`);
+        return;
+      }
+    }
     try {
-      const newMaterial = await createMaterial({
-        projectId,
-        milestoneId: formData.milestoneId,
-        taskId: formData.taskId,
-        name: formData.name,
-        description: formData.description,
-        quantity: Number(formData.quantity),
-        unit: formData.unit,
-        requiredDate: formData.requiredDate ? new Date(formData.requiredDate).toISOString() : undefined
-      });
-      setMaterials([...materials, newMaterial]);
+      if (editingId) {
+        const updatedMaterial = await updateMaterial(editingId, {
+          milestoneId: formData.milestoneId,
+          taskId: formData.taskId,
+          name: formData.name,
+          description: formData.description,
+          quantity: Number(formData.quantity),
+          unit: formData.unit,
+          requiredDate: formData.requiredDate ? new Date(formData.requiredDate).toISOString() : undefined
+        });
+        setMaterials(materials.map(m => m.materialId === editingId ? updatedMaterial : m));
+      } else {
+        const newMaterial = await createMaterial({
+          projectId,
+          milestoneId: formData.milestoneId,
+          taskId: formData.taskId,
+          name: formData.name,
+          description: formData.description,
+          quantity: Number(formData.quantity),
+          unit: formData.unit,
+          requiredDate: formData.requiredDate ? new Date(formData.requiredDate).toISOString() : undefined
+        });
+        setMaterials([...materials, newMaterial]);
+      }
       setShowForm(false);
+      setEditingId(null);
       setFormData(prev => ({ ...prev, name: '', description: '', quantity: 1, requiredDate: '' }));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to request material.');
+      alert(err.response?.data?.message || 'Failed to save material.');
     }
   };
 
@@ -90,7 +132,15 @@ export default function MaterialList() {
         <h2 className="text-3xl font-serif text-[#1C1917] dark:text-[#FAF8F5]">Material Logistics</h2>
         {!isClient && (
           <button 
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false);
+                setEditingId(null);
+                setFormData({ milestoneId: milestones[0]?.milestoneId || '', taskId: '', name: '', description: '', quantity: 1, unit: 'pcs', requiredDate: '' });
+              } else {
+                setShowForm(true);
+              }
+            }}
             className="bg-[#C48A36] text-white px-5 py-2.5 rounded-xl hover:bg-[#A8742A] flex items-center shadow-sm text-sm font-semibold transition-colors"
           >
             {showForm ? <><X className="w-4 h-4 mr-2" /> Cancel</> : <><PackagePlus className="w-4 h-4 mr-2" /> Request Material</>}
@@ -100,7 +150,7 @@ export default function MaterialList() {
 
       {showForm && !isClient && (
         <div className="bg-white dark:bg-[#1A1715] p-6 rounded-3xl shadow-sm border border-[#C48A36] mb-6 transition-all">
-          <h3 className="text-lg font-serif text-[#1C1917] dark:text-[#FAF8F5] mb-4">Request New Material</h3>
+          <h3 className="text-lg font-serif text-[#1C1917] dark:text-[#FAF8F5] mb-4">{editingId ? 'Edit Material' : 'Request New Material'}</h3>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="lg:col-span-2">
@@ -164,7 +214,7 @@ export default function MaterialList() {
                   <th className="px-8 py-4 text-left text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider">Quantity</th>
                   <th className="px-8 py-4 text-left text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider">Status</th>
                   <th className="px-8 py-4 text-left text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider">Required By</th>
-                  {!isClient && <th className="px-8 py-4 text-right text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider">Update Status</th>}
+                  {!isClient && <th className="px-8 py-4 text-right text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#E7E1D7] dark:divide-[#2E2824]">
@@ -184,7 +234,7 @@ export default function MaterialList() {
                       {material.requiredDate ? new Date(material.requiredDate).toLocaleDateString() : 'N/A'}
                     </td>
                     {!isClient && (
-                      <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium flex items-center justify-end space-x-3">
                         <select 
                           className="text-sm bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] text-[#1C1917] dark:text-[#FAF8F5] rounded-xl px-4 py-2 focus:outline-hidden focus:border-[#C48A36] transition-colors cursor-pointer appearance-none"
                           value={material.status}
@@ -194,6 +244,25 @@ export default function MaterialList() {
                           <option value="Ordered">Ordered</option>
                           <option value="Delivered">Delivered</option>
                         </select>
+                        <button onClick={() => {
+                          setEditingId(material.materialId);
+                          setFormData({
+                            milestoneId: material.milestoneId || '',
+                            taskId: material.taskId || '',
+                            name: material.name,
+                            description: material.description || '',
+                            quantity: material.quantity,
+                            unit: material.unit || 'pcs',
+                            requiredDate: material.requiredDate ? new Date(material.requiredDate).toISOString().split('T')[0] : ''
+                          });
+                          setShowForm(true);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }} className="text-[#C48A36] hover:text-[#A8742A] p-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl transition-colors">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(material.materialId)} className="text-red-500 hover:text-red-700 p-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </td>
                     )}
                   </tr>

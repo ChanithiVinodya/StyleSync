@@ -20,12 +20,12 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
     try {
       milestones = await service.getMilestones(widget.projectId);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load milestones: $e')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load milestones: $e')));
       return;
     }
 
     if (milestones.isEmpty && task == null) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please create a milestone first.')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please create a milestone first.')));
       return;
     }
 
@@ -61,7 +61,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     const SizedBox(height: 16),
                     if (task == null) ...[
                       DropdownButtonFormField<String>(
-                        value: selectedMilestoneId,
+                        initialValue: selectedMilestoneId,
                         items: milestones.map((m) {
                           return DropdownMenuItem(value: m.milestoneId, child: Text(m.name));
                         }).toList(),
@@ -113,7 +113,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: status,
+                      initialValue: status,
                       items: const [
                         DropdownMenuItem(value: 'NotStarted', child: Text('Not Started')),
                         DropdownMenuItem(value: 'InProgress', child: Text('In Progress')),
@@ -150,10 +150,10 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
                   } else {
                     await service.updateTask(task.taskId, data);
                   }
-                  if (mounted) Navigator.pop(context);
+                  if (context.mounted) Navigator.pop(context);
                   ref.invalidate(projectTasksProvider(null));
                 } catch (e) {
-                  if (mounted) {
+                  if (context.mounted) {
                     String msg = e.toString();
                     if (e is DioException && e.response?.data != null) {
                       msg = e.response?.data['message'] ?? e.response?.data.toString() ?? msg;
@@ -191,7 +191,7 @@ class _TaskListScreenState extends ConsumerState<TaskListScreen> {
         await service.deleteTask(task.taskId);
         ref.invalidate(projectTasksProvider(null));
       } catch (e) {
-        if (mounted) {
+        if (context.mounted) {
           String msg = e.toString();
           if (e is DioException && e.response?.data != null) {
             msg = e.response?.data['message'] ?? e.response?.data.toString() ?? msg;

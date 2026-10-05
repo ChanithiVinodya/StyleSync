@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { getTasks, updateTaskStatus, createTask, getMilestones } from '../api';
+import { getTasks, updateTaskStatus, createTask, getMilestones, updateTask, deleteTask } from '../api';
 import { Task, Milestone } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
-import { Plus, Settings2, Link, CheckSquare, X } from 'lucide-react';
+import { Plus, Settings2, Link, CheckSquare, X, Edit, Trash2 } from 'lucide-react';
 
 export default function TaskList() {
   const { projectId, userRole } = useOutletContext<{ projectId: string; userRole?: string }>();
@@ -13,6 +13,7 @@ export default function TaskList() {
   const [error, setError] = useState('');
   
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ milestoneId: '', name: '', description: '', startDate: '', dueDate: '' });
   const isClient = userRole === 'Client';
 
@@ -49,6 +50,17 @@ export default function TaskList() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (isClient) return;
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    try {
+      await deleteTask(id);
+      setTasks(tasks.filter(t => t.taskId !== id));
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Failed to delete task.");
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isClient) return;
@@ -56,19 +68,41 @@ export default function TaskList() {
       alert("Please select a milestone first.");
       return;
     }
+
+    const startDate = new Date(formData.startDate);
+    const dueDate = new Date(formData.dueDate);
+    startDate.setHours(0,0,0,0);
+    dueDate.setHours(0,0,0,0);
+    if (dueDate < startDate) {
+      alert("Due date cannot be earlier than start date.");
+      return;
+    }
+
     try {
-      const newTask = await createTask({
-        milestoneId: formData.milestoneId,
-        name: formData.name,
-        description: formData.description,
-        startDate: new Date(formData.startDate).toISOString(),
-        dueDate: new Date(formData.dueDate).toISOString()
-      });
-      setTasks([...tasks, newTask]);
+      if (editingId) {
+        const updatedTask = await updateTask(editingId, {
+          milestoneId: formData.milestoneId,
+          name: formData.name,
+          description: formData.description,
+          startDate: new Date(formData.startDate).toISOString(),
+          dueDate: new Date(formData.dueDate).toISOString()
+        });
+        setTasks(tasks.map(t => t.taskId === editingId ? updatedTask : t));
+      } else {
+        const newTask = await createTask({
+          milestoneId: formData.milestoneId,
+          name: formData.name,
+          description: formData.description,
+          startDate: new Date(formData.startDate).toISOString(),
+          dueDate: new Date(formData.dueDate).toISOString()
+        });
+        setTasks([...tasks, newTask]);
+      }
       setShowForm(false);
+      setEditingId(null);
       setFormData(prev => ({ ...prev, name: '', description: '', startDate: '', dueDate: '' }));
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create task.');
+      alert(err.response?.data?.message || 'Failed to save task.');
     }
   };
 
@@ -85,7 +119,15 @@ export default function TaskList() {
           </button>
           {!isClient && (
             <button 
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => {
+                if (showForm) {
+                  setShowForm(false);
+                  setEditingId(null);
+                  setFormData(prev => ({ ...prev, name: '', description: '', startDate: '', dueDate: '' }));
+                } else {
+                  setShowForm(true);
+                }
+              }}
               className="bg-[#C48A36] text-white px-5 py-2.5 rounded-xl hover:bg-[#A8742A] flex items-center shadow-sm text-sm font-semibold transition-colors"
             >
               {showForm ? <><X className="w-4 h-4 mr-2" /> Cancel</> : <><Plus className="w-4 h-4 mr-2" /> Create Task</>}
@@ -96,7 +138,7 @@ export default function TaskList() {
 
       {showForm && !isClient && (
         <div className="bg-white dark:bg-[#1A1715] p-6 rounded-3xl shadow-sm border border-[#C48A36] mb-6 transition-all">
-          <h3 className="text-lg font-serif text-[#1C1917] dark:text-[#FAF8F5] mb-4">Create New Task</h3>
+          <h3 className="text-lg font-serif text-[#1C1917] dark:text-[#FAF8F5] mb-4">{editingId ? 'Edit Task' : 'Create New Task'}</h3>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-3">
@@ -179,6 +221,23 @@ export default function TaskList() {
                     <option value="InProgress">In Progress</option>
                     <option value="Completed">Completed</option>
                   </select>
+                  <button onClick={() => {
+                    setEditingId(task.taskId);
+                    setFormData({
+                      milestoneId: task.milestoneId || '',
+                      name: task.name,
+                      description: task.description || '',
+                      startDate: new Date(task.startDate).toISOString().split('T')[0],
+                      dueDate: new Date(task.dueDate).toISOString().split('T')[0]
+                    });
+                    setShowForm(true);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} className="text-[#C48A36] hover:text-[#A8742A] p-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl transition-colors">
+                    <Edit className="w-4 h-4" />
+                  </button>
+                  <button onClick={() => handleDelete(task.taskId)} className="text-red-500 hover:text-red-700 p-2 bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               )}
             </div>

@@ -83,6 +83,11 @@ class ProjectExecutionService {
     return MaterialItem.fromJson(response.data);
   }
 
+  Future<MaterialItem> updateMaterialStatus(String materialId, String status) async {
+    final response = await _apiClient.dio.patch('/materials/$materialId/status', data: {'status': status});
+    return MaterialItem.fromJson(response.data);
+  }
+
   Future<void> deleteMaterial(String materialId) async {
     await _apiClient.dio.delete('/materials/$materialId');
   }

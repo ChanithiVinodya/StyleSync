@@ -14,86 +14,12 @@ class MaterialListScreen extends ConsumerStatefulWidget {
 
 class _MaterialListScreenState extends ConsumerState<MaterialListScreen> {
   Future<void> _showMaterialDialog({MaterialItem? material}) async {
-    final nameController = TextEditingController(text: material?.name ?? '');
-    final descriptionController = TextEditingController(text: material?.description ?? '');
-    final quantityController = TextEditingController(text: material?.quantity.toString() ?? '0');
-    final unitController = TextEditingController(text: material?.unit ?? 'pcs');
-    String status = material?.status.name ?? 'Required';
-
     await showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text(material == null ? 'New Material' : 'Edit Material'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Name'),
-                ),
-                TextField(
-                  controller: descriptionController,
-                  decoration: const InputDecoration(labelText: 'Description'),
-                ),
-                TextField(
-                  controller: quantityController,
-                  decoration: const InputDecoration(labelText: 'Quantity'),
-                  keyboardType: TextInputType.number,
-                ),
-                TextField(
-                  controller: unitController,
-                  decoration: const InputDecoration(labelText: 'Unit'),
-                ),
-                DropdownButtonFormField<String>(
-                  value: status,
-                  items: const [
-                    DropdownMenuItem(value: 'Required', child: Text('Required')),
-                    DropdownMenuItem(value: 'Ordered', child: Text('Ordered')),
-                    DropdownMenuItem(value: 'Delivered', child: Text('Delivered')),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) status = val;
-                  },
-                  decoration: const InputDecoration(labelText: 'Status'),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                final service = ref.read(projectExecutionServiceProvider);
-                final data = {
-                  'projectId': widget.projectId,
-                  'name': nameController.text,
-                  'description': descriptionController.text,
-                  'quantity': int.tryParse(quantityController.text) ?? 0,
-                  'unit': unitController.text,
-                  'status': status,
-                };
-                try {
-                  if (material == null) {
-                    await service.createMaterial(data);
-                  } else {
-                    await service.updateMaterial(material.materialId, data);
-                  }
-                  if (mounted) Navigator.pop(context);
-                  ref.invalidate(projectMaterialsProvider(widget.projectId));
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                  }
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
+        return _MaterialDialogBody(
+          projectId: widget.projectId,
+          material: material,
         );
       },
     );
@@ -118,7 +44,7 @@ class _MaterialListScreenState extends ConsumerState<MaterialListScreen> {
         await service.deleteMaterial(material.materialId);
         ref.invalidate(projectMaterialsProvider(widget.projectId));
       } catch (e) {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
@@ -192,6 +118,24 @@ class _MaterialListScreenState extends ConsumerState<MaterialListScreen> {
                     color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
                   ),
                 ),
+              ),
+              Checkbox(
+                value: material.status == MaterialStatus.Delivered,
+                activeColor: terracotta,
+                onChanged: (bool? checked) async {
+                  if (checked != null) {
+                    final newStatus = checked ? 'Delivered' : 'Ordered';
+                    try {
+                      final service = ref.read(projectExecutionServiceProvider);
+                      await service.updateMaterialStatus(material.materialId, newStatus);
+                      ref.invalidate(projectMaterialsProvider(widget.projectId));
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+                      }
+                    }
+                  }
+                },
               ),
               _buildStatusBadge(material.status, terracotta),
               IconButton(
@@ -269,6 +213,213 @@ class _MaterialListScreenState extends ConsumerState<MaterialListScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _MaterialDialogBody extends ConsumerStatefulWidget {
+  final String projectId;
+  final MaterialItem? material;
+
+  const _MaterialDialogBody({required this.projectId, this.material});
+
+  @override
+  ConsumerState<_MaterialDialogBody> createState() => _MaterialDialogBodyState();
+}
+
+class _MaterialDialogBodyState extends ConsumerState<_MaterialDialogBody> {
+  late TextEditingController nameController;
+  late TextEditingController descriptionController;
+  late TextEditingController quantityController;
+  late TextEditingController unitController;
+  late String status;
+  String? selectedMilestoneId;
+  String? selectedTaskId;
+  DateTime? requiredDate;
+
+  @override
+  void initState() {
+    super.initState();
+    nameController = TextEditingController(text: widget.material?.name ?? '');
+    descriptionController = TextEditingController(text: widget.material?.description ?? '');
+    quantityController = TextEditingController(text: widget.material?.quantity.toString() ?? '0');
+    unitController = TextEditingController(text: widget.material?.unit ?? 'pcs');
+    status = widget.material?.status.name ?? 'Required';
+    selectedMilestoneId = widget.material?.milestoneId;
+    selectedTaskId = widget.material?.taskId;
+    requiredDate = widget.material?.requiredDate;
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    descriptionController.dispose();
+    quantityController.dispose();
+    unitController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final milestonesAsync = ref.watch(projectMilestonesProvider(widget.projectId));
+    final tasksAsync = ref.watch(projectTasksProvider(selectedMilestoneId));
+
+    return AlertDialog(
+      title: Text(widget.material == null ? 'New Material' : 'Edit Material'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            milestonesAsync.when(
+              data: (milestones) => DropdownButtonFormField<String>(
+                value: selectedMilestoneId,
+                items: milestones.map((m) => DropdownMenuItem(value: m.milestoneId, child: Text(m.name))).toList(),
+                onChanged: (val) {
+                  setState(() {
+                    selectedMilestoneId = val;
+                    selectedTaskId = null; // Reset task when milestone changes
+                  });
+                },
+                decoration: const InputDecoration(labelText: 'Milestone'),
+              ),
+              loading: () => const CircularProgressIndicator(),
+              error: (err, stack) => Text('Error: $err'),
+            ),
+            if (selectedMilestoneId != null)
+              tasksAsync.when(
+                data: (tasks) {
+                  final milestoneTasks = tasks.where((t) => t.milestoneId == selectedMilestoneId).toList();
+                  return DropdownButtonFormField<String>(
+                    value: selectedTaskId,
+                    items: milestoneTasks.map((t) => DropdownMenuItem(value: t.taskId, child: Text(t.name))).toList(),
+                    onChanged: (val) {
+                      setState(() {
+                        selectedTaskId = val;
+                      });
+                    },
+                    decoration: const InputDecoration(labelText: 'Task'),
+                  );
+                },
+                loading: () => const CircularProgressIndicator(),
+                error: (err, stack) => Text('Error: $err'),
+              ),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Name'),
+            ),
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: quantityController,
+                    decoration: const InputDecoration(labelText: 'Quantity'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: unitController,
+                    decoration: const InputDecoration(labelText: 'Unit'),
+                  ),
+                ),
+              ],
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Required By (Date)'),
+              subtitle: Text(requiredDate != null ? "${requiredDate!.toLocal()}".split(' ')[0] : 'Select a date'),
+              trailing: const Icon(Icons.calendar_today),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: requiredDate ?? DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (date != null) {
+                  setState(() {
+                    requiredDate = date;
+                  });
+                }
+              },
+            ),
+            DropdownButtonFormField<String>(
+              value: status,
+              items: const [
+                DropdownMenuItem(value: 'Required', child: Text('Required')),
+                DropdownMenuItem(value: 'Ordered', child: Text('Ordered')),
+                DropdownMenuItem(value: 'Delivered', child: Text('Delivered')),
+              ],
+              onChanged: (val) {
+                if (val != null) setState(() => status = val);
+              },
+              decoration: const InputDecoration(labelText: 'Status'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () async {
+            if (selectedMilestoneId == null || selectedTaskId == null) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a milestone and a task.')));
+              return;
+            }
+
+            if (requiredDate != null) {
+              final tasks = ref.read(projectTasksProvider(selectedMilestoneId!)).value;
+              final task = tasks?.firstWhere((t) => t.taskId == selectedTaskId, orElse: () => throw Exception('Task not found'));
+              if (task != null) {
+                final rDate = DateTime(requiredDate!.year, requiredDate!.month, requiredDate!.day);
+                final sDate = DateTime(task.startDate.year, task.startDate.month, task.startDate.day);
+                final dDate = DateTime(task.dueDate.year, task.dueDate.month, task.dueDate.day);
+                
+                if (rDate.isBefore(sDate) || rDate.isAfter(dDate)) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Required date must be between ${sDate.toLocal().toString().split(' ')[0]} and ${dDate.toLocal().toString().split(' ')[0]}')));
+                  return;
+                }
+              }
+            }
+
+            final service = ref.read(projectExecutionServiceProvider);
+            final data = {
+              'projectId': widget.projectId,
+              'milestoneId': selectedMilestoneId,
+              'taskId': selectedTaskId,
+              'name': nameController.text,
+              'description': descriptionController.text,
+              'quantity': int.tryParse(quantityController.text) ?? 0,
+              'unit': unitController.text,
+              'status': status,
+              if (requiredDate != null) 'requiredDate': requiredDate!.toUtc().toIso8601String(),
+            };
+
+            try {
+              if (widget.material == null) {
+                await service.createMaterial(data);
+              } else {
+                await service.updateMaterial(widget.material!.materialId, data);
+              }
+              if (context.mounted) Navigator.pop(context);
+              ref.invalidate(projectMaterialsProvider(widget.projectId));
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            }
+          },
+          child: const Text('Save'),
+        ),
+      ],
     );
   }
 }

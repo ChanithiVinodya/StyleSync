@@ -98,19 +98,25 @@ class Task {
 class MaterialItem {
   final String materialId;
   final String projectId;
+  final String? milestoneId;
+  final String? taskId;
   final String name;
   final String description;
   final int quantity;
   final String unit;
+  final DateTime? requiredDate;
   final MaterialStatus status;
 
   MaterialItem({
     required this.materialId,
     required this.projectId,
+    this.milestoneId,
+    this.taskId,
     required this.name,
     required this.description,
     required this.quantity,
     required this.unit,
+    this.requiredDate,
     required this.status,
   });
 
@@ -118,10 +124,13 @@ class MaterialItem {
     return MaterialItem(
       materialId: json['materialId'] ?? '',
       projectId: json['projectId'] ?? '',
+      milestoneId: json['milestoneId'],
+      taskId: json['taskId'],
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       quantity: json['quantity'] ?? 0,
       unit: json['unit'] ?? '',
+      requiredDate: json['requiredDate'] != null ? DateTime.tryParse(json['requiredDate']) : null,
       status: _parseMaterialStatus(json['status']),
     );
   }

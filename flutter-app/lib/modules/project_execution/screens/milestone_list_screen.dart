@@ -83,7 +83,7 @@ class _MilestoneListScreenState extends ConsumerState<MilestoneListScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: status,
+                      initialValue: status,
                       items: const [
                         DropdownMenuItem(value: 'NotStarted', child: Text('Not Started')),
                         DropdownMenuItem(value: 'InProgress', child: Text('In Progress')),
@@ -120,10 +120,10 @@ class _MilestoneListScreenState extends ConsumerState<MilestoneListScreen> {
                   } else {
                     await service.updateMilestone(milestone.milestoneId, data);
                   }
-                  if (mounted) Navigator.pop(context);
+                  if (context.mounted) Navigator.pop(context);
                   ref.invalidate(projectMilestonesProvider(widget.projectId));
                 } catch (e) {
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
                   }
                 }
@@ -157,7 +157,7 @@ class _MilestoneListScreenState extends ConsumerState<MilestoneListScreen> {
         await service.deleteMilestone(milestone.milestoneId);
         ref.invalidate(projectMilestonesProvider(widget.projectId));
       } catch (e) {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }

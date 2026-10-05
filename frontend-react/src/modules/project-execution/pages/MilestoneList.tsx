@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { getMilestones, createMilestone, deleteMilestone } from '../api';
+import { getMilestones, createMilestone, deleteMilestone, updateMilestone } from '../api';
 import { Milestone } from '../types';
 import { StatusBadge } from '../components/StatusBadge';
 import { Plus, Trash2, Edit, Layers, X } from 'lucide-react';
@@ -11,6 +11,7 @@ export default function MilestoneList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', startDate: '', dueDate: '' });
   const isClient = userRole === 'Client';
 
@@ -33,19 +34,41 @@ export default function MilestoneList() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isClient) return;
+
+    const startDate = new Date(formData.startDate);
+    const dueDate = new Date(formData.dueDate);
+    startDate.setHours(0,0,0,0);
+    dueDate.setHours(0,0,0,0);
+    if (dueDate < startDate) {
+      alert("Due date cannot be earlier than start date.");
+      return;
+    }
+
     try {
-      const newMilestone = await createMilestone({
-        projectId,
-        name: formData.name,
-        description: formData.description,
-        startDate: new Date(formData.startDate).toISOString(),
-        dueDate: new Date(formData.dueDate).toISOString()
-      });
-      setMilestones([...milestones, newMilestone]);
+      if (editingId) {
+        const updatedMilestone = await updateMilestone(editingId, {
+          projectId,
+          name: formData.name,
+          description: formData.description,
+          startDate: new Date(formData.startDate).toISOString(),
+          dueDate: new Date(formData.dueDate).toISOString()
+        });
+        setMilestones(milestones.map(m => m.milestoneId === editingId ? updatedMilestone : m));
+      } else {
+        const newMilestone = await createMilestone({
+          projectId,
+          name: formData.name,
+          description: formData.description,
+          startDate: new Date(formData.startDate).toISOString(),
+          dueDate: new Date(formData.dueDate).toISOString()
+        });
+        setMilestones([...milestones, newMilestone]);
+      }
       setShowForm(false);
+      setEditingId(null);
       setFormData({ name: '', description: '', startDate: '', dueDate: '' });
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Failed to create milestone.');
+      alert(err.response?.data?.message || 'Failed to save milestone.');
     }
   };
 
@@ -69,7 +92,15 @@ export default function MilestoneList() {
         <h2 className="text-3xl font-serif text-[#1C1917] dark:text-[#FAF8F5]">Project Milestones</h2>
         {!isClient && (
           <button 
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              if (showForm) {
+                setShowForm(false);
+                setEditingId(null);
+                setFormData({ name: '', description: '', startDate: '', dueDate: '' });
+              } else {
+                setShowForm(true);
+              }
+            }}
             className="bg-[#C48A36] text-white px-5 py-2.5 rounded-xl hover:bg-[#A8742A] flex items-center shadow-sm text-sm font-semibold transition-colors"
           >
             {showForm ? <><X className="w-4 h-4 mr-2" /> Cancel</> : <><Plus className="w-4 h-4 mr-2" /> Create Milestone</>}
@@ -79,7 +110,7 @@ export default function MilestoneList() {
 
       {showForm && !isClient && (
         <div className="bg-white dark:bg-[#1A1715] p-6 rounded-3xl shadow-sm border border-[#C48A36] mb-6 transition-all">
-          <h3 className="text-lg font-serif text-[#1C1917] dark:text-[#FAF8F5] mb-4">Create New Milestone</h3>
+          <h3 className="text-lg font-serif text-[#1C1917] dark:text-[#FAF8F5] mb-4">{editingId ? 'Edit Milestone' : 'Create New Milestone'}</h3>
           <form onSubmit={handleCreate} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -141,7 +172,21 @@ export default function MilestoneList() {
                     </td>
                     {!isClient && (
                       <td className="px-8 py-5 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-[#57534E] hover:text-[#C48A36] dark:text-[#A8A29E] dark:hover:text-[#C48A36] mr-4 transition-colors" title="Edit">
+                        <button 
+                          onClick={() => {
+                            setEditingId(milestone.milestoneId);
+                            setFormData({
+                              name: milestone.name,
+                              description: milestone.description || '',
+                              startDate: new Date(milestone.startDate).toISOString().split('T')[0],
+                              dueDate: new Date(milestone.dueDate).toISOString().split('T')[0]
+                            });
+                            setShowForm(true);
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                          className="text-[#57534E] hover:text-[#C48A36] dark:text-[#A8A29E] dark:hover:text-[#C48A36] mr-4 transition-colors" 
+                          title="Edit"
+                        >
                           <Edit className="w-5 h-5" />
                         </button>
                         <button 

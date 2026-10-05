@@ -95,6 +95,26 @@ class DesignerProfileScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  onPressed: () {
+                    // TODO: Implement edit functionality
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Edit Designer UI not implemented yet')),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  onPressed: () {
+                    // TODO: Implement delete functionality
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Delete Designer UI not implemented yet')),
+                    );
+                  },
+                ),
+              ],
             ),
 
             // Profile Content

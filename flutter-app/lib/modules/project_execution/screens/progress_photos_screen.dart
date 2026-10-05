@@ -58,7 +58,7 @@ class _ProgressPhotosScreenState extends ConsumerState<ProgressPhotosScreen> {
         await service.deleteProgressPhoto(photo.photoId);
         setState(() {});
       } catch (e) {
-        if (mounted) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
         }
       }
@@ -273,7 +273,7 @@ class _PhotoDialogState extends ConsumerState<_PhotoDialog> {
     } catch (e) {
       // ignore
     } finally {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _isLoading = false;
         });
@@ -291,7 +291,7 @@ class _PhotoDialogState extends ConsumerState<_PhotoDialog> {
       try {
         final service = ref.read(projectExecutionServiceProvider);
         final tasks = await service.getTasks(milestoneId: milestoneId);
-        if (mounted) {
+        if (context.mounted) {
           setState(() {
             _tasks = tasks;
           });
@@ -325,7 +325,7 @@ class _PhotoDialogState extends ConsumerState<_PhotoDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedMilestoneId,
+              initialValue: _selectedMilestoneId,
               decoration: const InputDecoration(labelText: 'Milestone (optional)'),
               items: [
                 const DropdownMenuItem(value: null, child: Text('None')),
@@ -335,7 +335,7 @@ class _PhotoDialogState extends ConsumerState<_PhotoDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedTaskId,
+              initialValue: _selectedTaskId,
               decoration: const InputDecoration(labelText: 'Task (optional)'),
               items: [
                 const DropdownMenuItem(value: null, child: Text('None')),
@@ -390,9 +390,9 @@ class _PhotoDialogState extends ConsumerState<_PhotoDialog> {
       await service.createProgressPhoto(formData);
       await service.deleteProgressPhoto(widget.existingPhoto!.photoId);
       
-      if (mounted) Navigator.pop(context, true);
+      if (context.mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 
@@ -428,9 +428,9 @@ class _PhotoDialogState extends ConsumerState<_PhotoDialog> {
         
         await service.updateProgressPhoto(widget.existingPhoto!.photoId, data);
       }
-      if (mounted) Navigator.pop(context, true);
+      if (context.mounted) Navigator.pop(context, true);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
   }
 }
