@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/designer_listing_screen.dart';
 
 // OWNED BY: Student 1 - Designer Portfolios & Listings
 class DesignersPage extends StatelessWidget {
@@ -6,8 +7,6 @@ class DesignersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text('TODO: browse recommended designers'),
-    );
+    return const DesignerListingScreen();
   }
 }

@@ -1,6 +1,6 @@
-import { PersonaInfo, CaseStudy, Testimonial, FeaturePillar } from '../types';
+import { PersonaInfo, CaseStudy, Testimonial, FeaturePillar, HeroData } from '../types';
 
-export const HERO_DATA = {
+export const HERO_DATA: HeroData = {
   eyebrow: "Verified Marketplace & Room Makeover Platform",
   title: "Interior design, perfectly matched. Reliably delivered.",
   subtitle: "Share your room and your style. Get matched with a designer who fits. Watch your renovation move forward, milestone by milestone, with human sign-off at every stage.",
@@ -128,6 +128,8 @@ export const PERSONAS_DATA: PersonaInfo[] = [
     platformNote: "Enterprise compliance, milestone controls, and system rules management.",
   },
 ];
+
+export const PERSONAS = PERSONAS_DATA;
 
 export const CASE_STUDIES: CaseStudy[] = [
   {

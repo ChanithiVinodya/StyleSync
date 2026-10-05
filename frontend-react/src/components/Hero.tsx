@@ -74,7 +74,7 @@ const DESIGN_PILLARS: DesignPillar[] = [
 export const Hero: React.FC<HeroProps> = ({ onOpenMobileModal, onOpenGetStarted }) => {
   return (
     <section className="relative overflow-hidden pt-4 sm:pt-6 pb-12 lg:pt-6 lg:pb-16">
-      {/* Subtle atmospheric golden ambient lighting in background - removed white gradient in dark mode */}
+      {/* Subtle atmospheric golden ambient lighting in background */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[900px] h-[550px] bg-gradient-to-b from-[#F3ECE0]/70 via-[#EFE6D5]/30 to-transparent dark:hidden rounded-full blur-3xl pointer-events-none -z-10" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -216,7 +216,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMobileModal, onOpenGetStarted 
             {/* Gallery Container */}
             <div className="relative mx-auto max-w-xl lg:max-w-none pt-2 pb-4 px-1 sm:px-2">
 
-              {/* Decorative Subtle Underlay Warm Glow - removed white gradient in dark mode */}
+              {/* Decorative Subtle Underlay Warm Glow */}
               <div className="absolute -inset-4 bg-gradient-to-tr from-[#C48A36]/12 via-[#F4F0E8]/60 to-transparent dark:from-[#C48A36]/8 dark:via-transparent dark:to-transparent rounded-[50px] blur-2xl pointer-events-none" />
 
               {/* 4 Ellipse Pillars Grid */}
@@ -230,7 +230,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMobileModal, onOpenGetStarted 
                       key={pillar.id}
                       className={`relative flex flex-col items-center ${pillar.offsetClass}`}
                     >
-                      {/* Floating Interactive Circle Arrow Button (Anchored on Pillar 2, exactly as in reference image) */}
+                      {/* Floating Interactive Circle Arrow Button */}
                       {isSecond && (
                         <button
                           type="button"
@@ -300,4 +300,3 @@ export const Hero: React.FC<HeroProps> = ({ onOpenMobileModal, onOpenGetStarted 
     </section>
   );
 };
-
