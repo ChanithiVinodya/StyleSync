@@ -1,33 +1,60 @@
+using System.Text.Json.Serialization;
+
 namespace StyleSync.Api.Models
 {
-    // PRD section 14 — Quote status: Draft → Submitted → Client Review → Revision Requested → Accepted / Rejected
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum QuoteStatus
     {
         Draft,
-        Submitted,
-        ClientReview,
-        RevisionRequested,
-        Accepted,
-        Rejected
+        Stage1Pending,
+        Stage1RevisionRequested,
+        Stage1Rejected,
+        Stage1Released,
+        Stage2Approved,
+        Stage2ChangesRequested,
+        Stage2Rejected,
+        // Legacy aliases for backward compatibility with frontend mock badges
+        Submitted = Stage1Pending,
+        ClientReview = Stage1Released,
+        RevisionRequested = Stage2ChangesRequested,
+        Accepted = Stage2Approved,
+        Rejected = Stage2Rejected
     }
 
-    // PRD section 14 — Contract status: Draft → Pending Signature → Active → Completed / Cancelled
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum ContractStatus
     {
-        Draft,
         PendingSignature,
         Active,
         Completed,
-        Cancelled
+        Cancelled,
+        // Backward compatibility
+        Draft = PendingSignature
     }
 
-    // Rough categories for a quote line item — keeps the scope breakdown readable
+    [JsonConverter(typeof(JsonStringEnumConverter))]
     public enum QuoteItemCategory
     {
-        Design,
-        Labor,
         Materials,
+        Labor,
+        Design,
         Furniture,
         Other
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum Stage1Action
+    {
+        Release,
+        SendForRevision,
+        Reject
+    }
+
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public enum Stage2Action
+    {
+        Approve,
+        RequestChanges,
+        Reject
     }
 }

@@ -61,9 +61,19 @@ builder.Services.AddDbContext<StyleSync.Api.Data.AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Identity & Auth Services
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Quotes & Contracts Services & Integration Adapters (Student 3)
+builder.Services.AddScoped<StyleSync.Api.Services.IQuotationEngine, StyleSync.Api.Services.QuotationEngine>();
+builder.Services.AddScoped<StyleSync.Api.Services.IBudgetGuard, StyleSync.Api.Services.BudgetGuard>();
+builder.Services.AddScoped<StyleSync.Api.Services.IQuoteExportService, StyleSync.Api.Services.QuoteExportService>();
+builder.Services.AddScoped<StyleSync.Api.Integrations.IScopeSource, StyleSync.Api.Integrations.AiScopeSourceAdapter>();
+builder.Services.AddSingleton<StyleSync.Api.Integrations.IProjectRequestProvider, StyleSync.Api.Integrations.StubProjectRequestProvider>();
+builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, StyleSync.Api.Integrations.HttpContextUserContext>();
+builder.Services.AddScoped<StyleSync.Api.Integrations.IApprovalGateResumer, StyleSync.Api.Integrations.LangGraphApprovalGateResumer>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>

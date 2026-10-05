@@ -32,124 +32,65 @@ class QuotesContractsService {
         'Accept': 'application/json',
       };
 
-  // Local fallback caches matching screenshots
   final List<Quote> _localQuotes = [];
   final List<Contract> _localContracts = [];
 
   void _initLocalStore() {
-    final quoteF3 = Quote(
-      id: 'f315971a',
-      projectRequestId: '7c88187a-7133-4fd2',
-      designerId: 'des-001',
+    final releasedQuote = Quote(
+      id: 'f315971a-0000-0000-0000-000000000001',
+      projectRequestId: '7c88187a-7133-4fd2-0000-000000000001',
+      designerId: '22222222-2222-2222-2222-222222222222',
       scopeSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
-      notes: 'testing......',
+      notes: 'Released proposal approved by Admin for Client Stage 2 decision.',
       isAiGenerated: false,
-      status: 'Accepted',
+      status: 'Stage1Released',
       totalCost: 190000.00,
       createdAt: DateTime(2026, 9, 29),
       updatedAt: DateTime(2026, 9, 29),
-      items: [
-        QuoteItem(id: 'i-w1', description: 'Wardrobe', category: 'Furniture', quantity: 1, unitCost: 35000, totalCost: 35000),
-        QuoteItem(id: 'i-w2', description: 'Bed frame', category: 'Furniture', quantity: 1, unitCost: 45000, totalCost: 45000),
-        QuoteItem(id: 'i-w3', description: 'Wall painting', category: 'Materials', quantity: 1, unitCost: 110000, totalCost: 110000),
-      ],
-    );
-
-    final quote91 = Quote(
-      id: '91c8be8d',
-      projectRequestId: '221f6067-dcb9-414f',
-      designerId: 'des-003',
-      scopeSummary: 'Modern living room refresh, 200 sq ft.',
-      notes: 'fallback estimate — generated without a live LLM call, split across standard category ratios.',
-      isAiGenerated: true,
-      status: 'Rejected',
-      totalCost: 200000.00,
-      createdAt: DateTime(2026, 9, 24),
-      updatedAt: DateTime(2026, 9, 24),
-      items: [
-        QuoteItem(id: 'i-f1', description: 'Furniture - modern living room work', category: 'Furniture', quantity: 1, unitCost: 50000, totalCost: 50000),
-        QuoteItem(id: 'i-f2', description: 'Labor - modern living room craftsmanship', category: 'Labor', quantity: 1, unitCost: 60000, totalCost: 60000),
-        QuoteItem(id: 'i-f3', description: 'Materials - wall & flooring finishes', category: 'Materials', quantity: 1, unitCost: 70000, totalCost: 70000),
-        QuoteItem(id: 'i-f4', description: 'Design - space planning & drawings', category: 'Design', quantity: 1, unitCost: 20000, totalCost: 20000),
-      ],
-    );
-
-    final defaultQuotes = [
-      Quote(
-        id: 'q-101',
-        projectRequestId: 'req-001',
-        designerId: 'des-001',
-        scopeSummary: 'Modern bedroom refresh, 200 sq ft.',
-        notes: 'fallback estimate — generated without a live LLM call',
-        isAiGenerated: false,
-        status: 'Draft',
-        totalCost: 180000.00,
-        createdAt: DateTime(2026, 10, 2),
-        updatedAt: DateTime(2026, 10, 2),
-        items: [
-          QuoteItem(id: 'i-1', description: 'Wall Panel & Minimalist Bed Headboard', category: 'Carpentry', quantity: 1, unitCost: 95000, totalCost: 95000),
-          QuoteItem(id: 'i-2', description: 'Warm Cove Lighting & LED Profiles', category: 'Electrical', quantity: 2, unitCost: 25000, totalCost: 50000),
-          QuoteItem(id: 'i-3', description: 'Premium Matte Finish Wall Paint', category: 'Painting', quantity: 1, unitCost: 35000, totalCost: 35000),
-        ],
-      ),
-      Quote(
-        id: 'q-102',
-        projectRequestId: 'req-002',
-        designerId: 'des-002',
-        scopeSummary: 'Minimalist bedroom refresh, 200 sq ft.',
-        notes: 'fallback estimate — generated without a live LLM call',
-        isAiGenerated: true,
-        status: 'Draft',
-        totalCost: 150000.00,
-        createdAt: DateTime(2026, 10, 2),
-        updatedAt: DateTime(2026, 10, 2),
-        items: [
-          QuoteItem(id: 'i-4', description: 'Design — minimalist bedroom concept & planning', category: 'Design', quantity: 1, unitCost: 15000, totalCost: 15000),
-          QuoteItem(id: 'i-5', description: 'Labor — minimalist bedroom installation & craftsmanship', category: 'Labor', quantity: 1, unitCost: 45000, totalCost: 45000),
-          QuoteItem(id: 'i-6', description: 'Materials — minimalist bedroom fixtures & finishes', category: 'Materials', quantity: 1, unitCost: 52500, totalCost: 52500),
-          QuoteItem(id: 'i-7', description: 'Furniture — minimalist bedroom curated styling', category: 'Furniture', quantity: 1, unitCost: 37500, totalCost: 37500),
-        ],
-      ),
-      quoteF3,
-      quote91,
-    ];
-
-    _localQuotes.addAll(defaultQuotes);
-
-    final defaultContracts = [
-      Contract(
-        id: '83239481',
-        quoteId: 'f315971a',
-        projectRequestId: '7c88187a-7133-4fd2',
-        designerId: 'des-001',
-        clientId: 'client-001',
-        status: 'Active',
-        totalAmount: 190000.00,
-        termsSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
-        terms: 'Official StyleSync Binding Agreement for Minimalist bedroom redesign with furniture, lighting and wall finishing. Payments follow the standard milestone schedule: 50% advance deposit due upon signing, and 50% balance upon final quality inspection and room handover. All work is guaranteed under StyleSync Designer Quality Assurance.',
-        signedAt: DateTime(2026, 9, 29),
+      currentVersion: QuoteVersion(
+        id: 'v-1',
+        versionNumber: 1,
+        authorId: '22222222-2222-2222-2222-222222222222',
+        authorRole: 'Designer',
+        materialsSubtotal: 110000,
+        laborSubtotal: 45000,
+        designFee: 15500,
+        contingencyAmount: 8525,
+        taxAmount: 10975,
+        totalCost: 190000,
         createdAt: DateTime(2026, 9, 29),
-        updatedAt: DateTime(2026, 9, 29),
-        quote: quoteF3,
+        items: [
+          QuoteVersionItem(id: 'i-w1', description: 'Wardrobe & Storage', category: 'Furniture', quantity: 1, unitCost: 45000, lineTotal: 45000),
+          QuoteVersionItem(id: 'i-w2', description: 'Bed frame', category: 'Furniture', quantity: 1, unitCost: 65000, lineTotal: 65000),
+          QuoteVersionItem(id: 'i-w3', description: 'Wall painting & finishing', category: 'Labor', quantity: 1, unitCost: 45000, lineTotal: 45000),
+        ],
       ),
-      Contract(
-        id: '39b2ded8',
-        quoteId: '91c8be8d',
-        projectRequestId: '221f6067-dcb9-414f',
-        designerId: 'des-003',
-        clientId: 'client-002',
-        status: 'Cancelled',
-        totalAmount: 200000.00,
-        termsSummary: 'Modern living room refresh, 200 sq ft.',
-        terms: 'Official StyleSync Binding Agreement for Modern living room refresh, 200 sq ft. Payments follow the standard milestone schedule: 50% advance deposit due upon signing, and 50% balance upon final quality inspection and room handover. All work is guaranteed under StyleSync Designer Quality Assurance.',
-        signedAt: null,
-        createdAt: DateTime(2026, 9, 24),
-        updatedAt: DateTime(2026, 9, 24),
-        quote: quote91,
-      ),
-    ];
+      items: [
+        QuoteItem(id: 'i-w1', description: 'Wardrobe & Storage', category: 'Furniture', quantity: 1, unitCost: 45000, totalCost: 45000),
+        QuoteItem(id: 'i-w2', description: 'Bed frame', category: 'Furniture', quantity: 1, unitCost: 65000, totalCost: 65000),
+        QuoteItem(id: 'i-w3', description: 'Wall painting & finishing', category: 'Labor', quantity: 1, unitCost: 45000, totalCost: 45000),
+      ],
+    );
 
-    _localContracts.addAll(defaultContracts);
+    _localQuotes.add(releasedQuote);
+
+    final contract = Contract(
+      id: '83239481-0000-0000-0000-000000000001',
+      quoteId: releasedQuote.id,
+      projectRequestId: releasedQuote.projectRequestId,
+      designerId: releasedQuote.designerId,
+      clientId: '11111111-1111-1111-1111-111111111111',
+      status: 'PendingSignature',
+      totalAmount: 190000.00,
+      termsSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
+      terms: 'Official StyleSync Agreement. 50% advance deposit due upon signing, 50% upon handover.',
+      signedAt: null,
+      createdAt: DateTime(2026, 9, 29),
+      updatedAt: DateTime(2026, 9, 29),
+      quote: releasedQuote,
+    );
+
+    _localContracts.add(contract);
   }
 
   // ================= QUOTES ENDPOINTS =================
@@ -184,7 +125,6 @@ class QuotesContractsService {
       debugPrint('[QuotesContractsService] Live API quotes fetch failed: $e. Using local store.');
     }
 
-    // Local filter fallback
     var filtered = List<Quote>.from(_localQuotes);
     if (status != null && status.isNotEmpty && status != 'All statuses') {
       filtered = filtered.where((q) => q.status.toLowerCase() == status.toLowerCase()).toList();
@@ -196,284 +136,99 @@ class QuotesContractsService {
     return filtered;
   }
 
-  Future<Quote> createQuote(QuoteFormPayload payload) async {
+  Future<Quote?> getQuote(String id) async {
     try {
-      final uri = Uri.parse('$_baseUrl/quotes');
+      final uri = Uri.parse('$_baseUrl/quotes/$id');
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final decoded = jsonDecode(res.body);
+        return Quote.fromJson(decoded as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[QuotesContractsService] getQuote API failed: $e.');
+    }
+    final idx = _localQuotes.indexWhere((q) => q.id == id);
+    return idx != -1 ? _localQuotes[idx] : null;
+  }
+
+  // Stage 2 Decision (Client: Approve, RequestChanges, Reject)
+  Future<dynamic> stage2Decision(String id, String action, {String? feedback}) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/quotes/$id/stage2-decision');
       final res = await http.post(
         uri,
         headers: _headers,
         body: jsonEncode({
-          'projectRequestId': payload.projectRequestId ?? '00000000-0000-0000-0000-000000000001',
-          'designerId': payload.designerId ?? '00000000-0000-0000-0000-000000000002',
-          'scopeSummary': payload.scopeSummary,
-          'notes': payload.notes,
-          'isAiGenerated': payload.isAiGenerated,
-          'items': payload.items.map((i) => {
-            'description': i.description,
-            'category': i.category,
-            'quantity': i.quantity,
-            'unitCost': i.unitCost,
-          }).toList(),
+          'action': action,
+          'feedback': feedback,
         }),
       ).timeout(const Duration(seconds: 5));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
-        final created = Quote.fromJson(decoded as Map<String, dynamic>);
-        _localQuotes.insert(0, created);
-        return created;
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] createQuote API failed: $e. Writing to local store.');
-    }
-
-    // Local fallback
-    final total = payload.items.fold(0.0, (sum, i) => sum + i.calculatedTotal);
-    final newQuote = Quote(
-      id: 'q-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-      projectRequestId: payload.projectRequestId ?? 'req-custom',
-      designerId: payload.designerId ?? 'des-custom',
-      scopeSummary: payload.scopeSummary,
-      notes: payload.notes,
-      isAiGenerated: payload.isAiGenerated,
-      status: 'Draft',
-      totalCost: total,
-      items: payload.items,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-    _localQuotes.insert(0, newQuote);
-    return newQuote;
-  }
-
-  Future<Quote> updateQuote(String id, QuoteFormPayload payload) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/quotes/$id');
-      final res = await http.put(
-        uri,
-        headers: _headers,
-        body: jsonEncode({
-          'scopeSummary': payload.scopeSummary,
-          'notes': payload.notes,
-          'items': payload.items.map((i) => {
-            'description': i.description,
-            'category': i.category,
-            'quantity': i.quantity,
-            'unitCost': i.unitCost,
-          }).toList(),
-        }),
-      ).timeout(const Duration(seconds: 5));
-
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        final updated = Quote.fromJson(decoded as Map<String, dynamic>);
-        final idx = _localQuotes.indexWhere((q) => q.id == id);
-        if (idx != -1) _localQuotes[idx] = updated;
-        return updated;
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] updateQuote API failed: $e. Updating local store.');
-    }
-
-    final idx = _localQuotes.indexWhere((q) => q.id == id);
-    if (idx != -1) {
-      final total = payload.items.fold(0.0, (sum, i) => sum + i.calculatedTotal);
-      final updated = _localQuotes[idx].copyWith(
-        scopeSummary: payload.scopeSummary,
-        notes: payload.notes,
-        items: payload.items,
-        totalCost: total,
-        updatedAt: DateTime.now(),
-      );
-      _localQuotes[idx] = updated;
-      return updated;
-    }
-    throw Exception('Quote not found');
-  }
-
-  Future<Quote> updateQuoteStatus(String id, String status) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/quotes/$id/status');
-      final res = await http.patch(
-        uri,
-        headers: _headers,
-        body: jsonEncode({'status': status}),
-      ).timeout(const Duration(seconds: 4));
-
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        final updated = Quote.fromJson(decoded as Map<String, dynamic>);
-        final idx = _localQuotes.indexWhere((q) => q.id == id);
-        if (idx != -1) _localQuotes[idx] = updated;
-        return updated;
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] updateQuoteStatus API failed: $e.');
-    }
-
-    final idx = _localQuotes.indexWhere((q) => q.id == id);
-    if (idx != -1) {
-      final updated = _localQuotes[idx].copyWith(
-        status: status,
-        updatedAt: DateTime.now(),
-      );
-      _localQuotes[idx] = updated;
-      return updated;
-    }
-    throw Exception('Quote not found');
-  }
-
-  Future<Contract?> acceptQuote(String id, {String? clientId}) async {
-    try {
-      final url = clientId != null
-          ? '$_baseUrl/quotes/$id/accept?clientId=$clientId'
-          : '$_baseUrl/quotes/$id/accept';
-      final res = await http.post(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 5));
-
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        final contract = Contract.fromJson(decoded as Map<String, dynamic>);
-        _localContracts.insert(0, contract);
-        final idx = _localQuotes.indexWhere((q) => q.id == id);
-        if (idx != -1) {
-          _localQuotes[idx] = _localQuotes[idx].copyWith(status: 'Accepted', updatedAt: DateTime.now());
+        if (action == 'Approve') {
+          final contract = Contract.fromJson(decoded as Map<String, dynamic>);
+          _localContracts.insert(0, contract);
+          final idx = _localQuotes.indexWhere((q) => q.id == id);
+          if (idx != -1) {
+            _localQuotes[idx] = _localQuotes[idx].copyWith(status: 'Stage2Approved', updatedAt: DateTime.now());
+          }
+          return contract;
         }
-        return contract;
+        return decoded;
       }
     } catch (e) {
-      debugPrint('[QuotesContractsService] acceptQuote API failed: $e.');
+      debugPrint('[QuotesContractsService] stage2Decision API failed: $e.');
     }
 
     final idx = _localQuotes.indexWhere((q) => q.id == id);
     if (idx != -1) {
-      final acceptedQuote = _localQuotes[idx].copyWith(
-        status: 'Accepted',
-        updatedAt: DateTime.now(),
-      );
-      _localQuotes[idx] = acceptedQuote;
+      if (action == 'Approve') {
+        final approvedQuote = _localQuotes[idx].copyWith(status: 'Stage2Approved', updatedAt: DateTime.now());
+        _localQuotes[idx] = approvedQuote;
 
-      final contract = Contract(
-        id: DateTime.now().millisecondsSinceEpoch.toRadixString(16).padLeft(6, '0').substring(0, 6),
-        quoteId: acceptedQuote.id,
-        projectRequestId: acceptedQuote.projectRequestId,
-        designerId: acceptedQuote.designerId,
-        clientId: clientId ?? 'client-auto',
-        status: 'Active',
-        totalAmount: acceptedQuote.totalCost,
-        termsSummary: acceptedQuote.scopeSummary,
-        terms: 'Official contract for ${acceptedQuote.scopeSummary}. 50% upfront deposit, 50% upon project completion.',
-        signedAt: DateTime.now(),
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-        quote: acceptedQuote,
-      );
-      _localContracts.insert(0, contract);
-      return contract;
+        final contract = Contract(
+          id: 'cnt-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
+          quoteId: approvedQuote.id,
+          projectRequestId: approvedQuote.projectRequestId,
+          designerId: approvedQuote.designerId,
+          clientId: 'client-1',
+          status: 'PendingSignature',
+          totalAmount: approvedQuote.totalCost,
+          termsSummary: approvedQuote.scopeSummary,
+          terms: 'Official contract for ${approvedQuote.scopeSummary}. 50% upfront deposit, 50% upon project completion.',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          quote: approvedQuote,
+        );
+        _localContracts.insert(0, contract);
+        return contract;
+      } else if (action == 'RequestChanges') {
+        final changedQuote = _localQuotes[idx].copyWith(status: 'Stage2ChangesRequested', updatedAt: DateTime.now());
+        _localQuotes[idx] = changedQuote;
+        return {'message': 'Revision requested'};
+      } else {
+        final rejectedQuote = _localQuotes[idx].copyWith(status: 'Stage2Rejected', updatedAt: DateTime.now());
+        _localQuotes[idx] = rejectedQuote;
+        return {'message': 'Quote rejected'};
+      }
     }
-    return null;
+    throw Exception('Quote not found');
   }
 
-  Future<void> deleteQuote(String id) async {
+  // Export quote PDF/CSV
+  Future<String> exportQuote(String id, String format) async {
     try {
-      final uri = Uri.parse('$_baseUrl/quotes/$id');
-      await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 4));
-    } catch (e) {
-      debugPrint('[QuotesContractsService] deleteQuote API failed: $e.');
-    }
-    _localQuotes.removeWhere((q) => q.id == id);
-  }
-
-  // ================= AI AGENT DRAFT ENDPOINTS =================
-
-  Future<AgentBudgetScopeResponse> previewQuoteFromAgent(AiDraftPayload payload) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/quotes/draft-preview');
-      final res = await http.post(
-        uri,
-        headers: _headers,
-        body: jsonEncode(payload.toJson()),
-      ).timeout(const Duration(seconds: 7));
-
+      final uri = Uri.parse('$_baseUrl/quotes/$id/export?format=$format');
+      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        return AgentBudgetScopeResponse.fromJson(decoded as Map<String, dynamic>);
+        return res.body;
       }
     } catch (e) {
-      debugPrint('[QuotesContractsService] previewQuoteFromAgent API failed: $e. Using deterministic algorithm.');
+      debugPrint('[QuotesContractsService] exportQuote API failed: $e.');
     }
-
-    // Deterministic mathematical algorithm mirroring backend budget_scope_agent.py
-    final target = (payload.budgetMin + payload.budgetMax) / 2 > 0
-        ? (payload.budgetMin + payload.budgetMax) / 2
-        : (payload.roomSizeSqft * 800);
-
-    final splits = [
-      {'cat': 'Design', 'pct': 0.10, 'desc': 'Design — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} concept & planning'},
-      {'cat': 'Labor', 'pct': 0.30, 'desc': 'Labor — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} installation & craftsmanship'},
-      {'cat': 'Materials', 'pct': 0.35, 'desc': 'Materials — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} fixtures & finishes'},
-      {'cat': 'Furniture', 'pct': 0.25, 'desc': 'Furniture — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} curated styling'},
-    ];
-
-    final items = splits.map((s) {
-      final cost = ((target * (s['pct'] as double)) / 100).round() * 100.0;
-      return QuoteItem(
-        id: 'ai-${s['cat']}',
-        description: s['desc'] as String,
-        category: s['cat'] as String,
-        quantity: 1,
-        unitCost: cost,
-        totalCost: cost,
-      );
-    }).toList();
-
-    final total = items.fold(0.0, (sum, i) => sum + i.calculatedTotal);
-
-    return AgentBudgetScopeResponse(
-      scopeSummary: '${payload.styleProfile} ${payload.roomType.toLowerCase()} refresh, ${payload.roomSizeSqft.toStringAsFixed(0)} sq ft.',
-      items: items,
-      notes: 'Fallback estimate — generated using deterministic category ratios (Design 10%, Labor 30%, Materials 35%, Furniture 25%).',
-      estimatedTotal: total,
-      withinBudget: payload.budgetMax > 0 ? (total >= payload.budgetMin && total <= payload.budgetMax) : true,
-      source: 'fallback',
-    );
-  }
-
-  Future<Quote> draftQuoteFromAgent(AiDraftPayload payload) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/quotes/draft-from-agent');
-      final res = await http.post(
-        uri,
-        headers: _headers,
-        body: jsonEncode(payload.toJson()),
-      ).timeout(const Duration(seconds: 8));
-
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        final created = Quote.fromJson(decoded as Map<String, dynamic>);
-        _localQuotes.insert(0, created);
-        return created;
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] draftQuoteFromAgent API failed: $e. Using local generation.');
-    }
-
-    final preview = await previewQuoteFromAgent(payload);
-    final created = Quote(
-      id: 'q-ai-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-      projectRequestId: payload.projectRequestId ?? 'req-${DateTime.now().millisecondsSinceEpoch}',
-      designerId: payload.designerId ?? 'des-ai',
-      scopeSummary: preview.scopeSummary,
-      notes: preview.notes ?? 'Fallback estimate — generated without a live LLM call',
-      isAiGenerated: true,
-      status: 'Draft',
-      totalCost: preview.estimatedTotal,
-      items: preview.items,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
-
-    _localQuotes.insert(0, created);
-    return created;
+    final quote = await getQuote(id);
+    return 'StyleSync Quotation Export\nQuote ID: ${quote?.id}\nScope: ${quote?.scopeSummary}\nTotal: LKR ${quote?.totalCost}';
   }
 
   // ================= CONTRACTS ENDPOINTS =================
@@ -584,20 +339,5 @@ class QuotesContractsService {
     }
     final idx = _localContracts.indexWhere((c) => c.id == id);
     return idx != -1 ? _localContracts[idx] : null;
-  }
-
-  Future<Quote?> getQuote(String id) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/quotes/$id');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        return Quote.fromJson(decoded as Map<String, dynamic>);
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] getQuote API failed: $e.');
-    }
-    final idx = _localQuotes.indexWhere((q) => q.id == id);
-    return idx != -1 ? _localQuotes[idx] : null;
   }
 }

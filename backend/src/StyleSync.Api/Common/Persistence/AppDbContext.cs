@@ -34,6 +34,8 @@ public class AppDbContext : DbContext
     // ---- Module: Quotes & Contracts (Student 3) ----
     public DbSet<StyleSync.Api.Models.Quote> Quotes => Set<StyleSync.Api.Models.Quote>();
     public DbSet<StyleSync.Api.Models.QuoteItem> QuoteItems => Set<StyleSync.Api.Models.QuoteItem>();
+    public DbSet<StyleSync.Api.Models.QuoteVersion> QuoteVersions => Set<StyleSync.Api.Models.QuoteVersion>();
+    public DbSet<StyleSync.Api.Models.QuoteVersionItem> QuoteVersionItems => Set<StyleSync.Api.Models.QuoteVersionItem>();
     public DbSet<StyleSync.Api.Models.Contract> Contracts => Set<StyleSync.Api.Models.Contract>();
 
     // ---- Module: Project Execution (Student 4) ----
