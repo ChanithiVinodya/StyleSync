@@ -556,10 +556,10 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
                                               icon: const Icon(
                                                   Icons.edit_outlined,
                                                   size: 18,
-                                                  color: Colors.indigo),
+                                                  color: accentTerracotta),
                                               label: const Text('Edit Draft',
                                                   style: TextStyle(
-                                                      color: Colors.indigo,
+                                                      color: accentTerracotta,
                                                       fontSize: 12)),
                                             ),
                                             ElevatedButton.icon(
@@ -572,7 +572,7 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
                                                       TextStyle(fontSize: 12)),
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor:
-                                                    Colors.indigo.shade900,
+                                                    accentTerracotta,
                                                 foregroundColor: Colors.white,
                                                 padding:
                                                     const EdgeInsets.symmetric(
@@ -587,7 +587,8 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
                                   ),
                                 ),
                               ),
-                            );
+                            ),
+                          );
                           },
                         ),
                       ),
@@ -603,7 +604,7 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
                 builder: (_) => const CreateProjectRequestScreen()),
           ).then((_) => _fetchRequests());
         },
-        backgroundColor: Colors.indigo.shade900,
+        backgroundColor: accentTerracotta,
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text('New Request',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
