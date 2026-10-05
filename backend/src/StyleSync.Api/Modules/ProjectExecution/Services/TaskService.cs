@@ -131,6 +131,18 @@ public class TaskService : ITaskService
             throw new InvalidOperationException("Cannot delete task because it contains dependent records.");
         }
 
+        var photos = await _context.ProgressPhotos.Where(p => p.TaskId == id).ToListAsync();
+        foreach (var photo in photos)
+        {
+            photo.TaskId = null;
+        }
+
+        var materials = await _context.ProjectMaterials.Where(m => m.TaskId == id).ToListAsync();
+        foreach (var material in materials)
+        {
+            material.TaskId = null;
+        }
+
         _context.ProjectTasks.Remove(task);
         await _context.SaveChangesAsync();
         return true;

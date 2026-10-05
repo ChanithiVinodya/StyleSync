@@ -1,6 +1,7 @@
 using StyleSync.Api.Common.Identity;
 using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Modules.ProjectExecution.Models;
+using StyleSync.Api.Modules.Designers.Models;
 
 namespace StyleSync.Api.Common.Persistence;
 
@@ -25,8 +26,7 @@ public class AppDbContext : DbContext
     public DbSet<AppUser> Users => Set<AppUser>();
 
     // ---- Module: Designers (Student 1) ----
-    // TODO: add your first DbSet here, e.g.
-    // public DbSet<DesignerProfile> DesignerProfiles => Set<DesignerProfile>();
+    public DbSet<DesignerProfile> DesignerProfiles => Set<DesignerProfile>();
 
     // ---- Module: Project Requests (Student 2) ----
     // TODO: add your first DbSet here, e.g.

@@ -10,7 +10,7 @@ import 'screens/designers/designer_profile_screen.dart';
 import 'screens/requests/new_request_screen.dart';
 import 'screens/quotes/quote_detail_screen.dart';
 import 'screens/quotes/contract_status_screen.dart';
-import 'screens/progress/project_timeline_screen.dart';
+import 'modules/project_execution/project_execution_page.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/messages/messages_screen.dart';
 
@@ -139,7 +139,7 @@ class AppRoutes {
     }
     if (segments.length == 2 && segments[0] == 'progress') {
       return MaterialPageRoute(
-        builder: (_) => AuthGuard(child: ProjectTimelineScreen(projectId: segments[1])),
+        builder: (_) => AuthGuard(child: ProjectExecutionPage(projectId: segments[1])),
         settings: settings,
       );
     }

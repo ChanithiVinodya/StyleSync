@@ -164,7 +164,7 @@ class ProfileScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     _buildStatColumn('1', 'In Progress', () {
-                      Navigator.pushNamed(context, AppRoutes.progressPath('proj-101'));
+                      Navigator.pushNamed(context, AppRoutes.progressPath('00000000-0000-0000-0000-000000000101'));
                     }, primaryColor, subtitleColor),
                     _buildStatDivider(borderColor),
                     _buildStatColumn('1', 'Pending Quote', () {

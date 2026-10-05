@@ -18,7 +18,7 @@ export default function ProjectExecutionLayout() {
     { name: 'Timeline', path: `/projects/${pId}/execution/timeline`, icon: Clock },
     { name: 'Photos', path: `/projects/${pId}/execution/photos`, icon: Camera },
     { name: 'Analytics', path: `/projects/${pId}/execution/analytics`, icon: BarChart2 },
-  ];
+  ].filter(item => !(user?.role === 'Client' && item.name === 'Analytics'));
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#12100E] text-[#1C1917] dark:text-[#FAF8F5] font-sans transition-colors duration-300">

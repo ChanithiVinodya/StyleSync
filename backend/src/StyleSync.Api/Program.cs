@@ -11,6 +11,7 @@ using StyleSync.Api.Middleware;
 using StyleSync.Api.Services;
 using StyleSync.Api.Modules.ProjectExecution.Interfaces;
 using StyleSync.Api.Modules.ProjectExecution.Services;
+using StyleSync.Api.Modules.Designers.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +76,9 @@ builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
 builder.Services.AddScoped<IProjectTimelineService, ProjectTimelineService>();
 builder.Services.AddScoped<IProjectAnalyticsService, ProjectAnalyticsService>();
 
+// Designers Services
+builder.Services.AddScoped<IDesignerProfileService, DesignerProfileService>();
+
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
@@ -103,8 +107,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration["Cors:ReactAppUrl"] ?? "http://localhost:5173")
+        policy.SetIsOriginAllowed(origin => true)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -122,9 +125,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseStaticFiles();
-app.UseHttpsRedirection();
 app.UseCors("AllowFrontend");
+app.UseStaticFiles();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
