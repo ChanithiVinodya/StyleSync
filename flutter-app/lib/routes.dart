@@ -110,8 +110,8 @@ class AppRoutes {
     } else if (uri.path == newRequest) {
       final initialRoomType = settings.arguments as String?;
       return MaterialPageRoute(
-        builder: (_) => AuthGuard(
-          child: NewRequestScreen(initialRoomType: initialRoomType),
+        builder: (_) => const AuthGuard(
+          child: NewRequestScreen(),
         ),
         settings: settings,
       );
