@@ -399,7 +399,7 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                       style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 4),
-                    Text('Updated: ${DateFormat.yMd().add_Hm().format(req.updatedAt)}', style: Theme.of(context).textTheme.bodySmall),
+                    Text('Updated: ${DateFormat.yMd().add_jm().format(req.updatedAt.toLocal())}', style: Theme.of(context).textTheme.bodySmall),
                   ],
                 ),
               ),

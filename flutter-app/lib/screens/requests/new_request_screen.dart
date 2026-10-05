@@ -11,8 +11,9 @@ import 'request_detail_screen.dart';
 
 class NewRequestScreen extends ConsumerStatefulWidget {
   final String? editId;
+  final String? initialRoomType;
 
-  const NewRequestScreen({super.key, this.editId});
+  const NewRequestScreen({super.key, this.editId, this.initialRoomType});
 
   @override
   ConsumerState<NewRequestScreen> createState() => _NewRequestScreenState();
@@ -43,6 +44,9 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   void initState() {
     super.initState();
     _currentId = widget.editId;
+    if (widget.initialRoomType != null) {
+      _roomType = RoomType.fromJson(widget.initialRoomType!);
+    }
     _budgetController.addListener(_markChanged);
     _lengthController.addListener(_onDimensionChanged);
     _widthController.addListener(_onDimensionChanged);

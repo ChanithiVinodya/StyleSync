@@ -139,7 +139,7 @@ class StatusTimeline extends StatelessWidget {
                     ),
                     if (step.timestamp != null)
                       Text(
-                        DateFormat.yMd().add_Hm().format(step.timestamp!),
+                        DateFormat.yMd().add_jm().format(step.timestamp!.toLocal()),
                         style: const TextStyle(color: Colors.grey, fontSize: 12),
                       ),
                     if (step.note != null && step.note!.isNotEmpty)

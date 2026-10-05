@@ -94,6 +94,23 @@ class MoodboardImage {
   };
 }
 
+DateTime _parseUtcDateTime(dynamic value) {
+  if (value == null) return DateTime.now();
+  final str = value.toString().trim();
+  if (str.isEmpty) return DateTime.now();
+  try {
+    DateTime dt;
+    if (!str.endsWith('Z') && !str.contains('+') && !RegExp(r'-\d{2}:\d{2}$').hasMatch(str)) {
+      dt = DateTime.parse('${str}Z');
+    } else {
+      dt = DateTime.parse(str);
+    }
+    return dt.toLocal();
+  } catch (_) {
+    return DateTime.tryParse(str)?.toLocal() ?? DateTime.now();
+  }
+}
+
 @immutable
 class RequestSummary {
   final String id;
@@ -127,8 +144,8 @@ class RequestSummary {
       roomType: RoomType.fromJson(json['roomType'] as String? ?? ''),
       budget: (json['budget'] as num?)?.toDouble() ?? 0.0,
       status: RequestStatus.fromJson(json['status'] as String? ?? ''),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : DateTime.now(),
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : DateTime.now(),
+      createdAt: _parseUtcDateTime(json['createdAt']),
+      updatedAt: _parseUtcDateTime(json['updatedAt']),
       thumbnailUrl: json['thumbnailUrl'] as String?,
       clientDisplayName: json['clientDisplayName'] as String?,
       isFlagged: json['isFlagged'] as bool? ?? false,
@@ -197,9 +214,9 @@ class RequestDetail {
       roomSizeSqM: ((json['roomSizeSqM'] ?? json['roomSizeSqFt'] ?? json['RoomSizeSqFt']) as num?)?.toDouble(),
       description: json['description'] as String?,
       status: RequestStatus.fromJson(json['status'] as String? ?? ''),
-      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : DateTime.now(),
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt'] as String) : DateTime.now(),
-      submittedAt: json['submittedAt'] != null ? DateTime.parse(json['submittedAt'] as String) : null,
+      createdAt: _parseUtcDateTime(json['createdAt']),
+      updatedAt: _parseUtcDateTime(json['updatedAt']),
+      submittedAt: json['submittedAt'] != null ? _parseUtcDateTime(json['submittedAt']) : null,
       cancelReason: json['cancelReason'] as String?,
       isFlagged: json['isFlagged'] as bool? ?? false,
       flagReason: json['flagReason'] as String?,
@@ -229,7 +246,7 @@ class StatusHistoryEntry {
   factory StatusHistoryEntry.fromJson(Map<String, dynamic> json) {
     return StatusHistoryEntry(
       status: RequestStatus.fromJson(json['status'] as String? ?? ''),
-      timestamp: json['timestamp'] != null ? DateTime.parse(json['timestamp'] as String) : DateTime.now(),
+      timestamp: _parseUtcDateTime(json['timestamp']),
       note: json['note'] as String? ?? '',
     );
   }
