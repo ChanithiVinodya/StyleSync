@@ -21,6 +21,57 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
   bool _isSubmitting = false;
   String? _error;
 
+  String? get _length {
+    final raw = _detail?.description ?? '';
+    final match = RegExp(r'\[Dimensions: L=([^,]+), W=([^,]+), H=([^\]]+)\]').firstMatch(raw);
+    if (match != null) {
+      final val = match.group(1)?.trim() ?? '';
+      return val.isNotEmpty ? val : null;
+    }
+    return null;
+  }
+
+  String? get _width {
+    final raw = _detail?.description ?? '';
+    final match = RegExp(r'\[Dimensions: L=([^,]+), W=([^,]+), H=([^\]]+)\]').firstMatch(raw);
+    if (match != null) {
+      final val = match.group(2)?.trim() ?? '';
+      return val.isNotEmpty ? val : null;
+    }
+    return null;
+  }
+
+  String? get _height {
+    final raw = _detail?.description ?? '';
+    final match = RegExp(r'\[Dimensions: L=([^,]+), W=([^,]+), H=([^\]]+)\]').firstMatch(raw);
+    if (match != null) {
+      final val = match.group(3)?.trim() ?? '';
+      return val.isNotEmpty ? val : null;
+    }
+    return null;
+  }
+
+  String? get _roomSizeDisplay {
+    final l = double.tryParse(_length ?? '');
+    final w = double.tryParse(_width ?? '');
+    if (l != null && w != null && l > 0 && w > 0) {
+      final area = l * w;
+      final areaStr = area % 1 == 0 ? area.toInt().toString() : area.toStringAsFixed(1);
+      return '$areaStr sq ft';
+    }
+    return null;
+  }
+
+  String get _cleanDescription {
+    final raw = _detail?.description ?? '';
+    final match = RegExp(r'\[Dimensions: L=([^,]+), W=([^,]+), H=([^\]]+)\]').firstMatch(raw);
+    if (match != null) {
+      final clean = raw.replaceAll(match.group(0)!, '').trim();
+      return clean.isEmpty ? '-' : clean;
+    }
+    return raw.isEmpty ? '-' : raw;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -103,7 +154,14 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: e.errors.map((err) => Text('• ${err.message}')).toList(),
+                children: e.errors.map((err) {
+                  String message = err.message;
+                  final field = err.field.toLowerCase();
+                  if (field == 'roomsizesqft' || field == 'roomsizesqm' || err.code == 'ROOM_SIZE_INVALID') {
+                    message = 'Length, width, and height are required: length and width must produce a room size > 0 and <= 10000 sq ft.';
+                  }
+                  return Text('• $message');
+                }).toList(),
               ),
               actions: [
                 TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
@@ -229,9 +287,17 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
                   const Divider(),
                   _buildFieldRow('Budget', _detail!.budget != null ? fmt.format(_detail!.budget) : '-'),
                   const Divider(),
-                  _buildFieldRow('Size (Sq Ft)', _detail!.roomSizeSqM?.toString() ?? '-'),
+                  _buildFieldRow('Length', _length != null ? '$_length ft' : '-'),
                   const Divider(),
-                  _buildFieldRow('Description', _detail!.description ?? '-'),
+                  _buildFieldRow('Width', _width != null ? '$_width ft' : '-'),
+                  const Divider(),
+                  _buildFieldRow('Height', _height != null ? '$_height ft' : '-'),
+                  const Divider(),
+                  if (_roomSizeDisplay != null) ...[
+                    _buildFieldRow('Room Size', _roomSizeDisplay!),
+                    const Divider(),
+                  ],
+                  _buildFieldRow('Description', _cleanDescription),
                 ],
               ),
             ),
