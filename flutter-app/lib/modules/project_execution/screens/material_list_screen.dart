@@ -335,11 +335,28 @@ class _MaterialDialogBodyState extends ConsumerState<_MaterialDialogBody> {
               subtitle: Text(requiredDate != null ? "${requiredDate!.toLocal()}".split(' ')[0] : 'Select a date'),
               trailing: const Icon(Icons.calendar_today),
               onTap: () async {
+                if (selectedMilestoneId == null || selectedTaskId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a milestone and a task first.')));
+                  return;
+                }
+                final tasks = ref.read(projectTasksProvider(selectedMilestoneId!)).value;
+                if (tasks == null) return;
+                
+                final task = tasks.where((t) => t.taskId == selectedTaskId).firstOrNull;
+                if (task == null) return;
+
+                final minDate = DateTime(task.startDate.year, task.startDate.month, task.startDate.day);
+                final maxDate = DateTime(task.dueDate.year, task.dueDate.month, task.dueDate.day);
+                
+                var initDate = requiredDate ?? minDate;
+                if (initDate.isBefore(minDate)) initDate = minDate;
+                if (initDate.isAfter(maxDate)) initDate = maxDate;
+
                 final date = await showDatePicker(
                   context: context,
-                  initialDate: requiredDate ?? DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
+                  initialDate: initDate,
+                  firstDate: minDate,
+                  lastDate: maxDate,
                 );
                 if (date != null) {
                   setState(() {

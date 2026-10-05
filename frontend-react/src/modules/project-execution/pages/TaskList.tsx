@@ -14,7 +14,7 @@ export default function TaskList() {
   
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ milestoneId: '', name: '', description: '', startDate: '', dueDate: '' });
+  const [formData, setFormData] = useState({ milestoneId: '', name: '', description: '', startDate: '', dueDate: '', status: 'NotStarted' });
   const isClient = userRole === 'Client';
 
   useEffect(() => {
@@ -43,7 +43,16 @@ export default function TaskList() {
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     if (isClient) return;
     try {
-      await updateTaskStatus(taskId, newStatus);
+      const task = tasks.find(t => t.taskId === taskId);
+      if (!task) return;
+      await updateTask(taskId, {
+        milestoneId: task.milestoneId,
+        name: task.name,
+        description: task.description,
+        startDate: new Date(task.startDate).toISOString(),
+        dueDate: new Date(task.dueDate).toISOString(),
+        status: newStatus as any
+      });
       setTasks(tasks.map(t => t.taskId === taskId ? { ...t, status: newStatus as any } : t));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to update status. Dependency or material restrictions may apply.');
@@ -85,7 +94,8 @@ export default function TaskList() {
           name: formData.name,
           description: formData.description,
           startDate: new Date(formData.startDate).toISOString(),
-          dueDate: new Date(formData.dueDate).toISOString()
+          dueDate: new Date(formData.dueDate).toISOString(),
+          status: formData.status as any
         });
         setTasks(tasks.map(t => t.taskId === editingId ? updatedTask : t));
       } else {
@@ -94,13 +104,14 @@ export default function TaskList() {
           name: formData.name,
           description: formData.description,
           startDate: new Date(formData.startDate).toISOString(),
-          dueDate: new Date(formData.dueDate).toISOString()
+          dueDate: new Date(formData.dueDate).toISOString(),
+          status: formData.status as any
         });
         setTasks([...tasks, newTask]);
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData(prev => ({ ...prev, name: '', description: '', startDate: '', dueDate: '' }));
+      setFormData(prev => ({ ...prev, name: '', description: '', startDate: '', dueDate: '', status: 'NotStarted' }));
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to save task.');
     }
@@ -123,7 +134,7 @@ export default function TaskList() {
                 if (showForm) {
                   setShowForm(false);
                   setEditingId(null);
-                  setFormData(prev => ({ ...prev, name: '', description: '', startDate: '', dueDate: '' }));
+                  setFormData(prev => ({ ...prev, name: '', description: '', startDate: '', dueDate: '', status: 'NotStarted' }));
                 } else {
                   setShowForm(true);
                 }
@@ -171,6 +182,17 @@ export default function TaskList() {
                 <label className="block text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider mb-1">Due Date</label>
                 <input required type="date" value={formData.dueDate} onChange={e => setFormData({...formData, dueDate: e.target.value})} className="w-full bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] text-[#1C1917] dark:text-[#FAF8F5] rounded-xl px-4 py-2 focus:outline-hidden focus:border-[#C48A36]" />
               </div>
+              {editingId && (
+                <div>
+                  <label className="block text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider mb-1">Status</label>
+                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] text-[#1C1917] dark:text-[#FAF8F5] rounded-xl px-4 py-2 focus:outline-hidden focus:border-[#C48A36] appearance-none cursor-pointer">
+                    <option value="NotStarted">Not Started</option>
+                    <option value="InProgress">In Progress</option>
+                    <option value="Delayed">Delayed</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex justify-end pt-2">
               <button type="submit" disabled={!formData.milestoneId} className="bg-[#C48A36] text-white px-6 py-2 rounded-xl hover:bg-[#A8742A] text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
@@ -228,7 +250,8 @@ export default function TaskList() {
                       name: task.name,
                       description: task.description || '',
                       startDate: new Date(task.startDate).toISOString().split('T')[0],
-                      dueDate: new Date(task.dueDate).toISOString().split('T')[0]
+                      dueDate: new Date(task.dueDate).toISOString().split('T')[0],
+                      status: task.status
                     });
                     setShowForm(true);
                     window.scrollTo({ top: 0, behavior: 'smooth' });

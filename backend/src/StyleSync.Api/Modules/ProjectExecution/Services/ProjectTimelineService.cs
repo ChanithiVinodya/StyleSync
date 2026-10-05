@@ -142,6 +142,23 @@ public class ProjectTimelineService : IProjectTimelineService
             CreatedBy = null
         }));
 
+        var customEvents = await _context.ProjectTimelineEvents
+            .Where(e => e.ProjectId == projectId)
+            .ToListAsync();
+            
+        timeline.AddRange(customEvents.Select(e => new ProjectTimelineEventDto
+        {
+            EventId = e.TimelineEventId.ToString(),
+            ProjectId = e.ProjectId,
+            EventType = e.EventType,
+            Title = e.Title,
+            Description = e.Description,
+            EntityType = "ProjectTimelineEvent",
+            EntityId = e.TimelineEventId.ToString(),
+            Timestamp = e.Timestamp,
+            CreatedBy = e.CreatedBy
+        }));
+
         // Apply filters
         var filteredTimeline = timeline.AsEnumerable();
 
@@ -162,5 +179,70 @@ public class ProjectTimelineService : IProjectTimelineService
 
         // Sort chronologically (descending by default)
         return filteredTimeline.OrderByDescending(t => t.Timestamp);
+    }
+
+    public async Task<ProjectTimelineEventDto> CreateTimelineEventAsync(Guid projectId, CreateTimelineEventDto dto, Guid? userId = null)
+    {
+        var ev = new ProjectTimelineEvent
+        {
+            TimelineEventId = Guid.NewGuid(),
+            ProjectId = projectId,
+            EventType = dto.EventType,
+            Title = dto.Title,
+            Description = dto.Description,
+            Timestamp = DateTime.UtcNow,
+            CreatedBy = userId
+        };
+
+        _context.ProjectTimelineEvents.Add(ev);
+        await _context.SaveChangesAsync();
+
+        return new ProjectTimelineEventDto
+        {
+            EventId = ev.TimelineEventId.ToString(),
+            ProjectId = ev.ProjectId,
+            EventType = ev.EventType,
+            Title = ev.Title,
+            Description = ev.Description,
+            EntityType = "ProjectTimelineEvent",
+            EntityId = ev.TimelineEventId.ToString(),
+            Timestamp = ev.Timestamp,
+            CreatedBy = ev.CreatedBy
+        };
+    }
+
+    public async Task<ProjectTimelineEventDto?> UpdateTimelineEventAsync(Guid eventId, UpdateTimelineEventDto dto)
+    {
+        var ev = await _context.ProjectTimelineEvents.FindAsync(eventId);
+        if (ev == null) return null;
+
+        ev.EventType = dto.EventType;
+        ev.Title = dto.Title;
+        ev.Description = dto.Description;
+
+        await _context.SaveChangesAsync();
+
+        return new ProjectTimelineEventDto
+        {
+            EventId = ev.TimelineEventId.ToString(),
+            ProjectId = ev.ProjectId,
+            EventType = ev.EventType,
+            Title = ev.Title,
+            Description = ev.Description,
+            EntityType = "ProjectTimelineEvent",
+            EntityId = ev.TimelineEventId.ToString(),
+            Timestamp = ev.Timestamp,
+            CreatedBy = ev.CreatedBy
+        };
+    }
+
+    public async Task<bool> DeleteTimelineEventAsync(Guid eventId)
+    {
+        var ev = await _context.ProjectTimelineEvents.FindAsync(eventId);
+        if (ev == null) return false;
+
+        _context.ProjectTimelineEvents.Remove(ev);
+        await _context.SaveChangesAsync();
+        return true;
     }
 }

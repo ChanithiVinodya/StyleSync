@@ -18,3 +18,15 @@ apiClient.interceptors.request.use((config) => {
   }
   return config
 })
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('stylesync_jwt_token')
+      localStorage.removeItem('stylesync_user_info')
+      window.location.href = '/' // Force a reload to trigger AuthContext state clear
+    }
+    return Promise.reject(error)
+  }
+)

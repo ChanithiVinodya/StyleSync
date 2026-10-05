@@ -12,7 +12,7 @@ export default function MilestoneList() {
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', startDate: '', dueDate: '' });
+  const [formData, setFormData] = useState({ name: '', description: '', startDate: '', dueDate: '', status: 'NotStarted' });
   const isClient = userRole === 'Client';
 
   useEffect(() => {
@@ -51,7 +51,8 @@ export default function MilestoneList() {
           name: formData.name,
           description: formData.description,
           startDate: new Date(formData.startDate).toISOString(),
-          dueDate: new Date(formData.dueDate).toISOString()
+          dueDate: new Date(formData.dueDate).toISOString(),
+          status: formData.status as any
         });
         setMilestones(milestones.map(m => m.milestoneId === editingId ? updatedMilestone : m));
       } else {
@@ -60,13 +61,14 @@ export default function MilestoneList() {
           name: formData.name,
           description: formData.description,
           startDate: new Date(formData.startDate).toISOString(),
-          dueDate: new Date(formData.dueDate).toISOString()
+          dueDate: new Date(formData.dueDate).toISOString(),
+          status: formData.status as any
         });
         setMilestones([...milestones, newMilestone]);
       }
       setShowForm(false);
       setEditingId(null);
-      setFormData({ name: '', description: '', startDate: '', dueDate: '' });
+      setFormData({ name: '', description: '', startDate: '', dueDate: '', status: 'NotStarted' });
     } catch (err: any) {
       alert(err.response?.data?.message || 'Failed to save milestone.');
     }
@@ -96,7 +98,7 @@ export default function MilestoneList() {
               if (showForm) {
                 setShowForm(false);
                 setEditingId(null);
-                setFormData({ name: '', description: '', startDate: '', dueDate: '' });
+                setFormData({ name: '', description: '', startDate: '', dueDate: '', status: 'NotStarted' });
               } else {
                 setShowForm(true);
               }
@@ -129,6 +131,17 @@ export default function MilestoneList() {
                 <label className="block text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider mb-1">Due Date</label>
                 <input required type="date" value={formData.dueDate} onChange={e => setFormData({...formData, dueDate: e.target.value})} className="w-full bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] text-[#1C1917] dark:text-[#FAF8F5] rounded-xl px-4 py-2 focus:outline-hidden focus:border-[#C48A36]" />
               </div>
+              {editingId && (
+                <div>
+                  <label className="block text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider mb-1">Status</label>
+                  <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] text-[#1C1917] dark:text-[#FAF8F5] rounded-xl px-4 py-2 focus:outline-hidden focus:border-[#C48A36] appearance-none cursor-pointer">
+                    <option value="NotStarted">Not Started</option>
+                    <option value="InProgress">In Progress</option>
+                    <option value="Delayed">Delayed</option>
+                    <option value="Completed">Completed</option>
+                  </select>
+                </div>
+              )}
             </div>
             <div className="flex justify-end pt-2">
               <button type="submit" className="bg-[#C48A36] text-white px-6 py-2 rounded-xl hover:bg-[#A8742A] text-sm font-semibold transition-colors">
@@ -179,7 +192,8 @@ export default function MilestoneList() {
                               name: milestone.name,
                               description: milestone.description || '',
                               startDate: new Date(milestone.startDate).toISOString().split('T')[0],
-                              dueDate: new Date(milestone.dueDate).toISOString().split('T')[0]
+                              dueDate: new Date(milestone.dueDate).toISOString().split('T')[0],
+                              status: milestone.status
                             });
                             setShowForm(true);
                             window.scrollTo({ top: 0, behavior: 'smooth' });

@@ -42,6 +42,7 @@ public class AppDbContext : DbContext
     public DbSet<TaskDependency> TaskDependencies => Set<TaskDependency>();
     public DbSet<ProjectMaterial> ProjectMaterials => Set<ProjectMaterial>();
     public DbSet<ProgressPhoto> ProgressPhotos => Set<ProgressPhoto>();
+    public DbSet<ProjectTimelineEvent> ProjectTimelineEvents => Set<ProjectTimelineEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

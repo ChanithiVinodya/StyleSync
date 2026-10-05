@@ -187,7 +187,15 @@ export default function MaterialList() {
               </div>
               <div className="lg:col-span-2">
                 <label className="block text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider mb-1">Required By (Date)</label>
-                <input required type="date" value={formData.requiredDate} onChange={e => setFormData({...formData, requiredDate: e.target.value})} className="w-full bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] text-[#1C1917] dark:text-[#FAF8F5] rounded-xl px-4 py-2 focus:outline-hidden focus:border-[#C48A36]" />
+                <input 
+                  required 
+                  type="date" 
+                  min={formData.taskId ? tasks.find(t => t.taskId === formData.taskId)?.startDate.split('T')[0] : undefined}
+                  max={formData.taskId ? tasks.find(t => t.taskId === formData.taskId)?.dueDate.split('T')[0] : undefined}
+                  value={formData.requiredDate} 
+                  onChange={e => setFormData({...formData, requiredDate: e.target.value})} 
+                  className="w-full bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#2E2824] text-[#1C1917] dark:text-[#FAF8F5] rounded-xl px-4 py-2 focus:outline-hidden focus:border-[#C48A36]" 
+                />
               </div>
             </div>
             <div className="flex justify-end pt-2">

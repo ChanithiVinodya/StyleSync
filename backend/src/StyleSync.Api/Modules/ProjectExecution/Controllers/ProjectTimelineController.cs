@@ -43,4 +43,36 @@ public class ProjectTimelineController : ControllerBase
         var photos = await _progressPhotoService.GetProjectPhotosAsync(projectId, milestoneId, taskId, from, to, sort);
         return Ok(photos);
     }
+
+    [HttpPost("{projectId:guid}/timeline")]
+    [Authorize(Roles = "Admin,Designer")]
+    [ProducesResponseType(typeof(ProjectTimelineEventDto), 201)]
+    public async Task<IActionResult> CreateTimelineEvent(Guid projectId, [FromBody] CreateTimelineEventDto dto)
+    {
+        // TODO: Get user id from claims
+        var ev = await _timelineService.CreateTimelineEventAsync(projectId, dto, null);
+        return Created("", ev);
+    }
+
+    [HttpPut("{projectId:guid}/timeline/{eventId:guid}")]
+    [Authorize(Roles = "Admin,Designer")]
+    [ProducesResponseType(typeof(ProjectTimelineEventDto), 200)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> UpdateTimelineEvent(Guid projectId, Guid eventId, [FromBody] UpdateTimelineEventDto dto)
+    {
+        var ev = await _timelineService.UpdateTimelineEventAsync(eventId, dto);
+        if (ev == null) return NotFound(new ErrorResponse(404, "Event not found"));
+        return Ok(ev);
+    }
+
+    [HttpDelete("{projectId:guid}/timeline/{eventId:guid}")]
+    [Authorize(Roles = "Admin,Designer")]
+    [ProducesResponseType(204)]
+    [ProducesResponseType(404)]
+    public async Task<IActionResult> DeleteTimelineEvent(Guid projectId, Guid eventId)
+    {
+        var success = await _timelineService.DeleteTimelineEventAsync(eventId);
+        if (!success) return NotFound(new ErrorResponse(404, "Event not found"));
+        return NoContent();
+    }
 }
