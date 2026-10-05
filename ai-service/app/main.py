@@ -7,8 +7,9 @@ source of truth for auth and business rules.
 """
 from fastapi import FastAPI
 
+from app.agents.style_analysis_agent import analyze_style
 from app.orchestrator import run_workflow
-from app.schemas import WorkflowState
+from app.schemas import StyleProfile, WorkflowState
 
 app = FastAPI(
     title="StyleSync - Agentic AI Service",
@@ -19,6 +20,15 @@ app = FastAPI(
 @app.get("/health")
 def health() -> dict:
     return {"status": "healthy"}
+
+
+@app.post("/agents/style-analysis", response_model=StyleProfile)
+def run_style_analysis(state: WorkflowState) -> StyleProfile:
+    """
+    Runs Agent 1 (Style Analysis Agent - Student 2) individually to analyze
+    room cues and client preferences, returning a structured StyleProfile.
+    """
+    return analyze_style(state)
 
 
 @app.post("/workflow/run", response_model=WorkflowState)
