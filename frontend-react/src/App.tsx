@@ -9,6 +9,8 @@ import { Register } from './pages/Register';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminRequests } from './pages/admin/AdminRequests';
+import { AdminRequestDetail } from './pages/admin/AdminRequestDetail';
 import { DesignerDashboard } from './pages/designer/DesignerDashboard';
 import { ClientDashboard } from './pages/client/ClientDashboard';
 import { Unauthorized } from './pages/Unauthorized';
@@ -48,6 +50,22 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/admin/requests"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AdminRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/requests/:id"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AdminRequestDetail />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Designer-only Routes */}
             <Route
@@ -69,10 +87,21 @@ export default function App() {
               }
             />
 
-            {/* Feature Modules */}
+            {/* Student 1: Designer Module Routes */}
             <Route path="/designers" element={<DesignersPage />} />
+            <Route path="/designers/:id" element={<DesignersPage />} />
+            <Route path="/designers/:id/gallery" element={<DesignersPage />} />
+            <Route path="/designers/studio" element={<DesignersPage />} />
+            <Route path="/designers/admin" element={<DesignersPage />} />
+            <Route path="/admin/designers" element={<DesignersPage />} />
+
+            {/* Student 2: Project Requests Module */}
             <Route path="/project-requests" element={<ProjectRequestsPage />} />
+
+            {/* Student 3: Quotes & Contracts Module */}
             <Route path="/quotes-contracts" element={<QuotesContractsPage />} />
+
+            {/* Student 4: Project Execution Module */}
             <Route path="/project-execution" element={<ProjectExecutionPage />} />
 
             {/* Fallback */}
@@ -83,3 +112,4 @@ export default function App() {
     </ThemeProvider>
   );
 }
+
