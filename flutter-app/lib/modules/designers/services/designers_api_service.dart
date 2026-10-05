@@ -1,4 +1,3 @@
-import 'dart:convert';
 import '../../../shared/api/api_client.dart';
 import '../models/designer_summary.dart';
 import '../models/designer_profile.dart';
@@ -168,14 +167,16 @@ class DesignersApiService {
         .where((p) => p.listingStatus == ListingStatus.published)
         .toList();
 
-    // Style filter
+    // Style & Category filter
     if (query.style != null &&
         query.style!.isNotEmpty &&
         query.style != 'All') {
       final reqStyle = query.style!.toLowerCase();
       filtered = filtered
           .where((p) =>
-              p.styleTags.any((t) => t.toLowerCase().contains(reqStyle)))
+              p.styleTags.any((t) => t.toLowerCase().contains(reqStyle)) ||
+              p.serviceCategories
+                  .any((c) => c.toLowerCase().contains(reqStyle)))
           .toList();
     }
 

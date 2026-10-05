@@ -105,8 +105,12 @@ class AppRoutes {
         builder: (_) => const AuthGuard(child: HomeScreen(initialTab: 2)),
       );
     } else if (uri.path == newRequest) {
+      final initialRoomType = settings.arguments as String?;
       return MaterialPageRoute(
-        builder: (_) => const AuthGuard(child: NewRequestScreen()),
+        builder: (_) => AuthGuard(
+          child: NewRequestScreen(initialRoomType: initialRoomType),
+        ),
+        settings: settings,
       );
     } else if (uri.path == profile) {
       return MaterialPageRoute(

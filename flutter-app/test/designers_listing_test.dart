@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylesync/modules/designers/models/designer_summary.dart';
 import 'package:stylesync/modules/designers/models/paged_result.dart';
 import 'package:stylesync/modules/designers/widgets/designer_card.dart';
 import 'package:stylesync/modules/designers/screens/designer_listing_screen.dart';
 import 'package:stylesync/modules/designers/services/designers_api_service.dart';
-import 'package:stylesync/shared/api/api_client.dart';
 
 class FakeDesignersApiService extends DesignersApiService {
   @override
@@ -189,8 +189,10 @@ void main() {
       final service = FakeDesignersApiService();
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: DesignerListingScreen(apiService: service),
+        ProviderScope(
+          child: MaterialApp(
+            home: DesignerListingScreen(apiService: service),
+          ),
         ),
       );
 
@@ -203,6 +205,41 @@ void main() {
 
       expect(find.text('Tropical Modernism'), findsWidgets);
       expect(find.text('Luxe Heritage Interiors'), findsOneWidget);
+    });
+
+    testWidgets(
+        'Displays removable filter chip when pre-filtered by style and clears on tap',
+        (tester) async {
+      final service = FakeDesignersApiService();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            home: DesignerListingScreen(
+              apiService: service,
+              initialStyle: 'Scandinavian',
+            ),
+          ),
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpAndSettle();
+
+      // Verify active removable filter chip is visible
+      expect(find.text('Style: Scandinavian'), findsOneWidget);
+      expect(find.byType(InputChip), findsOneWidget);
+
+      // Tap the delete icon to remove the filter
+      final inputChip = find.byType(InputChip);
+      expect(inputChip, findsOneWidget);
+
+      // Tap the close icon on the chip
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      // Verify chip is removed
+      expect(find.text('Style: Scandinavian'), findsNothing);
     });
   });
 }

@@ -2,7 +2,14 @@
 import 'package:flutter/material.dart';
 
 class NewRequestScreen extends StatelessWidget {
-  const NewRequestScreen({super.key});
+  final String? initialRoomType;
+  final String? roomType;
+
+  const NewRequestScreen({
+    super.key,
+    this.initialRoomType,
+    this.roomType,
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stylesync/modules/designers/models/designer_profile.dart';
-import 'package:stylesync/modules/designers/models/designer_summary.dart';
 import 'package:stylesync/modules/designers/models/portfolio_item.dart';
 import 'package:stylesync/modules/designers/screens/designer_profile_screen.dart';
 import 'package:stylesync/modules/designers/services/designers_api_service.dart';
-import 'package:stylesync/shared/api/api_client.dart';
 
 class FakeDesignerProfileApiService extends DesignersApiService {
   @override

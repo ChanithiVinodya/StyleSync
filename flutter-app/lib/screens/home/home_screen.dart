@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth/auth_provider.dart';
+import '../../providers/designers/designer_filter_provider.dart';
+import '../../config/style_constants.dart';
+import '../../modules/designers/models/designer_summary.dart';
 import '../../routes.dart';
 import '../designers/browse_designers_screen.dart';
 import '../requests/request_history_screen.dart';
@@ -53,16 +56,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       'title': 'Bedroom',
       'assetPath': null,
       'fallbackUrl': 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'title': 'Lighting',
-      'assetPath': 'assets/images/lighting.jpg',
-      'fallbackUrl': 'https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=800&q=80',
-    },
-    {
-      'title': 'Decor',
-      'assetPath': null,
-      'fallbackUrl': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
     },
     {
       'title': 'Kitchen',
@@ -392,6 +385,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
 
               // 5. Categories Section (Horizontal Snapping)
               _buildCategoriesSection(isDark, textEspresso, terracotta),
+              const SizedBox(height: 32),
+
+              // 5b. Styles Section (Directly below Categories)
+              _buildStylesSection(isDark, textEspresso, terracotta),
               const SizedBox(height: 32),
 
               // 6. Project Activity Carousel (Status & Metrics)
@@ -889,6 +886,89 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
+  // Reusable visual card for Categories & Styles horizontal carousels
+  Widget _buildVisualDiscoveryCard({
+    required String title,
+    String? assetPath,
+    String? fallbackUrl,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 142,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildSafeImage(
+                assetPath: assetPath,
+                fallbackUrl: fallbackUrl,
+                fit: BoxFit.cover,
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.65),
+                    ],
+                    stops: const [0.4, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.94),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF231713),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // ==========================================
   // SECTION 5: CATEGORIES CAROUSEL
   // ==========================================
@@ -923,11 +1003,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               ],
             ),
             GestureDetector(
-              onTap: () => _onBottomNavTapped(1),
+              onTap: () {
+                Navigator.of(context).pushNamed(AppRoutes.newRequest);
+              },
               child: Row(
                 children: [
                   Text(
-                    'See all',
+                    'Start request',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -953,76 +1035,110 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             separatorBuilder: (_, __) => const SizedBox(width: 14),
             itemBuilder: (context, index) {
               final cat = _categories[index];
-              return GestureDetector(
-                onTap: () => _onBottomNavTapped(1),
-                child: Container(
-                  width: 142,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        _buildSafeImage(
-                          assetPath: cat['assetPath'],
-                          fallbackUrl: cat['fallbackUrl'],
-                          fit: BoxFit.cover,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.65),
-                              ],
-                              stops: const [0.4, 1.0],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 12,
-                          right: 12,
-                          bottom: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.94),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                cat['title'],
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF231713),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              return _buildVisualDiscoveryCard(
+                title: cat['title'] as String,
+                assetPath: cat['assetPath'] as String?,
+                fallbackUrl: cat['fallbackUrl'] as String?,
+                isDark: isDark,
+                onTap: () {
+                  Navigator.of(context).pushNamed(
+                    AppRoutes.newRequest,
+                    arguments: cat['title'] as String,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================
+  // SECTION 5B: STYLES CAROUSEL
+  // ==========================================
+  Widget _buildStylesSection(bool isDark, Color textEspresso, Color terracotta) {
+    const styles = AppStyleConstants.homeStyles;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header matching Categories exactly
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Styles',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  'Find designers who match your taste',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? const Color(0xFF9B8B82) : const Color(0xFF8A7973),
+                  ),
+                ),
+              ],
+            ),
+            GestureDetector(
+              onTap: () {
+                ref.read(designerFilterProvider.notifier).resetFilters();
+                _onBottomNavTapped(1);
+              },
+              child: Row(
+                children: [
+                  Text(
+                    'See all',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: terracotta,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(Icons.chevron_right_rounded, size: 16, color: terracotta),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Horizontal scrolling track reusing exact same card treatment
+        SizedBox(
+          height: 195,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: styles.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (context, index) {
+              final styleItem = styles[index];
+              return _buildVisualDiscoveryCard(
+                title: styleItem.title,
+                assetPath: styleItem.assetPath,
+                fallbackUrl: styleItem.fallbackUrl,
+                isDark: isDark,
+                onTap: () {
+                  ref.read(designerFilterProvider.notifier).setParams(
+                        DesignerQueryParameters(
+                          style: styleItem.tag,
+                          page: 1,
+                          pageSize: 10,
+                          sort: 'newest',
+                        ),
+                      );
+                  _onBottomNavTapped(1);
+                },
               );
             },
           ),

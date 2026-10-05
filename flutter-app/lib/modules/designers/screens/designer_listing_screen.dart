@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../../config/style_constants.dart';
+import '../../../providers/designers/designer_filter_provider.dart';
 import '../models/designer_summary.dart';
 import '../models/paged_result.dart';
 import '../services/designers_api_service.dart';
@@ -7,16 +10,24 @@ import '../widgets/designer_card.dart';
 import '../widgets/designer_filter_sheet.dart';
 import 'designer_profile_screen.dart';
 
-class DesignerListingScreen extends StatefulWidget {
+class DesignerListingScreen extends ConsumerStatefulWidget {
   final DesignersApiService? apiService;
+  final String? initialStyle;
+  final DesignerQueryParameters? initialParams;
 
-  const DesignerListingScreen({super.key, this.apiService});
+  const DesignerListingScreen({
+    super.key,
+    this.apiService,
+    this.initialStyle,
+    this.initialParams,
+  });
 
   @override
-  State<DesignerListingScreen> createState() => _DesignerListingScreenState();
+  ConsumerState<DesignerListingScreen> createState() =>
+      _DesignerListingScreenState();
 }
 
-class _DesignerListingScreenState extends State<DesignerListingScreen> {
+class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
   late final DesignersApiService _apiService;
 
   DesignerQueryParameters _params = const DesignerQueryParameters(
@@ -33,6 +44,27 @@ class _DesignerListingScreenState extends State<DesignerListingScreen> {
   void initState() {
     super.initState();
     _apiService = widget.apiService ?? DesignersApiService();
+
+    if (widget.initialParams != null) {
+      _params = widget.initialParams!;
+    } else if (widget.initialStyle != null &&
+        widget.initialStyle!.trim().isNotEmpty) {
+      _params = DesignerQueryParameters(
+        style: widget.initialStyle!.trim(),
+        page: 1,
+        pageSize: 10,
+        sort: 'newest',
+      );
+    } else {
+      _params = ref.read(designerFilterProvider);
+    }
+
+    _fetchListings();
+  }
+
+  void _applyParams(DesignerQueryParameters newParams) {
+    setState(() => _params = newParams);
+    ref.read(designerFilterProvider.notifier).setParams(newParams);
     _fetchListings();
   }
 
@@ -68,18 +100,14 @@ class _DesignerListingScreenState extends State<DesignerListingScreen> {
       builder: (context) => DesignerFilterSheet(
         currentParams: _params,
         onApply: (newParams) {
-          setState(() => _params = newParams);
-          _fetchListings();
+          _applyParams(newParams);
         },
         onReset: () {
-          setState(() {
-            _params = const DesignerQueryParameters(
-              page: 1,
-              pageSize: 10,
-              sort: 'newest',
-            );
-          });
-          _fetchListings();
+          _applyParams(const DesignerQueryParameters(
+            page: 1,
+            pageSize: 10,
+            sort: 'newest',
+          ));
         },
       ),
     );
@@ -87,14 +115,32 @@ class _DesignerListingScreenState extends State<DesignerListingScreen> {
 
   void _onPageChanged(int newPage) {
     if (_result == null || newPage < 1 || newPage > _result!.totalPages) return;
-    setState(() {
-      _params = _params.copyWith(page: newPage);
-    });
-    _fetchListings();
+    _applyParams(_params.copyWith(page: newPage));
+  }
+
+  String _budgetFilterLabel() {
+    if (_params.budgetMin != null && _params.budgetMax != null) {
+      return 'Budget: LKR ${(_params.budgetMin! / 1000).toStringAsFixed(0)}k - ${(_params.budgetMax! / 1000).toStringAsFixed(0)}k';
+    } else if (_params.budgetMin != null) {
+      return 'Budget: ≥ LKR ${(_params.budgetMin! / 1000).toStringAsFixed(0)}k';
+    } else if (_params.budgetMax != null) {
+      return 'Budget: ≤ LKR ${(_params.budgetMax! / 1000).toStringAsFixed(0)}k';
+    }
+    return 'Budget';
   }
 
   @override
   Widget build(BuildContext context) {
+    // Listen to global designerFilterProvider updates (e.g. from Home screen style/category taps)
+    ref.listen<DesignerQueryParameters>(designerFilterProvider, (previous, next) {
+      if (previous != next && next != _params) {
+        setState(() {
+          _params = next;
+        });
+        _fetchListings();
+      }
+    });
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
@@ -219,77 +265,151 @@ class _DesignerListingScreenState extends State<DesignerListingScreen> {
                       ),
                     ),
                     onSelected: (selected) {
-                      setState(() {
-                        _params = _params.copyWith(
-                          style: selected ? style : 'All',
-                          clearStyle: !selected || style == 'All',
-                          page: 1,
-                        );
-                      });
-                      _fetchListings();
+                      _applyParams(_params.copyWith(
+                        style: selected ? style : 'All',
+                        clearStyle: !selected || style == 'All',
+                        page: 1,
+                      ));
                     },
                   );
                 },
               ),
             ),
 
-            // Active Filters Sub-Header Banner
+            // Active Removable Filter Chips Banner
             if (hasActiveFilters)
               Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF26201A) : const Color(0xFFF2ECE3),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isDark ? const Color(0xFF3D332A) : const Color(0xFFE5DBD0),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.filter_alt_outlined,
-                      size: 16,
-                      color: accentTerracotta,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _buildFilterSummaryText(),
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: textPrimary,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      if (_params.style != null && _params.style != 'All') ...[
+                        InputChip(
+                          avatar: const Icon(
+                            Icons.style_outlined,
+                            size: 14,
+                            color: accentTerracotta,
+                          ),
+                          label: Text('Style: ${_params.style}'),
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFFAF8F5)
+                                : const Color(0xFF241611),
+                          ),
+                          backgroundColor: isDark
+                              ? const Color(0xFF2A221C)
+                              : const Color(0xFFEDE3D8),
+                          deleteIcon: const Icon(Icons.close_rounded, size: 15),
+                          deleteIconColor: accentTerracotta,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: accentTerracotta.withValues(alpha: 0.5),
+                              width: 1.1,
+                            ),
+                          ),
+                          onDeleted: () {
+                            _applyParams(_params.copyWith(clearStyle: true, page: 1));
+                          },
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    InkWell(
-                      borderRadius: BorderRadius.circular(6),
-                      onTap: () {
-                        setState(() {
-                          _params = const DesignerQueryParameters(
+                        const SizedBox(width: 8),
+                      ],
+                      if (_params.budgetMin != null || _params.budgetMax != null) ...[
+                        InputChip(
+                          avatar: const Icon(
+                            Icons.payments_outlined,
+                            size: 14,
+                            color: accentTerracotta,
+                          ),
+                          label: Text(_budgetFilterLabel()),
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFFAF8F5)
+                                : const Color(0xFF241611),
+                          ),
+                          backgroundColor: isDark
+                              ? const Color(0xFF2A221C)
+                              : const Color(0xFFEDE3D8),
+                          deleteIcon: const Icon(Icons.close_rounded, size: 15),
+                          deleteIconColor: accentTerracotta,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: accentTerracotta.withValues(alpha: 0.5),
+                              width: 1.1,
+                            ),
+                          ),
+                          onDeleted: () {
+                            _applyParams(_params.copyWith(clearBudget: true, page: 1));
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (_params.available != null) ...[
+                        InputChip(
+                          avatar: const Icon(
+                            Icons.check_circle_outline_rounded,
+                            size: 14,
+                            color: accentTerracotta,
+                          ),
+                          label: Text(_params.available == true
+                              ? 'Available Only'
+                              : 'All Statuses'),
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFFAF8F5)
+                                : const Color(0xFF241611),
+                          ),
+                          backgroundColor: isDark
+                              ? const Color(0xFF2A221C)
+                              : const Color(0xFFEDE3D8),
+                          deleteIcon: const Icon(Icons.close_rounded, size: 15),
+                          deleteIconColor: accentTerracotta,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: accentTerracotta.withValues(alpha: 0.5),
+                              width: 1.1,
+                            ),
+                          ),
+                          onDeleted: () {
+                            _applyParams(_params.copyWith(clearAvailable: true, page: 1));
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      TextButton(
+                        onPressed: () {
+                          _applyParams(const DesignerQueryParameters(
                             page: 1,
                             pageSize: 10,
                             sort: 'newest',
-                          );
-                        });
-                        _fetchListings();
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          ));
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         child: Text(
-                          'Reset',
+                          'Clear all',
                           style: GoogleFonts.plusJakartaSans(
-                            fontSize: 11.5,
+                            fontSize: 12,
                             fontWeight: FontWeight.w700,
                             color: accentTerracotta,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
 
