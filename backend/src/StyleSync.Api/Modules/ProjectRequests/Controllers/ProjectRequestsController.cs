@@ -313,17 +313,21 @@ public class ProjectRequestsController : ControllerBase
             });
         }
 
-        var detailDto = MapToDetailDto(request);
-
         try
         {
             await workflowStarter.StartAsync(request.Id);
-            return Ok(detailDto);
+            var updatedRequest = await _context.ProjectRequests
+                .Include(r => r.StatusHistories)
+                .Include(r => r.MoodboardImages)
+                .Include(r => r.SuggestedPalettes)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(r => r.Id == id);
+            return Ok(MapToDetailDto(updatedRequest ?? request));
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "workflow start requested for {id} failed", request.Id);
-            return StatusCode(202, new { request = detailDto, workflowStarted = false });
+            return Ok(MapToDetailDto(request));
         }
     }
 
