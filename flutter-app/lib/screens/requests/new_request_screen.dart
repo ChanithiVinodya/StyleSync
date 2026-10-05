@@ -21,7 +21,9 @@ class NewRequestScreen extends ConsumerStatefulWidget {
 class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   final _formKey = GlobalKey<FormState>();
   final _budgetController = TextEditingController();
-  final _roomSizeController = TextEditingController();
+  final _lengthController = TextEditingController();
+  final _widthController = TextEditingController();
+  final _heightController = TextEditingController();
   final _descriptionController = TextEditingController();
   
   RoomType? _roomType;
@@ -31,6 +33,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   List<MoodboardImage> _moodboardImages = [];
   
   bool _isLoading = false;
+  bool _isSubmitting = false;
   final Map<String, String> _serverErrors = {};
   String? _unmappedError;
   bool _hasUnsavedChanges = false;
@@ -41,18 +44,36 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
     super.initState();
     _currentId = widget.editId;
     _budgetController.addListener(_markChanged);
-    _roomSizeController.addListener(_markChanged);
+    _lengthController.addListener(_onDimensionChanged);
+    _widthController.addListener(_onDimensionChanged);
+    _heightController.addListener(_onDimensionChanged);
     _descriptionController.addListener(_markChanged);
+  }
+
+  void _onDimensionChanged() {
+    _markChanged();
+    setState(() {});
   }
 
   void _markChanged() {
     if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
   }
 
+  double? get _calculatedArea {
+    final l = double.tryParse(_lengthController.text.trim());
+    final w = double.tryParse(_widthController.text.trim());
+    if (l != null && w != null && l > 0 && w > 0) {
+      return l * w;
+    }
+    return null;
+  }
+
   @override
   void dispose() {
     _budgetController.dispose();
-    _roomSizeController.dispose();
+    _lengthController.dispose();
+    _widthController.dispose();
+    _heightController.dispose();
     _descriptionController.dispose();
     super.dispose();
   }
@@ -67,8 +88,17 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       
       _roomType = draft.roomType;
       _budgetController.text = draft.budget?.toString() ?? '';
-      _roomSizeController.text = draft.roomSizeSqM?.toString() ?? '';
-      _descriptionController.text = draft.description ?? '';
+      
+      final rawDesc = draft.description ?? '';
+      final dimMatch = RegExp(r'\[Dimensions: L=([^,]+), W=([^,]+), H=([^\]]+)\]').firstMatch(rawDesc);
+      if (dimMatch != null) {
+        _lengthController.text = dimMatch.group(1)?.trim() ?? '';
+        _widthController.text = dimMatch.group(2)?.trim() ?? '';
+        _heightController.text = dimMatch.group(3)?.trim() ?? '';
+        _descriptionController.text = rawDesc.replaceAll(dimMatch.group(0)!, '').trim();
+      } else {
+        _descriptionController.text = rawDesc;
+      }
       
       if (draft.paletteMode != null) {
         final mode = PaletteMode.fromJson(draft.paletteMode);
@@ -115,12 +145,30 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       final data = <String, dynamic>{};
       if (_roomType != null) data['roomType'] = _roomType!.toJson();
       if (_budgetController.text.isNotEmpty) data['budget'] = double.parse(_budgetController.text);
-      if (_roomSizeController.text.isNotEmpty) {
-        final size = double.parse(_roomSizeController.text);
+      
+      final l = double.tryParse(_lengthController.text.trim());
+      final w = double.tryParse(_widthController.text.trim());
+      final h = double.tryParse(_heightController.text.trim());
+
+      if (l != null && w != null && l > 0 && w > 0) {
+        final size = l * w;
         data['roomSizeSqFt'] = size;
         data['roomSizeSqM'] = size;
+      } else {
+        data['roomSizeSqFt'] = 0;
+        data['roomSizeSqM'] = 0;
       }
-      if (_descriptionController.text.isNotEmpty) data['description'] = _descriptionController.text;
+
+      final userDesc = _descriptionController.text.trim();
+      if (l != null || w != null || h != null) {
+        final lStr = _lengthController.text.trim();
+        final wStr = _widthController.text.trim();
+        final hStr = _heightController.text.trim();
+        final dimTag = '[Dimensions: L=$lStr, W=$wStr, H=$hStr]';
+        data['description'] = userDesc.isEmpty ? dimTag : '$userDesc\n\n$dimTag';
+      } else if (userDesc.isNotEmpty) {
+        data['description'] = userDesc;
+      }
       
       if (_paletteSelection != null) {
         data['palette'] = _paletteSelection!.toJson();
@@ -173,6 +221,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   }
 
   Future<void> _submitRequest() async {
+    setState(() => _isSubmitting = true);
+
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please correct the validation errors before submitting.')),
@@ -225,7 +275,14 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: e.errors.map((err) => Text('• ${err.message}')).toList(),
+              children: e.errors.map((err) {
+                String message = err.message;
+                final field = err.field.toLowerCase();
+                if (field == 'roomsizesqft' || field == 'roomsizesqm' || err.code == 'ROOM_SIZE_INVALID') {
+                  message = 'Length, width, and height are required: length and width must produce a room size > 0 and <= 10000 sq ft.';
+                }
+                return Text('• $message');
+              }).toList(),
             ),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
@@ -250,29 +307,61 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
 
   String? _validateBudget(String? val) {
     if (_serverErrors.containsKey('budget')) return _serverErrors['budget'];
-    if (val == null || val.isEmpty) return null; // Lenient saving
-    final numVal = double.tryParse(val);
+    if (val == null || val.trim().isEmpty) {
+      return _isSubmitting ? 'Budget is required' : null;
+    }
+    final numVal = double.tryParse(val.trim());
     if (numVal == null) return 'Must be a number';
     if (numVal <= RequestConstants.minBudget) return 'Budget must be > ${RequestConstants.minBudget}';
     return null;
   }
 
-  String? _validateRoomSize(String? val) {
+  String? _validateLength(String? val) {
     if (_serverErrors.containsKey('roomsizesqft')) return _serverErrors['roomsizesqft'];
     if (_serverErrors.containsKey('roomsizesqm')) return _serverErrors['roomsizesqm'];
-    if (val == null || val.isEmpty) return null;
-    final numVal = double.tryParse(val);
-    if (numVal == null) return 'Must be a number';
-    if (numVal <= RequestConstants.minRoomSize || numVal > RequestConstants.maxRoomSize) {
-      return 'Room size must be > ${RequestConstants.minRoomSize} and <= ${RequestConstants.maxRoomSize}';
+    if (_serverErrors.containsKey('length')) return _serverErrors['length'];
+    if (val == null || val.trim().isEmpty) {
+      return _isSubmitting ? 'Length is required' : null;
     }
+    final numVal = double.tryParse(val.trim());
+    if (numVal == null) return 'Must be a number';
+    if (numVal <= 0) return 'Must be > 0';
+    if (numVal > 200) return 'Must be <= 200 ft';
+    return null;
+  }
+
+  String? _validateWidth(String? val) {
+    if (_serverErrors.containsKey('roomsizesqft')) return _serverErrors['roomsizesqft'];
+    if (_serverErrors.containsKey('roomsizesqm')) return _serverErrors['roomsizesqm'];
+    if (_serverErrors.containsKey('width')) return _serverErrors['width'];
+    if (val == null || val.trim().isEmpty) {
+      return _isSubmitting ? 'Width is required' : null;
+    }
+    final numVal = double.tryParse(val.trim());
+    if (numVal == null) return 'Must be a number';
+    if (numVal <= 0) return 'Must be > 0';
+    if (numVal > 200) return 'Must be <= 200 ft';
+    return null;
+  }
+
+  String? _validateHeight(String? val) {
+    if (_serverErrors.containsKey('height')) return _serverErrors['height'];
+    if (val == null || val.trim().isEmpty) {
+      return _isSubmitting ? 'Height is required' : null;
+    }
+    final numVal = double.tryParse(val.trim());
+    if (numVal == null) return 'Must be a number';
+    if (numVal <= 0) return 'Must be > 0';
+    if (numVal > 50) return 'Must be <= 50 ft';
     return null;
   }
 
   String? _validateDescription(String? val) {
     if (_serverErrors.containsKey('description')) return _serverErrors['description'];
-    if (val == null || val.isEmpty) return null;
-    if (val.length < RequestConstants.minDescriptionLength || val.length > RequestConstants.maxDescriptionLength) {
+    if (val == null || val.trim().isEmpty) {
+      return _isSubmitting ? 'Description is required' : null;
+    }
+    if (val.trim().length < RequestConstants.minDescriptionLength || val.trim().length > RequestConstants.maxDescriptionLength) {
       return 'Description must be ${RequestConstants.minDescriptionLength}-${RequestConstants.maxDescriptionLength} characters';
     }
     return null;
@@ -280,6 +369,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
 
   String? _validateRoomType(RoomType? val) {
     if (_serverErrors.containsKey('roomtype')) return _serverErrors['roomtype'];
+    if (val == null && _isSubmitting) return 'Room type is required';
     return null;
   }
 
@@ -343,13 +433,64 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                       ),
                       const SizedBox(height: 16),
                       
-                      TextFormField(
-                        controller: _roomSizeController,
-                        decoration: const InputDecoration(labelText: 'Room size (sq ft)'),
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
-                        validator: _validateRoomSize,
+                      // Room Dimensions (Length, Width, Height)
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _lengthController,
+                              decoration: const InputDecoration(
+                                labelText: 'Length (ft)',
+                                hintText: '0.0',
+                              ),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                              validator: _validateLength,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _widthController,
+                              decoration: const InputDecoration(
+                                labelText: 'Width (ft)',
+                                hintText: '0.0',
+                              ),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                              validator: _validateWidth,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _heightController,
+                              decoration: const InputDecoration(
+                                labelText: 'Height (ft)',
+                                hintText: '0.0',
+                              ),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*'))],
+                              validator: _validateHeight,
+                            ),
+                          ),
+                        ],
                       ),
+                      if (_calculatedArea != null) ...[
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 4.0),
+                          child: Text(
+                            'Estimated Room Size: ${_calculatedArea!.toStringAsFixed(1)} sq ft',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       
                       TextFormField(
