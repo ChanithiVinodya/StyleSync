@@ -8,7 +8,7 @@ import 'screens/splash/splash_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/project_request_list_screen.dart';
 import 'screens/designers/designer_profile_screen.dart';
-import 'screens/requests/new_request_screen.dart';
+import 'screens/create_project_request_screen.dart';
 import 'screens/quotes/quote_detail_screen.dart';
 import 'screens/quotes/contract_status_screen.dart';
 import 'screens/progress/project_timeline_screen.dart';
@@ -106,10 +106,9 @@ class AppRoutes {
         builder: (_) => const AuthGuard(child: HomeScreen(initialTab: 2)),
       );
     } else if (uri.path == newRequest) {
-      final initialRoomType = settings.arguments as String?;
       return MaterialPageRoute(
-        builder: (_) => AuthGuard(
-          child: NewRequestScreen(initialRoomType: initialRoomType),
+        builder: (_) => const AuthGuard(
+          child: CreateProjectRequestScreen(),
         ),
         settings: settings,
       );

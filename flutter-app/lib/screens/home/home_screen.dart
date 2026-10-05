@@ -12,6 +12,7 @@ import '../requests/request_history_screen.dart';
 import '../quotes/quote_detail_screen.dart';
 import '../progress/project_timeline_screen.dart';
 import '../splash/splash_screen.dart';
+import '../project_request_list_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final int initialTab;
@@ -313,7 +314,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   _buildTabWrapper(const BrowseDesignersScreen()),
 
                   // Tab 2: Requests Screen
-                  _buildTabWrapper(const RequestHistoryScreen()),
+                  _buildTabWrapper(const ProjectRequestListScreen()),
 
                   // Tab 3: Quotes Screen
                   _buildTabWrapper(const QuoteDetailScreen(id: 'q-804')),
