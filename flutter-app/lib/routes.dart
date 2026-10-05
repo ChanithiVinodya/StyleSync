@@ -95,7 +95,7 @@ class AppRoutes {
     // Protected Routes (Guarded by AuthGuard)
     if (uri.path == home) {
       return MaterialPageRoute(
-        builder: (_) => const AuthGuard(child: ProjectRequestListScreen()),
+        builder: (_) => const AuthGuard(child: HomeScreen(initialTab: 0)),
       );
     } else if (uri.path == designers) {
       return MaterialPageRoute(
