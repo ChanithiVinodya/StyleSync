@@ -4,7 +4,6 @@ import '../services/auth_api.dart';
 import '../models/project_request.dart';
 import 'create_project_request_screen.dart';
 import 'request_detail_screen.dart';
-import 'login_screen.dart';
 import '../widgets/smooth_mouse_scroll.dart';
 
 class ProjectRequestListScreen extends StatefulWidget {
@@ -154,9 +153,9 @@ class _ProjectRequestListScreenState extends State<ProjectRequestListScreen> {
             tooltip: 'Logout',
             onPressed: () {
               AuthApiService.logout();
-              Navigator.pushAndRemoveUntil(
+              Navigator.pushNamedAndRemoveUntil(
                 context,
-                MaterialPageRoute(builder: (_) => const ClientLoginScreen()),
+                '/login',
                 (route) => false,
               );
             },
