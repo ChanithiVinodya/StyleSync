@@ -120,7 +120,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
       ),
       body: timelineAsync.when(
         data: (events) {
-          if (events.isEmpty) {
+          final sortedEvents = List<TimelineEvent>.from(events)
+            ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+          if (sortedEvents.isEmpty) {
             return _buildEmptyState(isDark, textEspresso);
           }
           return RefreshIndicator(
@@ -130,10 +133,10 @@ class _TimelineScreenState extends ConsumerState<TimelineScreen> {
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(18),
-              itemCount: events.length,
+              itemCount: sortedEvents.length,
               itemBuilder: (context, index) {
-                final event = events[index];
-                return _buildTimelineItem(event, isDark, textEspresso, terracotta, index == events.length - 1);
+                final event = sortedEvents[index];
+                return _buildTimelineItem(event, isDark, textEspresso, terracotta, index == sortedEvents.length - 1);
               },
             ),
           );

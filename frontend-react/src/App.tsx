@@ -82,7 +82,7 @@ export default function App() {
             <Route path="/quotes-contracts" element={<QuotesContractsPage />} />
             
             {/* Project Execution Routing */}
-            <Route path="/project-execution" element={<Navigate to="/projects/123e4567-e89b-12d3-a456-426614174000/execution" replace />} />
+            <Route path="/project-execution" element={<Navigate to="/projects/00000000-0000-0000-0000-000000000101/execution" replace />} />
             <Route path="/projects/:projectId/execution" element={<ProjectExecutionLayout />}>
               <Route index element={<ProjectExecutionDashboard />} />
               <Route path="milestones" element={<MilestoneList />} />
