@@ -504,8 +504,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 /// handwriting reveal that stays permanently solid and fully visible on screen.
 class MonogramHandwritingPainter extends CustomPainter {
   final double progress; // 0.0 to 1.0
+  final bool isDark;
 
-  MonogramHandwritingPainter({required this.progress});
+  MonogramHandwritingPainter({
+    required this.progress,
+    this.isDark = false,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -514,38 +518,58 @@ class MonogramHandwritingPainter extends CustomPainter {
     canvas.save();
     canvas.scale(scale, scale);
 
-    // 1. Dark Roman Serif S
+    // 1. Roman Serif S
     final Paint darkRomanPaint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF382C21),
-          Color(0xFF1E140C),
-          Color(0xFF120B06),
-        ],
-      ).createShader(const Rect.fromLTWH(0, 0, 160, 160))
+      ..shader = (isDark
+          ? const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFFAF5F0),
+                Color(0xFFE8DACB),
+                Color(0xFFD5C3AE),
+              ],
+            )
+          : const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF382C21),
+                Color(0xFF1E140C),
+                Color(0xFF120B06),
+              ],
+            )).createShader(const Rect.fromLTWH(0, 0, 160, 160))
       ..style = PaintingStyle.fill;
 
     // 2. Light Ivory Script S Swash
     final Paint lightScriptPaint = Paint()
-      ..shader = const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [
-          Color(0xFFFFFFFF),
-          Color(0xFFF7EFE4),
-          Color(0xFFDECDB8),
-        ],
-      ).createShader(const Rect.fromLTWH(0, 0, 160, 160))
+      ..shader = (isDark
+          ? const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFFFF0C4),
+                Color(0xFFE5C17D),
+                Color(0xFFC89758),
+              ],
+            )
+          : const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFFFFFFFF),
+                Color(0xFFF7EFE4),
+                Color(0xFFDECDB8),
+              ],
+            )).createShader(const Rect.fromLTWH(0, 0, 160, 160))
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.2
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // 3. Script Stroke Outline Shadow (prevents washing out against light backgrounds)
+    // 3. Script Stroke Outline Shadow (prevents washing out against backgrounds)
     final Paint scriptShadowPaint = Paint()
-      ..color = const Color(0x3D2A1F17)
+      ..color = isDark ? const Color(0x66000000) : const Color(0x3D2A1F17)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 5.6
       ..strokeCap = StrokeCap.round
@@ -663,7 +687,7 @@ class MonogramHandwritingPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant MonogramHandwritingPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress || oldDelegate.isDark != isDark;
   }
 }
 

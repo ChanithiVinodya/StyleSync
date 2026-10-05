@@ -18,8 +18,8 @@ class ProfileScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final cardBg = isDark ? const Color(0xFF261D19) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF382C27) : const Color(0xFFEFE7DE);
+    final cardBg = isDark ? const Color(0xFF1A1715) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF2E2824) : const Color(0xFFEFE7DE);
     final subtitleColor = isDark ? const Color(0xFFB5A49B) : const Color(0xFF7A6B65);
     final primaryColor = theme.colorScheme.primary;
 
@@ -215,8 +215,8 @@ class ProfileScreen extends ConsumerWidget {
                       appState.themeMode == ThemeMode.system
                           ? 'System (${isDark ? 'Dark' : 'Light'})'
                           : appState.themeMode == ThemeMode.dark
-                              ? 'Espresso Dark'
-                              : 'Linen Light',
+                              ? 'Dark'
+                              : 'Light',
                       style: TextStyle(fontSize: 12, color: subtitleColor),
                     ),
                   ],
@@ -229,7 +229,6 @@ class ProfileScreen extends ConsumerWidget {
                       child: _buildThemeOptionCard(
                         context: context,
                         title: 'Light',
-                        subtitle: 'Warm Linen',
                         icon: Icons.wb_sunny_rounded,
                         isSelected: appState.themeMode == ThemeMode.light,
                         onTap: () => appState.setThemeMode(ThemeMode.light),
@@ -242,7 +241,6 @@ class ProfileScreen extends ConsumerWidget {
                       child: _buildThemeOptionCard(
                         context: context,
                         title: 'Dark',
-                        subtitle: 'Espresso',
                         icon: Icons.nightlight_round,
                         isSelected: appState.themeMode == ThemeMode.dark,
                         onTap: () => appState.setThemeMode(ThemeMode.dark),
@@ -255,7 +253,6 @@ class ProfileScreen extends ConsumerWidget {
                       child: _buildThemeOptionCard(
                         context: context,
                         title: 'System',
-                        subtitle: 'Auto Match',
                         icon: Icons.brightness_auto,
                         isSelected: appState.themeMode == ThemeMode.system,
                         onTap: () => appState.setThemeMode(ThemeMode.system),
@@ -454,7 +451,7 @@ class ProfileScreen extends ConsumerWidget {
             icon: const Icon(Icons.logout, size: 16),
             label: const Text('Log Out'),
             style: FilledButton.styleFrom(
-              backgroundColor: isDark ? const Color(0xFF3A2320) : const Color(0xFFFBEBE8),
+              backgroundColor: isDark ? const Color(0xFF2E1B18) : const Color(0xFFFBEBE8),
               foregroundColor: const Color(0xFFC84534),
               elevation: 0,
               padding: const EdgeInsets.symmetric(vertical: 12),
@@ -539,7 +536,6 @@ class ProfileScreen extends ConsumerWidget {
   static Widget _buildThemeOptionCard({
     required BuildContext context,
     required String title,
-    required String subtitle,
     required IconData icon,
     required bool isSelected,
     required VoidCallback onTap,
@@ -551,14 +547,14 @@ class ProfileScreen extends ConsumerWidget {
       borderRadius: BorderRadius.circular(14),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
         decoration: BoxDecoration(
           color: isSelected
               ? primaryColor.withValues(alpha: isDark ? 0.25 : 0.12)
-              : (isDark ? const Color(0xFF1E1613) : const Color(0xFFF9F5F0)),
+              : (isDark ? const Color(0xFF161311) : const Color(0xFFF9F5F0)),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? primaryColor : (isDark ? const Color(0xFF382C27) : const Color(0xFFE8DFD5)),
+            color: isSelected ? primaryColor : (isDark ? const Color(0xFF2E2824) : const Color(0xFFE8DFD5)),
             width: isSelected ? 1.8 : 1,
           ),
         ),
@@ -576,14 +572,6 @@ class ProfileScreen extends ConsumerWidget {
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 color: isSelected ? primaryColor : (isDark ? Colors.white : Colors.black87),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 9,
-                color: isSelected ? primaryColor.withValues(alpha: 0.8) : (isDark ? Colors.white38 : Colors.black38),
               ),
             ),
           ],

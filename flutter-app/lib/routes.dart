@@ -13,7 +13,7 @@ import 'screens/quotes/quote_detail_screen.dart';
 import 'screens/quotes/contract_status_screen.dart';
 import 'screens/progress/project_timeline_screen.dart';
 import 'screens/profile/profile_screen.dart';
-import 'screens/messages/messages_screen.dart';
+import 'screens/notifications/notifications_screen.dart';
 
 /// Route guard that verifies active authentication before allowing access to protected screens.
 /// If unauthenticated, it seamlessly redirects the user to the Login screen.
@@ -71,7 +71,8 @@ class AppRoutes {
   static const String contractStatus = '/contracts/:id';
   static const String progress = '/progress/:projectId';
   static const String profile = '/profile';
-  static const String messages = '/messages';
+  static const String notifications = '/notifications';
+  static const String messages = '/notifications';
 
   /// Helper to generate parameterized route strings
   static String designerProfilePath(String id) => '/designers/$id';
@@ -107,16 +108,20 @@ class AppRoutes {
         builder: (_) => const AuthGuard(child: HomeScreen(initialTab: 2)),
       );
     } else if (uri.path == newRequest) {
+      final initialRoomType = settings.arguments as String?;
       return MaterialPageRoute(
-        builder: (_) => const AuthGuard(child: NewRequestScreen()),
+        builder: (_) => AuthGuard(
+          child: NewRequestScreen(initialRoomType: initialRoomType),
+        ),
+        settings: settings,
       );
     } else if (uri.path == profile) {
       return MaterialPageRoute(
         builder: (_) => const AuthGuard(child: ProfileScreen()),
       );
-    } else if (uri.path == messages) {
+    } else if (uri.path == notifications || uri.path == '/messages') {
       return MaterialPageRoute(
-        builder: (_) => const AuthGuard(child: MessagesScreen()),
+        builder: (_) => const AuthGuard(child: NotificationsScreen()),
       );
     }
 

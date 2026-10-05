@@ -3,11 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth/auth_provider.dart';
+import '../../providers/designers/designer_filter_provider.dart';
+import '../../config/style_constants.dart';
+import '../../modules/designers/models/designer_summary.dart';
 import '../../routes.dart';
 import '../designers/browse_designers_screen.dart';
 import '../requests/my_requests_screen.dart';
 import '../quotes/quote_detail_screen.dart';
 import '../progress/project_timeline_screen.dart';
+import '../splash/splash_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final int initialTab;
@@ -40,27 +44,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   final List<Map<String, dynamic>> _categories = [
     {
       'title': 'Living Room',
-      'imageUrl': 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80',
+      'assetPath': 'assets/images/living room.jpg',
+      'fallbackUrl': 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80',
     },
     {
       'title': 'Dining',
-      'imageUrl': 'https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=600&q=80',
+      'assetPath': 'assets/images/dinning room.jpg',
+      'fallbackUrl': 'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=800&q=80',
     },
     {
       'title': 'Bedroom',
-      'imageUrl': 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      'title': 'Lighting',
-      'imageUrl': 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      'title': 'Decor',
-      'imageUrl': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80',
+      'assetPath': null,
+      'fallbackUrl': 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=800&q=80',
     },
     {
       'title': 'Kitchen',
-      'imageUrl': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=600&q=80',
+      'assetPath': 'assets/images/kitchen1.jpg',
+      'fallbackUrl': 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=800&q=80',
     },
   ];
 
@@ -94,6 +94,91 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     },
   ];
 
+  /// Resilient image loader that prioritizes local hardcoded assets and seamlessly falls back if web server has not reloaded
+  Widget _buildSafeImage({
+    String? assetPath,
+    String? fallbackUrl,
+    String? imagePath,
+    BoxFit fit = BoxFit.cover,
+    Alignment alignment = Alignment.center,
+    Widget? errorWidget,
+  }) {
+    String? effectiveAsset = assetPath;
+    String? effectiveUrl = fallbackUrl;
+
+    if (imagePath != null && imagePath.isNotEmpty) {
+      final clean = imagePath.trim();
+      if (clean.startsWith('http://') || clean.startsWith('https://')) {
+        effectiveUrl ??= clean;
+      } else {
+        effectiveAsset ??= clean.startsWith('/') ? clean.substring(1) : clean;
+      }
+    }
+
+    if (effectiveAsset != null && effectiveAsset.isNotEmpty) {
+      final cleanAsset = effectiveAsset.startsWith('/') ? effectiveAsset.substring(1) : effectiveAsset;
+      return Image.asset(
+        cleanAsset,
+        fit: fit,
+        alignment: alignment,
+        errorBuilder: (context, error, stackTrace) {
+          if (effectiveUrl != null && effectiveUrl.isNotEmpty) {
+            return Image.network(
+              effectiveUrl,
+              fit: fit,
+              alignment: alignment,
+              errorBuilder: (_, __, ___) => _defaultImageFallback(errorWidget),
+            );
+          }
+          return _defaultImageFallback(errorWidget);
+        },
+      );
+    } else if (effectiveUrl != null && effectiveUrl.isNotEmpty) {
+      return Image.network(
+        effectiveUrl,
+        fit: fit,
+        alignment: alignment,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: const Color(0xFF1C1411).withValues(alpha: 0.15),
+            child: const Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF8C4A3E),
+                ),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return _defaultImageFallback(errorWidget);
+        },
+      );
+    }
+
+    return _defaultImageFallback(errorWidget);
+  }
+
+  Widget _defaultImageFallback(Widget? errorWidget) {
+    return errorWidget ??
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF2E2824), Color(0xFF1A1715)],
+            ),
+          ),
+          child: const Center(
+            child: Icon(Icons.style_outlined, color: Color(0xFFD48270), size: 24),
+          ),
+        );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -118,7 +203,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
-      backgroundColor: isDark ? const Color(0xFF221915) : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF1A1715) : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -206,7 +291,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     const bgSand = Color(0xFFFAF7F2);
-    const darkBg = Color(0xFF18110E);
+    const darkBg = Color(0xFF120C0A);
     const textEspresso = Color(0xFF231713);
     const terracotta = Color(0xFF8C4A3E);
     const honeyAmber = Color(0xFFC89758);
@@ -302,6 +387,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               _buildCategoriesSection(isDark, textEspresso, terracotta),
               const SizedBox(height: 32),
 
+              // 5b. Styles Section (Directly below Categories)
+              _buildStylesSection(isDark, textEspresso, terracotta),
+              const SizedBox(height: 32),
+
               // 6. Project Activity Carousel (Status & Metrics)
               _buildProjectActivitySection(context, isDark, textEspresso, terracotta),
               const SizedBox(height: 30),
@@ -332,25 +421,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         Expanded(
           child: Row(
             children: [
-              // Luxury Squircle Logo
+              // Luxury Squircle Logo with Splash Screen Two-Tone Monogram
               Container(
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF191210),
+                  color: isDark ? const Color(0xFF1A1715) : const Color(0xFFEFE7DC),
                   borderRadius: BorderRadius.circular(13),
+                  border: Border.all(
+                    color: isDark
+                        ? const Color(0xFF2E2824)
+                        : const Color(0xFFD5C6B1),
+                    width: 1.2,
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: Center(
                   child: CustomPaint(
-                    size: const Size(26, 26),
-                    painter: _StyleSyncMonogramPainter(),
+                    size: const Size(28, 28),
+                    painter: MonogramHandwritingPainter(
+                      progress: 1.0,
+                      isDark: isDark,
+                    ),
                   ),
                 ),
               ),
@@ -366,7 +464,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
-                        color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
+                        color: isDark ? const Color(0xFFFAF8F5) : textEspresso,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -387,33 +485,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           ),
         ),
 
-        // Action Buttons: Messages, Bell, Profile
+        // Action Buttons: Notifications & Profile
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildCircularIconButton(
-              icon: Icons.chat_bubble_outline_rounded,
-              badgeCount: '2',
-              badgeColor: honeyAmber,
-              isDark: isDark,
-              onTap: () => Navigator.of(context).pushNamed(AppRoutes.messages),
-            ),
-            const SizedBox(width: 8),
-            _buildCircularIconButton(
               icon: Icons.notifications_none_rounded,
               badgeCount: '3',
-              badgeColor: const Color(0xFF78382E),
+              badgeColor: terracotta,
               isDark: isDark,
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('3 new notifications: Designer quote updated & 2 milestone photos ready!'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              },
+              onTap: () => Navigator.of(context).pushNamed(AppRoutes.notifications),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             GestureDetector(
               onTap: () => Navigator.of(context).pushNamed(AppRoutes.profile),
               child: Stack(
@@ -428,9 +511,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                         color: const Color(0xFF8C4A3E),
                         width: 2,
                       ),
-                      image: const DecorationImage(
-                        image: NetworkImage('https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'),
+                    ),
+                    child: ClipOval(
+                      child: _buildSafeImage(
+                        imagePath: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
                         fit: BoxFit.cover,
+                        errorWidget: Container(
+                          color: const Color(0xFF8C4A3E),
+                          child: const Icon(Icons.person, size: 20, color: Colors.white),
+                        ),
                       ),
                     ),
                   ),
@@ -443,7 +532,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       decoration: BoxDecoration(
                         color: const Color(0xFF6E4334),
                         shape: BoxShape.circle,
-                        border: Border.all(color: isDark ? const Color(0xFF18110E) : Colors.white, width: 1.5),
+                        border: Border.all(color: isDark ? const Color(0xFF12100E) : Colors.white, width: 1.5),
                       ),
                       child: const Icon(Icons.person, size: 8, color: Colors.white),
                     ),
@@ -473,10 +562,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF241C18) : Colors.white,
+              color: isDark ? const Color(0xFF1A1715) : Colors.white,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isDark ? const Color(0xFF382C27) : const Color(0xFFEDE3D8),
+                color: isDark ? const Color(0xFF2E2824) : const Color(0xFFEDE3D8),
                 width: 1,
               ),
               boxShadow: [
@@ -490,7 +579,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             child: Icon(
               icon,
               size: 19,
-              color: isDark ? const Color(0xFFFAF5F0) : const Color(0xFF231713),
+              color: isDark ? const Color(0xFFFAF8F5) : const Color(0xFF231713),
             ),
           ),
           if (badgeCount != null)
@@ -502,7 +591,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 decoration: BoxDecoration(
                   color: badgeColor,
                   shape: BoxShape.circle,
-                  border: Border.all(color: isDark ? const Color(0xFF18110E) : Colors.white, width: 1.5),
+                  border: Border.all(color: isDark ? const Color(0xFF12100E) : Colors.white, width: 1.5),
                 ),
                 child: Text(
                   badgeCount,
@@ -543,7 +632,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           style: GoogleFonts.playfairDisplay(
             fontSize: 17.5,
             fontWeight: FontWeight.w800,
-            color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
+            color: isDark ? const Color(0xFFFAF8F5) : textEspresso,
           ),
         ),
         const SizedBox(width: 5),
@@ -565,10 +654,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         height: 52,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF221915) : Colors.white,
+          color: isDark ? const Color(0xFF1A1715) : Colors.white,
           borderRadius: BorderRadius.circular(30),
           border: Border.all(
-            color: isDark ? const Color(0xFF382C27) : const Color(0xFFEDE3D8),
+            color: isDark ? const Color(0xFF2E2824) : const Color(0xFFEDE3D8),
             width: 1,
           ),
           boxShadow: [
@@ -622,7 +711,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   // SECTION 4: UNBOXED ARCHITECTURAL HERO (SEAMLESS FULL-BLEED)
   // ==========================================
   Widget _buildUnboxedHero(BuildContext context, bool isDark, Color textEspresso, Color terracotta) {
-    final bgColor = isDark ? const Color(0xFF1E1613) : const Color(0xFFF7F1EA);
+    final bgColor = isDark ? const Color(0xFF161311) : const Color(0xFFF7F1EA);
 
     return Container(
       width: double.infinity,
@@ -637,8 +726,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           children: [
             // Full-width background image aligned to the right
             Positioned.fill(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
+              child: _buildSafeImage(
+                imagePath: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=1200&q=80',
                 fit: BoxFit.cover,
                 alignment: Alignment.centerRight,
               ),
@@ -694,7 +783,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                       fontSize: 27,
                       fontWeight: FontWeight.w800,
                       height: 1.15,
-                      color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
+                      color: isDark ? const Color(0xFFFAF8F5) : textEspresso,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -782,9 +871,98 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(color: Colors.white, width: 1.5),
-          image: DecorationImage(
-            image: NetworkImage(url),
+        ),
+        child: ClipOval(
+          child: _buildSafeImage(
+            imagePath: url,
             fit: BoxFit.cover,
+            errorWidget: Container(
+              color: const Color(0xFF8C4A3E),
+              child: const Icon(Icons.person, size: 12, color: Colors.white),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Reusable visual card for Categories & Styles horizontal carousels
+  Widget _buildVisualDiscoveryCard({
+    required String title,
+    String? assetPath,
+    String? fallbackUrl,
+    required bool isDark,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 142,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(22),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildSafeImage(
+                assetPath: assetPath,
+                fallbackUrl: fallbackUrl,
+                fit: BoxFit.cover,
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withValues(alpha: 0.65),
+                    ],
+                    stops: const [0.4, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.94),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF231713),
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -825,11 +1003,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               ],
             ),
             GestureDetector(
-              onTap: () => _onBottomNavTapped(1),
+              onTap: () {
+                Navigator.of(context).pushNamed(AppRoutes.newRequest);
+              },
               child: Row(
                 children: [
                   Text(
-                    'See all',
+                    'Start request',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -855,75 +1035,110 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             separatorBuilder: (_, __) => const SizedBox(width: 14),
             itemBuilder: (context, index) {
               final cat = _categories[index];
-              return GestureDetector(
-                onTap: () => _onBottomNavTapped(1),
-                child: Container(
-                  width: 142,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(22),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-                        blurRadius: 12,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(22),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.network(
-                          cat['imageUrl'],
-                          fit: BoxFit.cover,
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.65),
-                              ],
-                              stops: const [0.4, 1.0],
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          left: 12,
-                          right: 12,
-                          bottom: 12,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.94),
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                cat['title'],
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF231713),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+              return _buildVisualDiscoveryCard(
+                title: cat['title'] as String,
+                assetPath: cat['assetPath'] as String?,
+                fallbackUrl: cat['fallbackUrl'] as String?,
+                isDark: isDark,
+                onTap: () {
+                  Navigator.of(context).pushNamed(
+                    AppRoutes.newRequest,
+                    arguments: cat['title'] as String,
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================
+  // SECTION 5B: STYLES CAROUSEL
+  // ==========================================
+  Widget _buildStylesSection(bool isDark, Color textEspresso, Color terracotta) {
+    const styles = AppStyleConstants.homeStyles;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header matching Categories exactly
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Styles',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
                   ),
                 ),
+                const SizedBox(height: 2),
+                Text(
+                  'Find designers who match your taste',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: isDark ? const Color(0xFF9B8B82) : const Color(0xFF8A7973),
+                  ),
+                ),
+              ],
+            ),
+            GestureDetector(
+              onTap: () {
+                ref.read(designerFilterProvider.notifier).resetFilters();
+                _onBottomNavTapped(1);
+              },
+              child: Row(
+                children: [
+                  Text(
+                    'See all',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: terracotta,
+                    ),
+                  ),
+                  const SizedBox(width: 3),
+                  Icon(Icons.chevron_right_rounded, size: 16, color: terracotta),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Horizontal scrolling track reusing exact same card treatment
+        SizedBox(
+          height: 195,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: styles.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (context, index) {
+              final styleItem = styles[index];
+              return _buildVisualDiscoveryCard(
+                title: styleItem.title,
+                assetPath: styleItem.assetPath,
+                fallbackUrl: styleItem.fallbackUrl,
+                isDark: isDark,
+                onTap: () {
+                  ref.read(designerFilterProvider.notifier).setParams(
+                        DesignerQueryParameters(
+                          style: styleItem.tag,
+                          page: 1,
+                          pageSize: 10,
+                          sort: 'newest',
+                        ),
+                      );
+                  _onBottomNavTapped(1);
+                },
               );
             },
           ),
@@ -1047,10 +1262,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         width: 245,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF221915) : Colors.white,
+          color: isDark ? const Color(0xFF1A1715) : Colors.white,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(
-            color: isDark ? const Color(0xFF382C27) : const Color(0xFFEDE3D8),
+            color: isDark ? const Color(0xFF2E2824) : const Color(0xFFEDE3D8),
           ),
           boxShadow: [
             BoxShadow(
@@ -1143,7 +1358,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   child: LinearProgressIndicator(
                     value: progressValue,
                     minHeight: 4.5,
-                    backgroundColor: isDark ? const Color(0xFF382C27) : const Color(0xFFEFE7DE),
+                    backgroundColor: isDark ? const Color(0xFF2E2824) : const Color(0xFFEFE7DE),
                     valueColor: AlwaysStoppedAnimation<Color>(tagColor),
                   ),
                 ),
@@ -1167,10 +1382,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF221915) : Colors.white,
+                color: isDark ? const Color(0xFF1A1715) : Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF382C27) : const Color(0xFFEDE3D8),
+                  color: isDark ? const Color(0xFF2E2824) : const Color(0xFFEDE3D8),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -1248,10 +1463,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF221915) : Colors.white,
+                color: isDark ? const Color(0xFF1A1715) : Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF382C27) : const Color(0xFFEDE3D8),
+                  color: isDark ? const Color(0xFF2E2824) : const Color(0xFFEDE3D8),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -1388,10 +1603,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   width: 165,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF221915) : Colors.white,
+                    color: isDark ? const Color(0xFF1A1715) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isDark ? const Color(0xFF382C27) : const Color(0xFFEDE3D8),
+                      color: isDark ? const Color(0xFF2E2824) : const Color(0xFFEDE3D8),
                     ),
                     boxShadow: [
                       BoxShadow(
@@ -1406,9 +1621,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                     children: [
                       Stack(
                         children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundImage: NetworkImage(d['avatarUrl']),
+                          Container(
+                            width: 60,
+                            height: 60,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark ? const Color(0xFF2E2824) : const Color(0xFFE8DFD5),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: _buildSafeImage(
+                                imagePath: d['avatarUrl'],
+                                fit: BoxFit.cover,
+                                errorWidget: Container(
+                                  color: const Color(0xFF8C4A3E),
+                                  child: Center(
+                                    child: Text(
+                                      d['name'][0],
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                           Positioned(
                             top: 0,
@@ -1491,11 +1732,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       height: 66,
       decoration: BoxDecoration(
         color: isDark
-            ? const Color(0xFF221915).withValues(alpha: 0.95)
+            ? const Color(0xFF1A1715).withValues(alpha: 0.95)
             : const Color(0xFFFAF7F2).withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(33),
         border: Border.all(
-          color: isDark ? const Color(0xFF382C27) : const Color(0xFFE8DFD5),
+          color: isDark ? const Color(0xFF2E2824) : const Color(0xFFE8DFD5),
           width: 1.2,
         ),
         boxShadow: [
@@ -1530,7 +1771,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
-              ? (isDark ? const Color(0xFF382620) : const Color(0xFFF3E7DC))
+              ? (isDark ? const Color(0xFF2E2824) : const Color(0xFFF3E7DC))
               : Colors.transparent,
           borderRadius: BorderRadius.circular(22),
           border: isSelected
@@ -1572,9 +1813,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           end: Alignment.bottomRight,
           colors: isDark
               ? [
-                  const Color(0xFF261D19),
-                  const Color(0xFF382C27),
-                  const Color(0xFF261D19),
+                  const Color(0xFF1A1715),
+                  const Color(0xFF2E2824),
+                  const Color(0xFF1A1715),
                 ]
               : [
                   const Color(0xFFEFE7DE),
@@ -1681,40 +1922,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       ),
     );
   }
-}
-
-/// Custom Monogram Painter for StyleSync's Interlocking "S" Logo Mark
-class _StyleSyncMonogramPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final goldPaint = Paint()
-      ..color = const Color(0xFFC89758)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round;
-
-    final ivoryPaint = Paint()
-      ..color = const Color(0xFFFAF7F2)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.4
-      ..strokeCap = StrokeCap.round;
-
-    final pathGold = Path();
-    pathGold.moveTo(w * 0.75, h * 0.28);
-    pathGold.cubicTo(w * 0.75, h * 0.12, w * 0.32, h * 0.12, w * 0.32, h * 0.38);
-    pathGold.cubicTo(w * 0.32, h * 0.58, w * 0.72, h * 0.56, w * 0.72, h * 0.76);
-    pathGold.cubicTo(w * 0.72, h * 0.92, w * 0.38, h * 0.94, w * 0.25, h * 0.78);
-    canvas.drawPath(pathGold, goldPaint);
-
-    final pathIvory = Path();
-    pathIvory.moveTo(w * 0.32, h * 0.28);
-    pathIvory.cubicTo(w * 0.32, h * 0.44, w * 0.68, h * 0.46, w * 0.68, h * 0.62);
-    canvas.drawPath(pathIvory, ivoryPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

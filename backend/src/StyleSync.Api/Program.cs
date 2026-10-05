@@ -8,6 +8,7 @@ using StyleSync.Api.Common.Identity;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Configuration;
 using StyleSync.Api.Middleware;
+using StyleSync.Api.Modules.Designers.Services;
 using StyleSync.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -78,6 +79,11 @@ builder.Services.AddSwaggerGen(options =>
 // DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Designer Services
+builder.Services.AddScoped<ICapacityGuardService, CapacityGuardService>();
+builder.Services.AddScoped<IMatchScoreEngine, MatchScoreEngine>();
+builder.Services.AddScoped<IDesignerService, DesignerService>();
 
 // Identity & Auth Services
 builder.Services.AddHttpContextAccessor();

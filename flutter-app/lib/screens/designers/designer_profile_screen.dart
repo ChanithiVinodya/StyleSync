@@ -1,5 +1,5 @@
-// TODO(Student 1): implement this screen — see PRD Section 1.2
 import 'package:flutter/material.dart';
+import '../../modules/designers/screens/designer_profile_screen.dart' as module_profile;
 
 class DesignerProfileScreen extends StatelessWidget {
   final String? id;
@@ -7,11 +7,7 @@ class DesignerProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Designer Profile & Portfolio')),
-      body: const Center(
-        child: Text('Coming soon — build owned by Student 1'),
-      ),
-    );
+    final parsedId = int.tryParse(id ?? '') ?? 1;
+    return module_profile.DesignerProfileScreen(designerId: parsedId);
   }
 }

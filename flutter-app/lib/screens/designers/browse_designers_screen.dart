@@ -1,16 +1,23 @@
-// TODO(Student 1): implement this screen — see PRD Section 1.1
 import 'package:flutter/material.dart';
+import '../../modules/designers/models/designer_summary.dart';
+import '../../modules/designers/screens/designer_listing_screen.dart';
 
 class BrowseDesignersScreen extends StatelessWidget {
-  const BrowseDesignersScreen({super.key});
+  final String? initialStyle;
+  final DesignerQueryParameters? initialParams;
+
+  const BrowseDesignersScreen({
+    super.key,
+    this.initialStyle,
+    this.initialParams,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Browse Designers')),
-      body: const Center(
-        child: Text('Coming soon — build owned by Student 1'),
-      ),
+    return DesignerListingScreen(
+      initialStyle: initialStyle,
+      initialParams: initialParams,
     );
   }
 }
+

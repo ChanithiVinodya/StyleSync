@@ -87,10 +87,21 @@ export default function App() {
               }
             />
 
-            {/* Feature Modules */}
+            {/* Student 1: Designer Module Routes */}
             <Route path="/designers" element={<DesignersPage />} />
+            <Route path="/designers/:id" element={<DesignersPage />} />
+            <Route path="/designers/:id/gallery" element={<DesignersPage />} />
+            <Route path="/designers/studio" element={<DesignersPage />} />
+            <Route path="/designers/admin" element={<DesignersPage />} />
+            <Route path="/admin/designers" element={<DesignersPage />} />
+
+            {/* Student 2: Project Requests Module */}
             <Route path="/project-requests" element={<ProjectRequestsPage />} />
+
+            {/* Student 3: Quotes & Contracts Module */}
             <Route path="/quotes-contracts" element={<QuotesContractsPage />} />
+
+            {/* Student 4: Project Execution Module */}
             <Route path="/project-execution" element={<ProjectExecutionPage />} />
 
             {/* Fallback */}
