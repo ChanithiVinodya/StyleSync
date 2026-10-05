@@ -1,5 +1,6 @@
 /// Shared style constants across StyleSync client application.
 /// Used for home discovery cards, designer matching, and project request forms.
+library;
 
 class AppStyleItem {
   final String title;

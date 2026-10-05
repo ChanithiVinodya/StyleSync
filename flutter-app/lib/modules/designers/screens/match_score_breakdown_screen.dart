@@ -199,7 +199,7 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
               border: Border.all(color: cardBorder, width: 1.2),
               boxShadow: [
                 BoxShadow(
-                  color: isDark ? Colors.black.withOpacity(0.3) : const Color(0xFF241611).withOpacity(0.05),
+                  color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF241611).withValues(alpha: 0.05),
                   blurRadius: 16,
                   offset: const Offset(0, 6),
                 ),
@@ -236,9 +236,9 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
-                        color: scoreColor.withOpacity(0.12),
+                        color: scoreColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: scoreColor.withOpacity(0.3)),
+                        border: Border.all(color: scoreColor.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         _getMatchTier(data.matchScore),
@@ -258,8 +258,8 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                     value: data.matchScore.clamp(0.0, 1.0),
                     minHeight: 8,
                     backgroundColor: isDark
-                        ? Colors.white.withOpacity(0.08)
-                        : Colors.black.withOpacity(0.06),
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.06),
                     valueColor: AlwaysStoppedAnimation<Color>(scoreColor),
                   ),
                 ),
@@ -324,9 +324,9 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF805AD5).withOpacity(0.1),
+                            color: const Color(0xFF805AD5).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFF805AD5).withOpacity(0.25)),
+                            border: Border.all(color: const Color(0xFF805AD5).withValues(alpha: 0.25)),
                           ),
                           child: Text(
                             '# $tag',
@@ -525,7 +525,7 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
         border: Border.all(color: cardBorder, width: 1.2),
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black.withOpacity(0.2) : const Color(0xFF241611).withOpacity(0.03),
+            color: isDark ? Colors.black.withValues(alpha: 0.2) : const Color(0xFF241611).withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -539,7 +539,7 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
+                  color: iconColor.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(icon, color: iconColor, size: 18),
@@ -591,8 +591,8 @@ class _MatchScoreBreakdownScreenState extends State<MatchScoreBreakdownScreen> {
               value: progressValue.clamp(0.0, 1.0),
               minHeight: 6,
               backgroundColor: isDark
-                  ? Colors.white.withOpacity(0.08)
-                  : Colors.black.withOpacity(0.06),
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : Colors.black.withValues(alpha: 0.06),
               valueColor: AlwaysStoppedAnimation<Color>(iconColor),
             ),
           ),

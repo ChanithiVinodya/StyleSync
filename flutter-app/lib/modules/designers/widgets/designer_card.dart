@@ -30,7 +30,6 @@ class DesignerCard extends StatelessWidget {
     final textPrimary = isDark ? const Color(0xFFFAF8F5) : const Color(0xFF241611);
     final textSecondary = isDark ? const Color(0xFFA89F91) : const Color(0xFF706558);
     const accentTerracotta = Color(0xFFC05621);
-    const warmGold = Color(0xFFD97706);
 
     return Container(
       decoration: BoxDecoration(
@@ -40,8 +39,8 @@ class DesignerCard extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: isDark
-                ? Colors.black.withOpacity(0.35)
-                : const Color(0xFF241611).withOpacity(0.06),
+                ? Colors.black.withValues(alpha: 0.35)
+                : const Color(0xFF241611).withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -52,8 +51,8 @@ class DesignerCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          splashColor: accentTerracotta.withOpacity(0.08),
-          highlightColor: accentTerracotta.withOpacity(0.04),
+          splashColor: accentTerracotta.withValues(alpha: 0.08),
+          highlightColor: accentTerracotta.withValues(alpha: 0.04),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -82,9 +81,9 @@ class DesignerCard extends StatelessWidget {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
-                            Colors.black.withOpacity(0.55),
+                            Colors.black.withValues(alpha: 0.55),
                             Colors.transparent,
-                            Colors.black.withOpacity(0.75),
+                            Colors.black.withValues(alpha: 0.75),
                           ],
                           stops: const [0.0, 0.45, 1.0],
                         ),
@@ -99,15 +98,15 @@ class DesignerCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.65),
+                        color: Colors.black.withValues(alpha: 0.65),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           width: 1,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
+                            color: Colors.black.withValues(alpha: 0.2),
                             blurRadius: 6,
                           ),
                         ],
@@ -147,7 +146,7 @@ class DesignerCard extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -349,15 +348,15 @@ class DesignerCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFF451A03).withOpacity(0.85),
+          color: const Color(0xFF451A03).withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFFF59E0B).withOpacity(0.5),
+            color: const Color(0xFFF59E0B).withValues(alpha: 0.5),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 4,
             ),
           ],
@@ -389,15 +388,15 @@ class DesignerCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFF064E3B).withOpacity(0.85),
+          color: const Color(0xFF064E3B).withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: const Color(0xFF10B981).withOpacity(0.5),
+            color: const Color(0xFF10B981).withValues(alpha: 0.5),
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withValues(alpha: 0.2),
               blurRadius: 4,
             ),
           ],
@@ -429,10 +428,10 @@ class DesignerCard extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.65),
+          color: Colors.black.withValues(alpha: 0.65),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
           ),
         ),
         child: Text(

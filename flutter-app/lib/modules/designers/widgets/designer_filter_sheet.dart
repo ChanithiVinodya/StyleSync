@@ -112,7 +112,7 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
             borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 20,
                 offset: const Offset(0, -4),
               ),
@@ -173,7 +173,7 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
                     ),
                     const SizedBox(height: 8),
                     DropdownButtonFormField<String>(
-                      value: _selectedSort,
+                      initialValue: _selectedSort,
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: isDark ? const Color(0xFF26201B) : Colors.white,
@@ -320,7 +320,7 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
                       ),
                       child: SwitchListTile(
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                        activeColor: accentTerracotta,
+                        activeThumbColor: accentTerracotta,
                         title: Text(
                           'Accepting Projects Only',
                           style: GoogleFonts.plusJakartaSans(

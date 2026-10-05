@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../config/style_constants.dart';
 import '../../../providers/designers/designer_filter_provider.dart';
 import '../models/designer_summary.dart';
 import '../models/paged_result.dart';
@@ -427,26 +426,6 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
     );
   }
 
-  String _buildFilterSummaryText() {
-    final parts = <String>[];
-    if (_params.style != null && _params.style != 'All') {
-      parts.add('Style: ${_params.style}');
-    }
-    if (_params.budgetMin != null || _params.budgetMax != null) {
-      final minStr = _params.budgetMin != null
-          ? 'LKR ${(_params.budgetMin! / 1000).toStringAsFixed(0)}k'
-          : '0';
-      final maxStr = _params.budgetMax != null
-          ? 'LKR ${(_params.budgetMax! / 1000).toStringAsFixed(0)}k'
-          : 'Any';
-      parts.add('Budget: $minStr - $maxStr');
-    }
-    if (_params.available == true) {
-      parts.add('Accepting Only');
-    }
-    return parts.join(' • ');
-  }
-
   Widget _buildBodyContent(
     ThemeData theme,
     bool isDark,
@@ -487,7 +466,7 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
                 width: 64,
                 height: 64,
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.12),
+                  color: Colors.red.withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.wifi_off_rounded, size: 32, color: Colors.redAccent),

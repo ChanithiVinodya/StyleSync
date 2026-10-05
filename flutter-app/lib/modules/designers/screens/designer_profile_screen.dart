@@ -129,9 +129,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFD97706).withOpacity(0.12),
+                                  color: const Color(0xFFD97706).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(color: const Color(0xFFD97706).withOpacity(0.3)),
+                                  border: Border.all(color: const Color(0xFFD97706).withValues(alpha: 0.3)),
                                 ),
                                 child: Text(
                                   item.budgetRangeLabel,
@@ -201,9 +201,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: const Color(0xFF064E3B).withOpacity(0.12),
+            color: const Color(0xFF064E3B).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+            border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.3)),
           ),
           child: Text(
             'Published Project',
@@ -218,9 +218,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: const Color(0xFFB45309).withOpacity(0.12),
+            color: const Color(0xFFB45309).withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+            border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.3)),
           ),
           child: Text(
             'In Progress (Draft)',
@@ -236,9 +236,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
           decoration: BoxDecoration(
-            color: Colors.grey.withOpacity(0.12),
+            color: Colors.grey.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
           ),
           child: Text(
             'Archived',
@@ -335,7 +335,7 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
                     border: Border.all(color: cardBorder, width: 1.2),
                     boxShadow: [
                       BoxShadow(
-                        color: isDark ? Colors.black.withOpacity(0.3) : const Color(0xFF241611).withOpacity(0.04),
+                        color: isDark ? Colors.black.withValues(alpha: 0.3) : const Color(0xFF241611).withValues(alpha: 0.04),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
@@ -570,7 +570,7 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: const Color(0xFFC05621).withOpacity(0.3),
+                          color: const Color(0xFFC05621).withValues(alpha: 0.3),
                           width: 1.2,
                         ),
                       ),
@@ -580,7 +580,7 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
                             width: 40,
                             height: 40,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFC05621).withOpacity(0.15),
+                              color: const Color(0xFFC05621).withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
@@ -684,7 +684,7 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
                           border: Border.all(color: cardBorder, width: 1.2),
                           boxShadow: [
                             BoxShadow(
-                              color: isDark ? Colors.black.withOpacity(0.25) : const Color(0xFF241611).withOpacity(0.04),
+                              color: isDark ? Colors.black.withValues(alpha: 0.25) : const Color(0xFF241611).withValues(alpha: 0.04),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -792,9 +792,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFF451A03).withOpacity(0.85),
+          color: const Color(0xFF451A03).withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+          border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -823,9 +823,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFF064E3B).withOpacity(0.85),
+          color: const Color(0xFF064E3B).withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF10B981).withOpacity(0.5)),
+          border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -854,9 +854,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
+          color: Colors.black.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.white.withOpacity(0.2)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
         ),
         child: Text(
           'Unavailable for Projects',
