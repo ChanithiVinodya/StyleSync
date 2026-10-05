@@ -33,7 +33,7 @@ public class RequestValidationRules
 
         if (request.RoomSizeSqFt < 0 || request.RoomSizeSqFt > 10000)
         {
-            errors.Add(new ValidationError("RoomSizeSqFt", "ROOM_SIZE_INVALID", "Room size must be > 0 and <= 10000 if provided."));
+            errors.Add(new ValidationError("RoomSizeSqFt", "ROOM_SIZE_INVALID", "Length and width must produce a room size > 0 and <= 10000 sq ft if provided."));
         }
 
         if (!string.IsNullOrEmpty(request.Description) && (request.Description.Length < 10 || request.Description.Length > 2000))
@@ -82,7 +82,7 @@ public class RequestValidationRules
 
         if (request.RoomSizeSqFt <= 0 || request.RoomSizeSqFt > 10000)
         {
-            errors.Add(new ValidationError("RoomSizeSqFt", "ROOM_SIZE_INVALID", "Room size must be > 0 and <= 10000."));
+            errors.Add(new ValidationError("RoomSizeSqFt", "ROOM_SIZE_INVALID", "Length, width, and height are required: length and width must produce a room size > 0 and <= 10000 sq ft."));
         }
 
         if (request.Budget <= 0)
