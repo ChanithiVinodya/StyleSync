@@ -6,6 +6,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/project_request_list_screen.dart';
 import 'screens/designers/designer_profile_screen.dart';
 import 'screens/requests/new_request_screen.dart';
 import 'screens/quotes/quote_detail_screen.dart';
@@ -94,7 +95,7 @@ class AppRoutes {
     // Protected Routes (Guarded by AuthGuard)
     if (uri.path == home) {
       return MaterialPageRoute(
-        builder: (_) => const AuthGuard(child: HomeScreen(initialTab: 0)),
+        builder: (_) => const AuthGuard(child: ProjectRequestListScreen()),
       );
     } else if (uri.path == designers) {
       return MaterialPageRoute(
@@ -151,7 +152,7 @@ class AppRoutes {
 
     // Default Fallback
     return MaterialPageRoute(
-      builder: (_) => const AuthGuard(child: HomeScreen()),
+      builder: (_) => const AuthGuard(child: ProjectRequestListScreen()),
     );
   }
 }
