@@ -8,7 +8,7 @@ import '../../config/style_constants.dart';
 import '../../modules/designers/models/designer_summary.dart';
 import '../../routes.dart';
 import '../designers/browse_designers_screen.dart';
-import '../requests/request_history_screen.dart';
+import '../requests/my_requests_screen.dart';
 import '../quotes/quote_detail_screen.dart';
 import '../progress/project_timeline_screen.dart';
 import '../splash/splash_screen.dart';
@@ -313,7 +313,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   _buildTabWrapper(const BrowseDesignersScreen()),
 
                   // Tab 2: Requests Screen
-                  _buildTabWrapper(const RequestHistoryScreen()),
+                  _buildTabWrapper(const MyRequestsScreen()),
 
                   // Tab 3: Quotes Screen
                   _buildTabWrapper(const QuoteDetailScreen(id: 'q-804')),

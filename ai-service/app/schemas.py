@@ -121,6 +121,8 @@ class WorkflowState(BaseModel):
     room_size: float
     budget_min: float
     budget_max: float
+    room_photo_url: Optional[str] = None
+    description: Optional[str] = None
 
     # Structured multi-step execution plan
     plan: list[PlanStep] = Field(default_factory=list)

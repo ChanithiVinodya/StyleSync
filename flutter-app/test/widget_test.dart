@@ -131,6 +131,10 @@ void main() {
         expect(find.text('Quotes'), findsWidgets);
         expect(find.text('Progress'), findsWidgets);
 
+        // Drain any pending debounce timers (e.g. 400ms search debounce
+        // from MyRequestsScreen) before the widget tree is disposed.
+        await tester.pump(const Duration(milliseconds: 500));
+
         // Verify Categories and Styles section headers
         expect(find.text('Categories'), findsOneWidget);
         expect(find.text('Styles'), findsOneWidget);
@@ -215,9 +219,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Verify it navigated to New Request placeholder screen
-        expect(find.text('New Request / Upload Photos'), findsOneWidget);
-        expect(find.text('Coming soon — build owned by Student 2'), findsOneWidget);
+        // Verify it navigated to the actual New Request screen
+        expect(find.text('New Request'), findsWidgets);
+        expect(find.text('Budget (LKR)'), findsWidgets);
       },
       createHttpClient: (context) => _MockHttpClient(),
     );
