@@ -25,7 +25,7 @@ import {
   Image as ImageIcon,
   AlertCircle
 } from 'lucide-react';
-import { ProjectRequest, fetchAIStyleAnalysis, submitRequestForAI } from '../../services/api';
+import { ProjectRequest, fetchAIStyleAnalysis, submitRequestForAI, API_BASE, authHeaders } from '../../services/api';
 import { useAuth } from '../../auth/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Logo } from '../../components/Logo';
@@ -149,15 +149,14 @@ export default function ProjectRequestsPage() {
     setEditErrorMsg(null);
 
     try {
-      const token = localStorage.getItem('stylesync_jwt_token');
       const res = await fetch(
-        `http://localhost:5000/api/v1/project-requests/${selectedRequest.id}`,
+        `${API_BASE}/${selectedRequest.id}`,
         {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'X-Client-Id': user?.id || 'client-nimali',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...authHeaders(),
           },
           body: JSON.stringify({
             roomType: editData.roomType,
@@ -191,14 +190,13 @@ export default function ProjectRequestsPage() {
     }
     if (window.confirm('Are you sure you want to delete this Draft request?')) {
       try {
-        const token = localStorage.getItem('stylesync_jwt_token');
         const res = await fetch(
-          `http://localhost:5000/api/v1/project-requests/${id}/cancel`,
+          `${API_BASE}/${id}/cancel`,
           {
             method: 'DELETE',
             headers: {
               'X-Client-Id': user?.id || 'client-nimali',
-              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+              ...authHeaders(),
             },
           }
         );
