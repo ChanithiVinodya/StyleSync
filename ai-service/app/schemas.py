@@ -33,13 +33,64 @@ class StyleProfile(BaseModel):
     secondary_style: Optional[str] = None
     preferred_colours: list[str] = Field(default_factory=list)
     confidence: float = 0.0
+    style_tags: list[str] = Field(default_factory=list, alias="styleTags")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
+
+
+class MatchScoreBreakdownDto(BaseModel):
+    style_tag_overlap_pct: float = Field(default=0.0, alias="styleTagOverlapPct")
+    budget_range_overlap_pct: float = Field(default=0.0, alias="budgetRangeOverlapPct")
+    past_rating_normalized: float = Field(default=0.0, alias="pastRatingNormalized")
+    availability_bonus: float = Field(default=0.0, alias="availabilityBonus")
+    match_score: float = Field(default=0.0, alias="matchScore")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
+
+
+class DesignerSearchResultDto(BaseModel):
+    designer_id: int = Field(alias="designerId")
+    match_score: float = Field(alias="matchScore")
+    score_breakdown: MatchScoreBreakdownDto = Field(
+        default_factory=MatchScoreBreakdownDto, alias="scoreBreakdown"
+    )
+    display_name: str = Field(alias="displayName")
+    bio: str = Field(default="", alias="bio")
+    style_tags: list[str] = Field(default_factory=list, alias="styleTags")
+    service_categories: list[str] = Field(default_factory=list, alias="serviceCategories")
+    price_range_min: float = Field(default=0.0, alias="priceRangeMin")
+    price_range_max: float = Field(default=0.0, alias="priceRangeMax")
+    rate_per_sq_ft: float = Field(default=0.0, alias="ratePerSqFt")
+    is_available: bool = Field(default=True, alias="isAvailable")
+    max_concurrent_projects: int = Field(default=3, alias="maxConcurrentProjects")
+    active_project_count: int = Field(default=0, alias="activeProjectCount")
+    remaining_capacity: int = Field(default=0, alias="remainingCapacity")
+    is_under_capacity: bool = Field(default=True, alias="isUnderCapacity")
+    average_rating: Optional[float] = Field(default=None, alias="averageRating")
+    listing_status: int = Field(default=1, alias="listingStatus")
+    featured_portfolio_image_url: Optional[str] = Field(default=None, alias="featuredPortfolioImageUrl")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
+
+
+class DesignerAvailabilityResponseDto(BaseModel):
+    is_available: bool = Field(alias="isAvailable")
+    is_under_capacity: bool = Field(alias="isUnderCapacity")
+    active_project_count: int = Field(alias="activeProjectCount")
+    max_concurrent_projects: int = Field(alias="maxConcurrentProjects")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
 
 
 class DesignerMatch(BaseModel):
-    designer_id: int
-    designer_name: str
-    style_match_pct: float
-    budget_match: str  # "High" | "Medium" | "Low"
+    designer_id: int = Field(alias="designerId", default=0)
+    designer_name: str = Field(alias="designerName", default="")
+    style_match_pct: float = Field(alias="styleMatchPct", default=0.0)
+    budget_match: str = Field(alias="budgetMatch", default="Medium")  # "High" | "Medium" | "Low"
+    match_score: float = Field(alias="matchScore", default=0.0)
+    explanation: str = Field(alias="explanation", default="")
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
 
 
 class ScopeItem(BaseModel):
@@ -76,7 +127,9 @@ class WorkflowState(BaseModel):
 
     # Domain outputs from specialist agents
     style_profile: Optional[StyleProfile] = None
-    designer_shortlist: list[DesignerMatch] = Field(default_factory=list)
+    designer_shortlist: list[DesignerMatch] = Field(default_factory=list, alias="designerMatches")
+    # "pending" | "success" | "no_eligible_designers"
+    matching_status: str = Field(default="pending", alias="matchingStatus")
     project_scope: Optional[ProjectScope] = None
     validation_result: Optional[ValidationResult] = None
     approval_status: str = "Pending"
@@ -85,4 +138,6 @@ class WorkflowState(BaseModel):
     tool_calls: list[ToolCallRecord] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
     retries: int = 0
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
 
