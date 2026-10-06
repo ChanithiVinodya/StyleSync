@@ -291,6 +291,86 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
           ),
           const SizedBox(height: 20),
 
+          // Assigned Designer Card
+          if (_detail!.designerDisplayName != null ||
+              _detail!.preferredDesignerId != null ||
+              _detail!.status == RequestStatus.designerAssigned ||
+              _detail!.status == RequestStatus.inProgress ||
+              _detail!.status == RequestStatus.completed) ...[
+            Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: const Color(0xFFC48A36).withValues(alpha: 0.35),
+                ),
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFFC48A36).withValues(alpha: 0.08),
+                      Colors.transparent,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor: const Color(0xFFC48A36),
+                      child: Text(
+                        (_detail!.designerDisplayName ?? 'D').substring(0, 1).toUpperCase(),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  _detail!.designerDisplayName ?? 'Assigned Designer',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFC48A36).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  'Assigned Designer',
+                                  style: TextStyle(color: Color(0xFFC48A36), fontSize: 10.5, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _detail!.designerEmail ?? 'Interior Design Lead • StyleSync Studio',
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Live Project Execution & Progress Card
           Card(
             elevation: 1,
@@ -393,7 +473,12 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
               spacing: 8,
               runSpacing: 8,
               children: _detail!.palette.map((c) {
-                final color = Color(int.parse(c.hexValue.replaceAll('#', '0xff')));
+                Color color;
+                try {
+                  color = Color(int.parse(c.hexValue.replaceAll('#', '0xff')));
+                } catch (e) {
+                  color = Colors.grey; // Fallback for invalid hex strings like 'Brushed Steel'
+                }
                 final tc = _getLuminanceContrast(color);
                 return InkWell(
                   onTap: () => _copyToClipboard(c.hexValue),

@@ -233,6 +233,29 @@ class QuoteCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
+                    ] else if (statusStr == 'stage2approved' || statusStr == 'accepted') ...[
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0x1F10B981),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0x6610B981)),
+                          ),
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle, color: Color(0xFF34D399), size: 16),
+                              SizedBox(width: 6),
+                              Text(
+                                'Accepted • In Progress',
+                                style: TextStyle(color: Color(0xFF34D399), fontWeight: FontWeight.w700, fontSize: 12.5),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                     ],
 
                     // Delete Button
