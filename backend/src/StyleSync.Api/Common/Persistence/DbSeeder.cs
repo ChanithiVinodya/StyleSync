@@ -52,6 +52,9 @@ public static class DbSeeder
 
         // Seed sample Designers and Portfolios idempotently
         await DesignerDbSeeder.SeedAsync(context);
+
+        // Seed sample Project Requests idempotently
+        await StyleSync.Api.Modules.ProjectRequests.Configuration.ProjectRequestsSeeder.SeedAsync(serviceProvider);
     }
 }
 

@@ -53,3 +53,28 @@ Object.defineProperty(global, 'ResizeObserver', {
   configurable: true,
   value: MockResizeObserver,
 })
+
+HTMLCanvasElement.prototype.getContext = (() => ({
+  fillRect: () => {},
+  clearRect: () => {},
+  getImageData: () => ({ data: [] }),
+  putImageData: () => {},
+  createImageData: () => [],
+  setTransform: () => {},
+  drawImage: () => {},
+  save: () => {},
+  fillText: () => {},
+  restore: () => {},
+  beginPath: () => {},
+  moveTo: () => {},
+  lineTo: () => {},
+  closePath: () => {},
+  stroke: () => {},
+  fill: () => {},
+  arc: () => {},
+  translate: () => {},
+  scale: () => {},
+  rotate: () => {},
+  resetTransform: () => {},
+})) as unknown as typeof HTMLCanvasElement.prototype.getContext
+
