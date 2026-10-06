@@ -23,6 +23,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"[ERROR] Unhandled exception: {ex}");
             _logger.LogError(ex, "An unhandled exception occurred during request execution.");
             await HandleExceptionAsync(context, ex);
         }
@@ -38,7 +39,7 @@ public class ExceptionHandlingMiddleware
             BadHttpRequestException badReq => ((int)HttpStatusCode.BadRequest, badReq.Message),
             InvalidOperationException conflict => ((int)HttpStatusCode.Conflict, conflict.Message),
             KeyNotFoundException notFound => ((int)HttpStatusCode.NotFound, notFound.Message),
-            _ => ((int)HttpStatusCode.InternalServerError, "An unexpected error occurred.")
+            _ => ((int)HttpStatusCode.InternalServerError, exception.Message ?? "An unexpected error occurred.")
         };
 
         context.Response.StatusCode = statusCode;

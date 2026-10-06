@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Common.Identity;
+using StyleSync.Api.Modules.Designers.Data;
 
 namespace StyleSync.Api.Common.Persistence;
 
@@ -52,5 +53,9 @@ public static class DbSeeder
             context.Users.Add(adminUser);
             await context.SaveChangesAsync();
         }
+
+        // Seed sample Designers and Portfolios idempotently
+        await DesignerDbSeeder.SeedAsync(context);
     }
 }
+

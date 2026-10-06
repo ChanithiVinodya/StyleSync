@@ -50,3 +50,17 @@ export interface FeaturePillar {
   bulletPoints: string[];
   highlightMetric: string;
 }
+
+export interface HeroStat {
+  value: string;
+  label: string;
+  subtext: string;
+}
+
+export interface HeroData {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  stats: HeroStat[];
+}
+

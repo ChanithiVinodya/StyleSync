@@ -1,5 +1,85 @@
 import 'quote_item.dart';
 
+class QuoteVersionItem {
+  final String id;
+  final String description;
+  final String category;
+  final int quantity;
+  final double unitCost;
+  final double lineTotal;
+
+  QuoteVersionItem({
+    required this.id,
+    required this.description,
+    required this.category,
+    required this.quantity,
+    required this.unitCost,
+    required this.lineTotal,
+  });
+
+  factory QuoteVersionItem.fromJson(Map<String, dynamic> json) {
+    return QuoteVersionItem(
+      id: json['id']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      category: json['category']?.toString() ?? 'Other',
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      unitCost: (json['unitCost'] as num?)?.toDouble() ?? 0.0,
+      lineTotal: (json['lineTotal'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
+class QuoteVersion {
+  final String id;
+  final int versionNumber;
+  final String authorId;
+  final String authorRole;
+  final double materialsSubtotal;
+  final double laborSubtotal;
+  final double designFee;
+  final double contingencyAmount;
+  final double taxAmount;
+  final double totalCost;
+  final String? notes;
+  final DateTime createdAt;
+  final List<QuoteVersionItem> items;
+
+  QuoteVersion({
+    required this.id,
+    required this.versionNumber,
+    required this.authorId,
+    required this.authorRole,
+    required this.materialsSubtotal,
+    required this.laborSubtotal,
+    required this.designFee,
+    required this.contingencyAmount,
+    required this.taxAmount,
+    required this.totalCost,
+    this.notes,
+    required this.createdAt,
+    this.items = const [],
+  });
+
+  factory QuoteVersion.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['items'] as List<dynamic>? ?? [];
+    return QuoteVersion(
+      id: json['id']?.toString() ?? '',
+      versionNumber: (json['versionNumber'] as num?)?.toInt() ?? 1,
+      authorId: json['authorId']?.toString() ?? '',
+      authorRole: json['authorRole']?.toString() ?? 'Designer',
+      materialsSubtotal: (json['materialsSubtotal'] as num?)?.toDouble() ?? 0.0,
+      laborSubtotal: (json['laborSubtotal'] as num?)?.toDouble() ?? 0.0,
+      designFee: (json['designFee'] as num?)?.toDouble() ?? 0.0,
+      contingencyAmount: (json['contingencyAmount'] as num?)?.toDouble() ?? 0.0,
+      taxAmount: (json['taxAmount'] as num?)?.toDouble() ?? 0.0,
+      totalCost: (json['totalCost'] as num?)?.toDouble() ?? 0.0,
+      notes: json['notes']?.toString(),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      items: rawItems.map((e) => QuoteVersionItem.fromJson(e as Map<String, dynamic>)).toList(),
+    );
+  }
+}
+
 class Quote {
   final String id;
   final String projectRequestId;
@@ -10,6 +90,8 @@ class Quote {
   final String status;
   final double totalCost;
   final List<QuoteItem> items;
+  final QuoteVersion? currentVersion;
+  final List<QuoteVersion> versions;
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? contractId;
@@ -24,6 +106,8 @@ class Quote {
     this.status = 'Draft',
     required this.totalCost,
     this.items = const [],
+    this.currentVersion,
+    this.versions = const [],
     this.createdAt,
     this.updatedAt,
     this.contractId,
@@ -53,6 +137,14 @@ class Quote {
       }
     }
 
+    QuoteVersion? currentVer;
+    if (json['currentVersion'] != null && json['currentVersion'] is Map<String, dynamic>) {
+      currentVer = QuoteVersion.fromJson(json['currentVersion']);
+    }
+
+    final rawVersions = json['versions'] as List<dynamic>? ?? [];
+    final versionsList = rawVersions.map((e) => QuoteVersion.fromJson(e as Map<String, dynamic>)).toList();
+
     double total = (json['totalCost'] is num)
         ? (json['totalCost'] as num).toDouble()
         : double.tryParse(json['totalCost']?.toString() ?? '0') ?? 0.0;
@@ -80,6 +172,8 @@ class Quote {
       status: statusStr,
       totalCost: total,
       items: itemsList,
+      currentVersion: currentVer,
+      versions: versionsList,
       createdAt: created,
       updatedAt: updated,
       contractId: json['contractId']?.toString(),
@@ -113,6 +207,8 @@ class Quote {
     String? status,
     double? totalCost,
     List<QuoteItem>? items,
+    QuoteVersion? currentVersion,
+    List<QuoteVersion>? versions,
     DateTime? createdAt,
     DateTime? updatedAt,
     String? contractId,
@@ -127,120 +223,11 @@ class Quote {
       status: status ?? this.status,
       totalCost: totalCost ?? this.totalCost,
       items: items ?? this.items,
+      currentVersion: currentVersion ?? this.currentVersion,
+      versions: versions ?? this.versions,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       contractId: contractId ?? this.contractId,
     );
-  }
-}
-
-class AiDraftPayload {
-  final String? projectRequestId;
-  final String? designerId;
-  final String roomType;
-  final double roomSizeSqft;
-  final double budgetMin;
-  final double budgetMax;
-  final String styleProfile;
-  final double styleConfidence;
-  final String? preferences;
-
-  AiDraftPayload({
-    this.projectRequestId,
-    this.designerId,
-    required this.roomType,
-    required this.roomSizeSqft,
-    required this.budgetMin,
-    required this.budgetMax,
-    required this.styleProfile,
-    this.styleConfidence = 0.88,
-    this.preferences,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'projectRequestId': projectRequestId,
-      'designerId': designerId,
-      'roomType': roomType,
-      'roomSizeSqft': roomSizeSqft,
-      'budgetMin': budgetMin,
-      'budgetMax': budgetMax,
-      'styleProfile': styleProfile,
-      'styleConfidence': styleConfidence,
-      'preferences': preferences,
-    };
-  }
-}
-
-class AgentBudgetScopeResponse {
-  final String scopeSummary;
-  final List<QuoteItem> items;
-  final String? notes;
-  final double estimatedTotal;
-  final bool withinBudget;
-  final String source;
-
-  AgentBudgetScopeResponse({
-    required this.scopeSummary,
-    required this.items,
-    this.notes,
-    required this.estimatedTotal,
-    this.withinBudget = true,
-    this.source = 'llm',
-  });
-
-  factory AgentBudgetScopeResponse.fromJson(Map<String, dynamic> json) {
-    final rawItems = (json['items'] as List<dynamic>?) ?? [];
-    final itemsList = rawItems.map((e) => QuoteItem.fromJson(e as Map<String, dynamic>)).toList();
-    
-    final scope = json['scopeSummary']?.toString() ??
-        json['scope_summary']?.toString() ??
-        'AI Estimated Scope';
-
-    final total = (json['estimatedTotal'] is num)
-        ? (json['estimatedTotal'] as num).toDouble()
-        : (json['estimated_total'] is num)
-            ? (json['estimated_total'] as num).toDouble()
-            : itemsList.fold(0.0, (sum, i) => sum + i.calculatedTotal);
-
-    final within = json['withinBudget'] == true || json['within_budget'] == true;
-
-    return AgentBudgetScopeResponse(
-      scopeSummary: scope,
-      items: itemsList,
-      notes: json['notes']?.toString(),
-      estimatedTotal: total,
-      withinBudget: within,
-      source: json['source']?.toString() ?? 'llm',
-    );
-  }
-}
-
-class QuoteFormPayload {
-  final String scopeSummary;
-  final String? notes;
-  final List<QuoteItem> items;
-  final String? projectRequestId;
-  final String? designerId;
-  final bool isAiGenerated;
-
-  QuoteFormPayload({
-    required this.scopeSummary,
-    this.notes,
-    required this.items,
-    this.projectRequestId,
-    this.designerId,
-    this.isAiGenerated = false,
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'scopeSummary': scopeSummary,
-      if (notes != null) 'notes': notes,
-      'items': items.map((i) => i.toJson()).toList(),
-      if (projectRequestId != null) 'projectRequestId': projectRequestId,
-      if (designerId != null) 'designerId': designerId,
-      'isAiGenerated': isAiGenerated,
-    };
   }
 }

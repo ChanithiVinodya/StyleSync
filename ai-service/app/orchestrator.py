@@ -11,8 +11,18 @@ import logging
 import os
 from typing import Any, Optional
 
+import importlib
 from langgraph.checkpoint.memory import MemorySaver
-from langgraph.checkpoint.postgres import PostgresSaver
+
+PostgresSaver: Optional[Any] = None
+for _pkg in ("langgraph.checkpoint.postgres", "langgraph_checkpoint_postgres"):
+    try:
+        _mod = importlib.import_module(_pkg)
+        PostgresSaver = getattr(_mod, "PostgresSaver", None)
+        if PostgresSaver:
+            break
+    except ImportError:
+        pass
 from langgraph.graph import END, START, StateGraph
 from langgraph.types import Command, interrupt
 
@@ -230,7 +240,7 @@ def get_checkpointer() -> Any:
     Returns a durable PostgresSaver if DATABASE_URL is reachable,
     otherwise gracefully falls back to MemorySaver for testing/offline environments.
     """
-    if os.getenv("USE_MEMORY_CHECKPOINTER", "").lower() in ("1", "true", "yes"):
+    if PostgresSaver is None or os.getenv("USE_MEMORY_CHECKPOINTER", "").lower() in ("1", "true", "yes"):
         return MemorySaver()
 
     conn_string = os.getenv(

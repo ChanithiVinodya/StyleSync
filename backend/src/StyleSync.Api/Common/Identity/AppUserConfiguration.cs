@@ -11,6 +11,8 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
 
         builder.HasKey(u => u.Id);
 
+        builder.Ignore(u => u.FullName);
+
         builder.HasIndex(u => u.Email)
             .IsUnique();
 

@@ -3,17 +3,14 @@ using StyleSync.Api.Models;
 
 namespace StyleSync.Api.Data
 {
-    // NOTE for the team: StyleSync is one modular monolith with one shared
-    // DbContext (PRD section 11 — "Database: PostgreSQL, Backend only").
-    // If a shared AppDbContext already exists in the repo, just copy the
-    // three DbSet lines and the OnModelCreating block below into it instead
-    // of using this file directly.
     public class AppDbContext : DbContext
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<Quote> Quotes => Set<Quote>();
         public DbSet<QuoteItem> QuoteItems => Set<QuoteItem>();
+        public DbSet<QuoteVersion> QuoteVersions => Set<QuoteVersion>();
+        public DbSet<QuoteVersionItem> QuoteVersionItems => Set<QuoteVersionItem>();
         public DbSet<Contract> Contracts => Set<Contract>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -23,11 +20,16 @@ namespace StyleSync.Api.Data
             modelBuilder.Entity<Quote>(entity =>
             {
                 entity.Property(q => q.TotalCost).HasColumnType("decimal(12,2)");
-                entity.Property(q => q.Status).HasConversion<string>().HasMaxLength(30);
+                entity.Property(q => q.Status).HasConversion<string>().HasMaxLength(35);
 
                 entity.HasMany(q => q.Items)
                       .WithOne(i => i.Quote)
                       .HasForeignKey(i => i.QuoteId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(q => q.Versions)
+                      .WithOne(v => v.Quote)
+                      .HasForeignKey(v => v.QuoteId)
                       .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(q => q.Contract)
@@ -40,17 +42,41 @@ namespace StyleSync.Api.Data
                 entity.HasIndex(q => q.Status);
             });
 
+            modelBuilder.Entity<QuoteVersion>(entity =>
+            {
+                entity.Property(v => v.MaterialsSubtotal).HasColumnType("decimal(12,2)");
+                entity.Property(v => v.LaborSubtotal).HasColumnType("decimal(12,2)");
+                entity.Property(v => v.DesignFee).HasColumnType("decimal(12,2)");
+                entity.Property(v => v.ContingencyAmount).HasColumnType("decimal(12,2)");
+                entity.Property(v => v.TaxAmount).HasColumnType("decimal(12,2)");
+                entity.Property(v => v.TotalCost).HasColumnType("decimal(12,2)");
+
+                entity.HasMany(v => v.Items)
+                      .WithOne(i => i.QuoteVersion)
+                      .HasForeignKey(i => i.QuoteVersionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(v => new { v.QuoteId, v.VersionNumber }).IsUnique();
+            });
+
+            modelBuilder.Entity<QuoteVersionItem>(entity =>
+            {
+                entity.Property(i => i.UnitCost).HasColumnType("decimal(12,2)");
+                entity.Property(i => i.LineTotal).HasColumnType("decimal(12,2)");
+                entity.Property(i => i.Category).HasConversion<string>().HasMaxLength(25);
+            });
+
             modelBuilder.Entity<QuoteItem>(entity =>
             {
                 entity.Property(i => i.UnitCost).HasColumnType("decimal(12,2)");
                 entity.Property(i => i.LineTotal).HasColumnType("decimal(12,2)");
-                entity.Property(i => i.Category).HasConversion<string>().HasMaxLength(20);
+                entity.Property(i => i.Category).HasConversion<string>().HasMaxLength(25);
             });
 
             modelBuilder.Entity<Contract>(entity =>
             {
                 entity.Property(c => c.TotalAmount).HasColumnType("decimal(12,2)");
-                entity.Property(c => c.Status).HasConversion<string>().HasMaxLength(30);
+                entity.Property(c => c.Status).HasConversion<string>().HasMaxLength(35);
 
                 entity.HasIndex(c => c.QuoteId).IsUnique();
                 entity.HasIndex(c => c.ProjectRequestId);
