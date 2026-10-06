@@ -152,7 +152,7 @@ void main() {
     );
   });
 
-  testWidgets('Tapping a style card pre-applies style filter and navigates to Designers', (tester) async {
+  testWidgets('Tapping a style card navigates to New Request with style pre-selected', (tester) async {
     await HttpOverrides.runZoned(
       () async {
         tester.view.physicalSize = const Size(800, 1400);
@@ -164,8 +164,12 @@ void main() {
             providers: [
               legacy_provider.ChangeNotifierProvider(create: (_) => AppStateProvider()),
             ],
-            child: const ProviderScope(
-              child: MaterialApp(
+            child: ProviderScope(
+              overrides: [
+                authProvider.overrideWith(() => _FakeAuthNotifier()),
+              ],
+              child: const MaterialApp(
+                onGenerateRoute: AppRoutes.onGenerateRoute,
                 home: HomeScreen(),
               ),
             ),
@@ -181,9 +185,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Should switch to Designers screen and show active removable chip
-        expect(find.text('Interior Designers'), findsOneWidget);
-        expect(find.text('Style: Scandinavian'), findsOneWidget);
+        // Should navigate to New Request screen with Scandinavian already picked
+        expect(find.text('New Request'), findsWidgets);
+        expect(find.text('Pick at least one style you like'), findsNothing);
+        expect(find.text('1 selected'), findsOneWidget);
+        expect(find.byIcon(Icons.check_rounded), findsWidgets);
       },
       createHttpClient: (context) => _MockHttpClient(),
     );

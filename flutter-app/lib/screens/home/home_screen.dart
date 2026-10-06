@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../providers/designers/designer_filter_provider.dart';
 import '../../config/style_constants.dart';
+import '../../shared/widgets/main_bottom_nav_bar.dart';
 import '../../modules/designers/models/designer_summary.dart';
 import '../../routes.dart';
 import '../designers/browse_designers_screen.dart';
@@ -319,7 +320,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   _buildTabWrapper(const QuotesContractsPage()),
 
                   // Tab 4: Progress Screen
-                  _buildTabWrapper(const ProjectTimelineScreen(projectId: '123e4567-e89b-12d3-a456-426614174000')),
+                  _buildTabWrapper(const ProjectTimelineScreen()),
                 ],
               ),
             ),
@@ -329,7 +330,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               left: 0,
               right: 0,
               bottom: 0,
-              child: _buildFloatingBottomNav(isDark, terracotta, ref.watch(authProvider).isDesigner),
+              child: MainBottomNavBar(
+                currentIndex: _currentIndex,
+                onTap: _onBottomNavTapped,
+              ),
             ),
           ],
         ),
@@ -1129,15 +1133,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                 fallbackUrl: styleItem.fallbackUrl,
                 isDark: isDark,
                 onTap: () {
-                  ref.read(designerFilterProvider.notifier).setParams(
-                        DesignerQueryParameters(
-                          style: styleItem.tag,
-                          page: 1,
-                          pageSize: 10,
-                          sort: 'newest',
-                        ),
-                      );
-                  _onBottomNavTapped(1);
+                  Navigator.of(context).pushNamed(
+                    AppRoutes.newRequest,
+                    arguments: {
+                      'styleTags': [styleItem.title],
+                    },
+                  );
                 },
               );
             },

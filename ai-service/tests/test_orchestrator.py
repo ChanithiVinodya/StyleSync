@@ -29,16 +29,71 @@ def test_workflow_state_can_be_constructed():
     assert state.approval_status == "Pending"
 
 
-def test_orchestrator_raises_until_agents_are_implemented():
+def test_orchestrator_runs_full_workflow(monkeypatch):
     """
-    Each agent currently raises NotImplementedError - this is expected.
-    Once your agent is done, add a real test for YOUR agent in a new file,
-    e.g. tests/test_style_analysis_agent.py, rather than editing this one.
+    Tests that the orchestrator coordinates all 4 agents into an enriched WorkflowState.
     """
+    import httpx
     from app.orchestrator import run_workflow
 
-    try:
-        run_workflow(_sample_state())
-        assert False, "Expected NotImplementedError - has an agent been implemented?"
-    except NotImplementedError:
-        pass
+    search_fixtures = [
+        {
+            "designerId": 101,
+            "matchScore": 0.94,
+            "scoreBreakdown": {
+                "styleTagOverlapPct": 1.0,
+                "budgetRangeOverlapPct": 0.90,
+                "pastRatingNormalized": 0.98,
+                "availabilityBonus": 1.0,
+                "matchScore": 0.94,
+            },
+            "displayName": "Elena Rostova",
+            "bio": "Specialist in Scandinavian serenity",
+            "styleTags": ["Scandinavian", "Minimalist"],
+            "serviceCategories": ["Full Concept"],
+            "priceRangeMin": 120000.0,
+            "priceRangeMax": 400000.0,
+            "ratePerSqFt": 350.0,
+            "isAvailable": True,
+            "maxConcurrentProjects": 4,
+            "activeProjectCount": 1,
+            "remainingCapacity": 3,
+            "isUnderCapacity": True,
+            "averageRating": 4.9,
+            "listingStatus": 1,
+        }
+    ]
+
+    def mock_get(self, url, params=None, **kwargs):
+        req = httpx.Request("GET", url)
+        if "/api/designers/search" in url:
+            return httpx.Response(200, json=search_fixtures, request=req)
+        elif "/availability" in url:
+            return httpx.Response(
+                200,
+                json={
+                    "isAvailable": True,
+                    "isUnderCapacity": True,
+                    "activeProjectCount": 1,
+                    "maxConcurrentProjects": 4,
+                },
+                request=req,
+            )
+        return httpx.Response(404, request=req)
+
+    monkeypatch.setattr(httpx.Client, "get", mock_get)
+
+    state = _sample_state(
+        room_type="Living Room",
+        room_size=200,
+        budget_min=100_000,
+        budget_max=600_000,
+    )
+    result = run_workflow(state)
+    assert result.style_profile is not None
+    assert result.style_profile.primary_style is not None
+    assert result.designer_shortlist is not None
+    assert len(result.designer_shortlist) > 0
+    assert result.project_scope is not None
+    assert result.validation_result is not None
+    assert len(result.plan) == 4

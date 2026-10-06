@@ -105,19 +105,20 @@ class RequestsRepository {
 
   Future<RequestDetail> uploadRoomPhoto(String id, String filePath, {List<int>? bytes, String? filename}) async {
     try {
-      final name = filename ?? (filePath.isNotEmpty ? filePath.split(RegExp(r'[\\/]')).last : 'room_photo.jpg');
+      var name = filename ?? (filePath.isNotEmpty ? filePath.split(RegExp(r'[\\/]')).last : 'room_photo.jpg');
+      if (!name.contains('.')) {
+        name = '$name.jpg';
+      }
       final contentType = _determineMediaType(name);
       final multipart = bytes != null
           ? MultipartFile.fromBytes(bytes, filename: name, contentType: contentType)
           : (kIsWeb
               ? throw UnsupportedError('File path upload is not supported on web without bytes.')
-              : await MultipartFile.fromFile(filePath, contentType: contentType));
+              : await MultipartFile.fromFile(filePath, filename: name, contentType: contentType));
       final formData = FormData.fromMap({
         'type': 'room',
         'files': [multipart],
       });
-      // The API returns an anonymous object, but we just need to return the updated RequestDetail 
-      // or at least fetch it again. The API returns { RoomPhotoUrl: ... }. Let's re-fetch the request.
       await _apiClient.dio.post('/requests/$id/images', data: formData);
       return await getRequest(id);
     } catch (e) {
@@ -127,13 +128,16 @@ class RequestsRepository {
 
   Future<RequestDetail> uploadMoodboard(String id, String filePath, {List<int>? bytes, String? filename}) async {
     try {
-      final name = filename ?? (filePath.isNotEmpty ? filePath.split(RegExp(r'[\\/]')).last : 'moodboard.jpg');
+      var name = filename ?? (filePath.isNotEmpty ? filePath.split(RegExp(r'[\\/]')).last : 'moodboard.jpg');
+      if (!name.contains('.')) {
+        name = '$name.jpg';
+      }
       final contentType = _determineMediaType(name);
       final multipart = bytes != null
           ? MultipartFile.fromBytes(bytes, filename: name, contentType: contentType)
           : (kIsWeb
               ? throw UnsupportedError('File path upload is not supported on web without bytes.')
-              : await MultipartFile.fromFile(filePath, contentType: contentType));
+              : await MultipartFile.fromFile(filePath, filename: name, contentType: contentType));
       final formData = FormData.fromMap({
         'type': 'moodboard',
         'files': [multipart],

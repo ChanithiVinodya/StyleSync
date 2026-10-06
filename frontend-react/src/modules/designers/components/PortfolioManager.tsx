@@ -1,21 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Plus, 
   Trash2, 
+  Edit3,
   Image as ImageIcon, 
   ExternalLink, 
   Sparkles, 
   X, 
   AlertCircle, 
   CheckCircle2,
-  Lock,
-  Eye,
-  EyeOff
+  Upload,
+  Layers
 } from 'lucide-react';
 import { 
   PortfolioItem, 
   ListingStatus, 
   CreatePortfolioItemRequest, 
+  UpdatePortfolioItemRequest,
   PortfolioItemFormState, 
   PortfolioItemValidationErrors 
 } from '../types';
@@ -24,6 +25,7 @@ interface PortfolioManagerProps {
   designerId: number;
   items: PortfolioItem[];
   onAddItem: (request: CreatePortfolioItemRequest) => Promise<void>;
+  onUpdateItem: (itemId: number, request: UpdatePortfolioItemRequest) => Promise<void>;
   onDeleteItem: (itemId: number) => Promise<void>;
   isLoading?: boolean;
 }
@@ -37,19 +39,35 @@ const INITIAL_ITEM_STATE: PortfolioItemFormState = {
   completionStatusBadge: ListingStatus.Published
 };
 
+const PRESET_PORTFOLIO_IMAGES = [
+  { label: 'Tropical Modern', url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Minimalist Teak', url: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Warm Bohemian', url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Urban Loft Penthouse', url: 'https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Colonial Coastal Villa', url: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Luxury Marble Salon', url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Japandi Bedroom', url: 'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80' },
+  { label: 'Biophilic Living', url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80' },
+];
+
 export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
   designerId,
   items,
   onAddItem,
+  onUpdateItem,
   onDeleteItem,
   isLoading = false
 }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
   const [formState, setFormState] = useState<PortfolioItemFormState>(INITIAL_ITEM_STATE);
   const [errors, setErrors] = useState<PortfolioItemValidationErrors>({});
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [previewError, setPreviewError] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isModalOpen = isAddModalOpen || editingItem !== null;
 
   const validateItemForm = (): boolean => {
     const newErrors: PortfolioItemValidationErrors = {};
@@ -67,12 +85,12 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     }
 
     if (!formState.imageUrl.trim()) {
-      newErrors.imageUrl = 'Image URL is required.';
-    } else {
+      newErrors.imageUrl = 'Image URL or file upload is required.';
+    } else if (!formState.imageUrl.startsWith('data:image') && !formState.imageUrl.startsWith('blob:')) {
       try {
         new URL(formState.imageUrl.trim());
       } catch {
-        newErrors.imageUrl = 'Please provide a valid image URL.';
+        newErrors.imageUrl = 'Please provide a valid image URL or upload an image.';
       }
     }
 
@@ -92,27 +110,86 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleCreateItem = async (e: React.FormEvent) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrors(prev => ({ ...prev, imageUrl: 'Selected file must be an image (JPEG, PNG, WEBP).' }));
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setFormState(prev => ({ ...prev, imageUrl: reader.result as string }));
+        setErrors(prev => ({ ...prev, imageUrl: undefined }));
+        setPreviewError(false);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const openAddModal = () => {
+    setEditingItem(null);
+    setFormState(INITIAL_ITEM_STATE);
+    setErrors({});
+    setPreviewError(false);
+    setIsAddModalOpen(true);
+  };
+
+  const openEditModal = (item: PortfolioItem) => {
+    setEditingItem(item);
+    setFormState({
+      title: item.title,
+      description: item.description,
+      imageUrl: item.imageUrl,
+      budgetRangeLabel: item.budgetRangeLabel,
+      clientInitials: item.clientInitials,
+      completionStatusBadge: item.completionStatusBadge
+    });
+    setErrors({});
+    setPreviewError(false);
+  };
+
+  const closeModal = () => {
+    setIsAddModalOpen(false);
+    setEditingItem(null);
+    setFormState(INITIAL_ITEM_STATE);
+    setErrors({});
+  };
+
+  const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateItemForm()) return;
 
     try {
-      await onAddItem({
-        title: formState.title.trim(),
-        description: formState.description.trim(),
-        imageUrl: formState.imageUrl.trim(),
-        budgetRangeLabel: formState.budgetRangeLabel.trim(),
-        clientInitials: formState.clientInitials.trim(),
-        completionStatusBadge: formState.completionStatusBadge
-      });
+      if (editingItem) {
+        await onUpdateItem(editingItem.id, {
+          title: formState.title.trim(),
+          description: formState.description.trim(),
+          imageUrl: formState.imageUrl.trim(),
+          budgetRangeLabel: formState.budgetRangeLabel.trim(),
+          clientInitials: formState.clientInitials.trim(),
+          completionStatusBadge: formState.completionStatusBadge
+        });
+        setActionSuccess('Portfolio project updated successfully!');
+      } else {
+        await onAddItem({
+          title: formState.title.trim(),
+          description: formState.description.trim(),
+          imageUrl: formState.imageUrl.trim(),
+          budgetRangeLabel: formState.budgetRangeLabel.trim(),
+          clientInitials: formState.clientInitials.trim(),
+          completionStatusBadge: formState.completionStatusBadge
+        });
+        setActionSuccess('Portfolio project published successfully!');
+      }
 
-      setIsAddModalOpen(false);
-      setFormState(INITIAL_ITEM_STATE);
-      setErrors({});
-      setActionSuccess('Portfolio project published successfully!');
+      closeModal();
       setTimeout(() => setActionSuccess(null), 3500);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to add portfolio item.';
+      const message = err instanceof Error ? err.message : 'Failed to save portfolio item.';
       setErrors(prev => ({ ...prev, general: message }));
     }
   };
@@ -146,12 +223,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
 
         <button
           type="button"
-          onClick={() => {
-            setFormState(INITIAL_ITEM_STATE);
-            setErrors({});
-            setPreviewError(false);
-            setIsAddModalOpen(true);
-          }}
+          onClick={openAddModal}
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold text-[#FAF8F5] dark:text-[#1C1917] bg-[#1C1917] dark:bg-[#FAF8F5] hover:bg-[#322C27] dark:hover:bg-[#EAE4D9] shadow-sm hover:shadow-md transition-all cursor-pointer shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -181,8 +253,8 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
           </p>
           <button
             type="button"
-            onClick={() => setIsAddModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#925C18] dark:text-[#E8A849] bg-[#FAF3E8] dark:bg-[#2A231C] border border-[#EADBCA] dark:border-[#3D3328] hover:bg-[#F2E5D3] dark:hover:bg-[#382F24] transition-colors"
+            onClick={openAddModal}
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold text-[#925C18] dark:text-[#E8A849] bg-[#FAF3E8] dark:bg-[#2A231C] border border-[#EADBCA] dark:border-[#3D3328] hover:bg-[#F2E5D3] dark:hover:bg-[#382F24] transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             Add First Project
@@ -202,7 +274,9 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
                   alt={item.title}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80';
+                    if (!(e.target as HTMLImageElement).src.includes('photo-1600210492486')) {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80';
+                    }
                   }}
                 />
 
@@ -245,25 +319,37 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
                   </p>
                 </div>
 
-                {/* Action Bar */}
-                <div className="flex items-center justify-between pt-2 border-t border-[#E7E1D7] dark:border-[#2C2723] text-xs">
+                {/* Action Bar with Edit & Delete */}
+                <div className="flex items-center justify-between pt-3 border-t border-[#E7E1D7] dark:border-[#2C2723] text-xs">
                   <span className="text-[11px] text-[#78716C] dark:text-[#8C8681]">
-                    Added {new Date(item.createdAtUtc).toLocaleDateString()}
+                    {item.updatedAtUtc ? `Updated ${new Date(item.updatedAtUtc).toLocaleDateString()}` : `Added ${new Date(item.createdAtUtc).toLocaleDateString()}`}
                   </span>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
-                        handleDelete(item.id);
-                      }
-                    }}
-                    disabled={deletingId === item.id || isLoading}
-                    className="inline-flex items-center gap-1 text-xs text-[#DC2626] hover:text-[#B91C1C] dark:text-[#F87171] dark:hover:text-[#EF4444] font-medium transition-colors cursor-pointer disabled:opacity-50"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>{deletingId === item.id ? 'Deleting...' : 'Delete'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(item)}
+                      disabled={isLoading}
+                      className="inline-flex items-center gap-1 text-xs text-[#925C18] dark:text-[#E8A849] hover:text-[#734710] dark:hover:text-[#F3C47C] font-semibold transition-colors cursor-pointer disabled:opacity-50 px-2 py-1 rounded-md hover:bg-[#FAF3E8] dark:hover:bg-[#2A231C]"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to delete "${item.title}"?`)) {
+                          handleDelete(item.id);
+                        }
+                      }}
+                      disabled={deletingId === item.id || isLoading}
+                      className="inline-flex items-center gap-1 text-xs text-[#DC2626] hover:text-[#B91C1C] dark:text-[#F87171] dark:hover:text-[#EF4444] font-medium transition-colors cursor-pointer disabled:opacity-50 px-2 py-1 rounded-md hover:bg-[#FEE2E2]/60 dark:hover:bg-[#451A1A]/60"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{deletingId === item.id ? 'Deleting...' : 'Delete'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -271,8 +357,8 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
         </div>
       )}
 
-      {/* Add Item Modal */}
-      {isAddModalOpen && (
+      {/* Add / Edit Item Modal */}
+      {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fadeIn">
           <div 
             className="w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl bg-[#FAF8F5] dark:bg-[#1C1917] border border-[#E7E1D7] dark:border-[#2C2723] shadow-2xl p-6 sm:p-8 space-y-5 animate-scaleUp"
@@ -281,14 +367,18 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-[#E7E1D7] dark:border-[#2C2723]">
               <div className="flex items-center gap-2.5">
-                <ImageIcon className="w-5 h-5 text-[#925C18] dark:text-[#E8A849]" />
+                {editingItem ? (
+                  <Edit3 className="w-5 h-5 text-[#925C18] dark:text-[#E8A849]" />
+                ) : (
+                  <ImageIcon className="w-5 h-5 text-[#925C18] dark:text-[#E8A849]" />
+                )}
                 <h3 className="font-serif text-lg font-medium text-[#1C1917] dark:text-[#FAF8F5]">
-                  Add Portfolio Project
+                  {editingItem ? 'Edit Portfolio Project' : 'Add Portfolio Project'}
                 </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setIsAddModalOpen(false)}
+                onClick={closeModal}
                 className="p-1 rounded-lg text-[#78716C] hover:text-[#1C1917] dark:text-[#A8A29E] dark:hover:text-[#FAF8F5] transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -302,7 +392,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
               </div>
             )}
 
-            <form onSubmit={handleCreateItem} className="space-y-4 text-left">
+            <form onSubmit={handleSubmitForm} className="space-y-4 text-left">
               {/* Title */}
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
@@ -323,25 +413,70 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
                 {errors.title && <p className="mt-1 text-xs text-[#DC2626]">{errors.title}</p>}
               </div>
 
-              {/* Image URL & Live Preview */}
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E] mb-1">
-                  Image URL <span className="text-[#DC2626]">*</span>
-                </label>
+              {/* Image Selection (URL + File Upload + Presets) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold uppercase tracking-wider text-[#78716C] dark:text-[#A8A29E]">
+                    Project Image <span className="text-[#DC2626]">*</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#925C18] dark:text-[#E8A849] hover:underline cursor-pointer"
+                  >
+                    <Upload className="w-3 h-3" />
+                    <span>Upload Local Photo</span>
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                </div>
+
                 <input
-                  type="url"
+                  type="text"
                   value={formState.imageUrl}
                   onChange={e => {
                     setFormState(prev => ({ ...prev, imageUrl: e.target.value }));
                     setErrors(prev => ({ ...prev, imageUrl: undefined }));
                     setPreviewError(false);
                   }}
-                  placeholder="https://images.unsplash.com/..."
+                  placeholder="Enter image URL or upload image file above..."
                   className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8F5F0] dark:bg-[#24201C] border ${
                     errors.imageUrl ? 'border-[#DC2626]' : 'border-[#E7E1D7] dark:border-[#2C2723]'
                   } text-xs text-[#1C1917] dark:text-[#FAF8F5] focus:outline-hidden focus:ring-2 focus:ring-[#C48A36]`}
                 />
                 {errors.imageUrl && <p className="mt-1 text-xs text-[#DC2626]">{errors.imageUrl}</p>}
+
+                {/* Preset Suggestions */}
+                <div>
+                  <p className="text-[11px] text-[#78716C] dark:text-[#A8A29E] mb-1.5 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-[#C48A36]" /> Quick Preset Inspiration:
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {PRESET_PORTFOLIO_IMAGES.map(preset => (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => {
+                          setFormState(prev => ({ ...prev, imageUrl: preset.url }));
+                          setErrors(prev => ({ ...prev, imageUrl: undefined }));
+                          setPreviewError(false);
+                        }}
+                        className={`text-[10px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                          formState.imageUrl === preset.url
+                            ? 'bg-[#925C18] text-white border-[#925C18]'
+                            : 'bg-[#FAF3E8] dark:bg-[#25201C] text-[#78716C] dark:text-[#A8A29E] border-[#EADBCA] dark:border-[#382F24] hover:bg-[#F0E5D4]'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Live Image Preview */}
                 {formState.imageUrl && (
@@ -355,7 +490,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
                       />
                     ) : (
                       <span className="text-xs text-[#DC2626] flex items-center gap-1.5">
-                        <AlertCircle className="w-4 h-4" /> Unable to load image preview from URL.
+                        <AlertCircle className="w-4 h-4" /> Unable to load image preview.
                       </span>
                     )}
                   </div>
@@ -445,8 +580,8 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
               <div className="flex justify-end gap-3 pt-4 border-t border-[#E7E1D7] dark:border-[#2C2723]">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-5 py-2.5 rounded-full text-xs font-semibold text-[#57534E] dark:text-[#A8A29E] hover:bg-[#EFEAE1] dark:hover:bg-[#2C2723] transition-colors"
+                  onClick={closeModal}
+                  className="px-5 py-2.5 rounded-full text-xs font-semibold text-[#57534E] dark:text-[#A8A29E] hover:bg-[#EFEAE1] dark:hover:bg-[#2C2723] transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -455,7 +590,7 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
                   disabled={isLoading}
                   className="px-6 py-2.5 rounded-full text-xs font-semibold text-[#FAF8F5] dark:text-[#1C1917] bg-[#1C1917] dark:bg-[#FAF8F5] hover:bg-[#322C27] dark:hover:bg-[#EAE4D9] shadow-md transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {isLoading ? 'Publishing...' : 'Save & Publish Item'}
+                  {isLoading ? 'Saving...' : editingItem ? 'Save Changes' : 'Save & Publish Item'}
                 </button>
               </div>
             </form>

@@ -4,16 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../modules/requests/models/request_models.dart';
 import '../../modules/requests/providers/requests_provider.dart';
 import '../../modules/requests/utils/request_constants.dart';
+import '../../shared/widgets/main_bottom_nav_bar.dart';
+import '../../screens/home/home_screen.dart';
+import '../../routes.dart';
 import 'widgets/palette_picker.dart';
 import 'widgets/room_photo_picker.dart';
 import 'widgets/moodboard_picker.dart';
+import 'widgets/style_picker.dart';
 import 'request_detail_screen.dart';
 
 class NewRequestScreen extends ConsumerStatefulWidget {
   final String? editId;
   final String? initialRoomType;
+  final List<String>? initialStyleTags;
 
-  const NewRequestScreen({super.key, this.editId, this.initialRoomType});
+  const NewRequestScreen({
+    super.key,
+    this.editId,
+    this.initialRoomType,
+    this.initialStyleTags,
+  });
 
   @override
   ConsumerState<NewRequestScreen> createState() => _NewRequestScreenState();
@@ -32,6 +42,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   String? _currentId;
   String? _roomPhotoUrl;
   List<MoodboardImage> _moodboardImages = [];
+  List<String> _selectedStyleTags = [];
+  String? _styleError;
   
   bool _isLoading = false;
   bool _isSubmitting = false;
@@ -47,6 +59,9 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
     if (widget.initialRoomType != null) {
       _roomType = RoomType.fromJson(widget.initialRoomType!);
     }
+    if (widget.initialStyleTags != null && widget.initialStyleTags!.isNotEmpty) {
+      _selectedStyleTags = List.from(widget.initialStyleTags!);
+    }
     _budgetController.addListener(_markChanged);
     _lengthController.addListener(_onDimensionChanged);
     _widthController.addListener(_onDimensionChanged);
@@ -61,6 +76,23 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
 
   void _markChanged() {
     if (!_hasUnsavedChanges) setState(() => _hasUnsavedChanges = true);
+  }
+
+  int get _filledSectionCount {
+    int count = 0;
+    if (_roomType != null) count++;
+    if (_lengthController.text.trim().isNotEmpty ||
+        _widthController.text.trim().isNotEmpty ||
+        _heightController.text.trim().isNotEmpty) {
+      count++;
+    }
+    if (_selectedStyleTags.isNotEmpty) count++;
+    if (_budgetController.text.trim().isNotEmpty) count++;
+    if (_descriptionController.text.trim().isNotEmpty) count++;
+    if (_roomPhotoUrl != null && _roomPhotoUrl!.isNotEmpty) count++;
+    if (_moodboardImages.isNotEmpty) count++;
+    if (_paletteSelection != null) count++;
+    return count;
   }
 
   double? get _calculatedArea {
@@ -93,16 +125,23 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       _roomType = draft.roomType;
       _budgetController.text = draft.budget?.toString() ?? '';
       
-      final rawDesc = draft.description ?? '';
-      final dimMatch = RegExp(r'\[Dimensions: L=([^,]+), W=([^,]+), H=([^\]]+)\]').firstMatch(rawDesc);
+      var cleanDesc = draft.description ?? '';
+      final dimMatch = RegExp(r'\[Dimensions: L=([^,]+), W=([^,]+), H=([^\]]+)\]').firstMatch(cleanDesc);
       if (dimMatch != null) {
         _lengthController.text = dimMatch.group(1)?.trim() ?? '';
         _widthController.text = dimMatch.group(2)?.trim() ?? '';
         _heightController.text = dimMatch.group(3)?.trim() ?? '';
-        _descriptionController.text = rawDesc.replaceAll(dimMatch.group(0)!, '').trim();
-      } else {
-        _descriptionController.text = rawDesc;
+        cleanDesc = cleanDesc.replaceAll(dimMatch.group(0)!, '').trim();
       }
+
+      final styleMatch = RegExp(r'\[Styles:\s*([^\]]+)\]').firstMatch(cleanDesc);
+      if (styleMatch != null) {
+        if (draft.requestedStyleTags.isEmpty) {
+          _selectedStyleTags = styleMatch.group(1)!.split(',').map((s) => s.trim()).toList();
+        }
+        cleanDesc = cleanDesc.replaceAll(styleMatch.group(0)!, '').trim();
+      }
+      _descriptionController.text = cleanDesc;
       
       if (draft.paletteMode != null) {
         final mode = PaletteMode.fromJson(draft.paletteMode);
@@ -116,6 +155,9 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       }
       _roomPhotoUrl = draft.roomPhotoUrl;
       _moodboardImages = List.from(draft.moodboard);
+      if (draft.requestedStyleTags.isNotEmpty) {
+        _selectedStyleTags = List.from(draft.requestedStyleTags);
+      }
       _hasUnsavedChanges = false;
     } catch (e) {
       _unmappedError = e.toString();
@@ -132,9 +174,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   }
 
   Future<String?> _saveDraft({bool isSilent = false}) async {
-    if (!_formKey.currentState!.validate()) return null;
-
     if (!isSilent) {
+      if (!_formKey.currentState!.validate()) return null;
       setState(() {
         _isLoading = true;
         _serverErrors.clear();
@@ -147,8 +188,10 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
 
     try {
       final data = <String, dynamic>{};
-      if (_roomType != null) data['roomType'] = _roomType!.toJson();
-      if (_budgetController.text.isNotEmpty) data['budget'] = double.parse(_budgetController.text);
+      data['roomType'] = (_roomType ?? RoomType.livingRoom).toJson();
+      if (_budgetController.text.trim().isNotEmpty) {
+        data['budget'] = double.tryParse(_budgetController.text.trim()) ?? 0.0;
+      }
       
       final l = double.tryParse(_lengthController.text.trim());
       final w = double.tryParse(_widthController.text.trim());
@@ -179,6 +222,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       } else {
         data['palette'] = null;
       }
+
+      data['requestedStyleTags'] = _selectedStyleTags;
 
       final repo = ref.read(requestsRepositoryProvider);
       if (_currentId != null) {
@@ -227,10 +272,21 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   Future<void> _submitRequest() async {
     setState(() => _isSubmitting = true);
 
-    if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please correct the validation errors before submitting.')),
-      );
+    final isFormValid = _formKey.currentState!.validate();
+    if (_selectedStyleTags.isEmpty) {
+      setState(() => _styleError = 'Pick at least one style you like');
+    }
+
+    if (!isFormValid || _selectedStyleTags.isEmpty) {
+      if (_selectedStyleTags.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pick at least one style you like')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please correct the validation errors before submitting.')),
+        );
+      }
       return;
     }
 
@@ -380,24 +436,22 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_hasUnsavedChanges,
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
-        final res = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Discard changes?'),
-            content: const Text('You have unsaved changes. Are you sure you want to leave?'),
-            actions: [
-              TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Cancel')),
-              TextButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Discard')),
-            ],
-          ),
-        );
-        if (res == true) {
-          if (!context.mounted) return;
-          Navigator.of(context).pop();
+        if (_filledSectionCount > 1) {
+          final savedId = await _saveDraft(isSilent: true);
+          if (savedId != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Request progress saved as draft'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
         }
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
       },
       child: Scaffold(
         appBar: AppBar(
@@ -495,7 +549,22 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
+
+                      StylePicker(
+                        selectedStyles: _selectedStyleTags,
+                        errorText: _styleError,
+                        onChanged: (styles) {
+                          setState(() {
+                            _selectedStyleTags = styles;
+                            if (styles.isNotEmpty) {
+                              _styleError = null;
+                            }
+                          });
+                          _markChanged();
+                        },
+                      ),
+                      const SizedBox(height: 20),
                       
                       TextFormField(
                         controller: _budgetController,
@@ -574,6 +643,27 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                   ),
                 ),
               ),
+        bottomNavigationBar: MainBottomNavBar(
+          currentIndex: 2,
+          onTap: (index) async {
+            if (_filledSectionCount > 1) {
+              final savedId = await _saveDraft(isSilent: true);
+              if (savedId != null && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Request progress saved as draft'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+            }
+            if (!context.mounted) return;
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => AuthGuard(child: HomeScreen(initialTab: index))),
+              (route) => false,
+            );
+          },
+        ),
       ),
     );
   }

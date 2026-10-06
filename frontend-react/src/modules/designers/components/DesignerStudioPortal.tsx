@@ -10,7 +10,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { DesignerProfile, UpdateDesignerProfileRequest, CreatePortfolioItemRequest } from '../types';
+import { DesignerProfile, UpdateDesignerProfileRequest, CreatePortfolioItemRequest, UpdatePortfolioItemRequest } from '../types';
 import { designerApi } from '../services/designerApi';
 import { CapacityStatusCard } from './CapacityStatusCard';
 import { DesignerProfileForm } from './DesignerProfileForm';
@@ -55,10 +55,37 @@ export const DesignerStudioPortal: React.FC = () => {
     try {
       setIsSaving(true);
       const newItem = await designerApi.addPortfolioItem(profile.id, request);
-      setProfile(prev => prev ? {
-        ...prev,
-        portfolioItems: [newItem, ...prev.portfolioItems]
-      } : null);
+      setProfile(prev => {
+        if (!prev) return null;
+        // Avoid duplicate insertion
+        if (prev.portfolioItems.some(item => item.id === newItem.id)) {
+          return {
+            ...prev,
+            portfolioItems: prev.portfolioItems.map(item => item.id === newItem.id ? newItem : item)
+          };
+        }
+        return {
+          ...prev,
+          portfolioItems: [newItem, ...prev.portfolioItems]
+        };
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleUpdatePortfolioItem = async (itemId: number, request: UpdatePortfolioItemRequest) => {
+    if (!profile) return;
+    try {
+      setIsSaving(true);
+      const updatedItem = await designerApi.updatePortfolioItem(profile.id, itemId, request);
+      setProfile(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          portfolioItems: prev.portfolioItems.map(item => item.id === itemId ? updatedItem : item)
+        };
+      });
     } finally {
       setIsSaving(false);
     }
@@ -191,6 +218,7 @@ export const DesignerStudioPortal: React.FC = () => {
             designerId={profile.id}
             items={profile.portfolioItems}
             onAddItem={handleAddPortfolioItem}
+            onUpdateItem={handleUpdatePortfolioItem}
             onDeleteItem={handleDeletePortfolioItem}
             isLoading={isSaving}
           />

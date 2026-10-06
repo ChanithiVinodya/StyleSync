@@ -231,6 +231,92 @@ class _MoodboardPickerState extends ConsumerState<MoodboardPicker> {
     }
   }
 
+  void _showPickerSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library),
+              title: const Text('Choose from gallery / files'),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImages();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('Paste image web URL'),
+              onTap: () {
+                Navigator.pop(context);
+                _showUrlInputDialog();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUrlInputDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Moodboard Image URL'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Paste a direct link to an inspiration image:',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'https://images.unsplash.com/...',
+                labelText: 'Image URL',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.link),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final url = controller.text.trim();
+              if (url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'))) {
+                Navigator.pop(ctx);
+                setState(() {
+                  _images.add(MoodboardImage(
+                    id: 'url-${DateTime.now().millisecondsSinceEpoch}',
+                    url: url,
+                    sortOrder: _images.length + 1,
+                  ));
+                });
+                widget.onMoodboardUpdated?.call(_images);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid HTTP or HTTPS image URL.')),
+                );
+              }
+            },
+            child: const Text('Add Image'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final totalCount = _images.length + _pendingUploads.length;
@@ -253,7 +339,7 @@ class _MoodboardPickerState extends ConsumerState<MoodboardPicker> {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Add up to 10 reference images to inspire your design. You can upload from your gallery.',
+              'Add up to 10 reference images to inspire your design. You can upload from your gallery or paste image links.',
               style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 16),
@@ -265,7 +351,7 @@ class _MoodboardPickerState extends ConsumerState<MoodboardPicker> {
               )
             else if (totalCount == 0)
               InkWell(
-                onTap: _pickImages,
+                onTap: _showPickerSheet,
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   height: 150,
@@ -278,9 +364,9 @@ class _MoodboardPickerState extends ConsumerState<MoodboardPicker> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.photo_library, size: 48, color: Theme.of(context).colorScheme.primary),
+                        Icon(Icons.add_photo_alternate_rounded, size: 48, color: Theme.of(context).colorScheme.primary),
                         const SizedBox(height: 8),
-                        const Text('Choose from gallery'),
+                        const Text('Add Moodboard Images'),
                       ],
                     ),
                   ),
@@ -306,7 +392,7 @@ class _MoodboardPickerState extends ConsumerState<MoodboardPicker> {
                     return _buildPendingImage(p);
                   } else {
                     return InkWell(
-                      onTap: _pickImages,
+                      onTap: _showPickerSheet,
                       borderRadius: BorderRadius.circular(8),
                       child: Container(
                         decoration: BoxDecoration(

@@ -315,6 +315,34 @@ public class DesignerService : IDesignerService
         return MapPortfolioItem(item);
     }
 
+    public async Task<PortfolioItemResponse?> UpdatePortfolioItemAsync(int designerId, int itemId, Guid currentUserId, bool isAdmin, UpdatePortfolioItemRequest request)
+    {
+        var item = await _context.PortfolioItems
+            .Include(p => p.DesignerProfile)
+            .FirstOrDefaultAsync(p => p.Id == itemId && p.DesignerProfileId == designerId);
+
+        if (item == null)
+        {
+            return null;
+        }
+
+        if (!isAdmin && item.DesignerProfile.UserId != currentUserId)
+        {
+            throw new UnauthorizedAccessException("You can only edit portfolio items on your own profile.");
+        }
+
+        item.Title = request.Title.Trim();
+        item.Description = request.Description.Trim();
+        item.ImageUrl = request.ImageUrl.Trim();
+        item.BudgetRangeLabel = request.BudgetRangeLabel.Trim();
+        item.ClientInitials = request.ClientInitials.Trim();
+        item.CompletionStatusBadge = request.CompletionStatusBadge;
+        item.UpdatedAtUtc = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+        return MapPortfolioItem(item);
+    }
+
     public async Task<List<PortfolioItemResponse>> GetPortfolioItemsAsync(int designerId, bool publicOnly = true)
     {
         var query = _context.PortfolioItems

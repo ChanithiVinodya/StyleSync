@@ -29,6 +29,10 @@ public class CreatePortfolioItemRequest
     public ListingStatus CompletionStatusBadge { get; set; } = ListingStatus.Published;
 }
 
+public class UpdatePortfolioItemRequest : CreatePortfolioItemRequest
+{
+}
+
 public class PortfolioItemResponse
 {
     public int Id { get; set; }

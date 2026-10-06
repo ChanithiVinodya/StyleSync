@@ -108,10 +108,29 @@ class AppRoutes {
         builder: (_) => const AuthGuard(child: HomeScreen(initialTab: 2)),
       );
     } else if (uri.path == newRequest) {
-      final initialRoomType = settings.arguments as String?;
+      String? initialRoomType;
+      List<String>? initialStyleTags;
+
+      if (settings.arguments is String) {
+        initialRoomType = settings.arguments as String;
+      } else if (settings.arguments is List<String>) {
+        initialStyleTags = settings.arguments as List<String>;
+      } else if (settings.arguments is List) {
+        initialStyleTags = (settings.arguments as List).map((e) => e.toString()).toList();
+      } else if (settings.arguments is Map<String, dynamic>) {
+        final map = settings.arguments as Map<String, dynamic>;
+        initialRoomType = map['roomType'] as String?;
+        if (map['styleTags'] is List) {
+          initialStyleTags = (map['styleTags'] as List).map((e) => e.toString()).toList();
+        }
+      }
+
       return MaterialPageRoute(
         builder: (_) => AuthGuard(
-          child: NewRequestScreen(initialRoomType: initialRoomType),
+          child: NewRequestScreen(
+            initialRoomType: initialRoomType,
+            initialStyleTags: initialStyleTags,
+          ),
         ),
         settings: settings,
       );

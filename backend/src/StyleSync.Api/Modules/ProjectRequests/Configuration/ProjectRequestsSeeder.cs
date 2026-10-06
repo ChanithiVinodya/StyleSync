@@ -75,6 +75,7 @@ public static class ProjectRequestsSeeder
                 RoomSizeSqFt = 100 + (i * 50),
                 Budget = 10000 + (i * 1000), // MinBudget is 10000
                 Description = $"A beautiful {rt} renovation project.",
+                RequestedStyleTags = new() { "Modern Minimalist", "Scandinavian" },
                 Status = status,
                 CreatedAt = DateTime.UtcNow.AddDays(-i),
                 UpdatedAt = DateTime.UtcNow.AddDays(-i).AddHours(1)

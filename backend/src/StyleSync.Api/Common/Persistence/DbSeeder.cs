@@ -17,6 +17,14 @@ public static class DbSeeder
         if (context.Database.IsNpgsql())
         {
             await context.Database.MigrateAsync();
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"ProjectRequests\" ADD COLUMN IF NOT EXISTS \"RequestedStyleTags\" text[] DEFAULT '{}';");
+            }
+            catch
+            {
+                // Column may already exist or table not created yet
+            }
         }
 
 

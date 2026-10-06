@@ -8,39 +8,104 @@ class ProjectExecutionService {
   ProjectExecutionService(this._apiClient);
 
   Future<List<Milestone>> getMilestones(String projectId) async {
-    final response = await _apiClient.dio.get('/milestones?projectId=$projectId');
-    return (response.data as List).map((json) => Milestone.fromJson(json)).toList();
+    try {
+      final response = await _apiClient.dio.get('/milestones?projectId=$projectId');
+      if (response.data is List) {
+        return (response.data as List).map((json) => Milestone.fromJson(json)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<List<Task>> getTasks({String? milestoneId}) async {
-    final query = milestoneId != null ? '?milestoneId=$milestoneId' : '';
-    final response = await _apiClient.dio.get('/tasks$query');
-    return (response.data as List).map((json) => Task.fromJson(json)).toList();
+    try {
+      final query = milestoneId != null ? '?milestoneId=$milestoneId' : '';
+      final response = await _apiClient.dio.get('/tasks$query');
+      if (response.data is List) {
+        return (response.data as List).map((json) => Task.fromJson(json)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<List<TaskDependency>> getTaskDependencies(String taskId) async {
-    final response = await _apiClient.dio.get('/tasks/$taskId/dependencies');
-    return (response.data as List).map((json) => TaskDependency.fromJson(json)).toList();
+    try {
+      final response = await _apiClient.dio.get('/tasks/$taskId/dependencies');
+      if (response.data is List) {
+        return (response.data as List).map((json) => TaskDependency.fromJson(json)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<List<MaterialItem>> getMaterials(String projectId) async {
-    final response = await _apiClient.dio.get('/materials?projectId=$projectId');
-    return (response.data as List).map((json) => MaterialItem.fromJson(json)).toList();
+    try {
+      final response = await _apiClient.dio.get('/materials?projectId=$projectId');
+      if (response.data is List) {
+        return (response.data as List).map((json) => MaterialItem.fromJson(json)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<List<ProgressPhoto>> getProgressPhotos(String projectId) async {
-    final response = await _apiClient.dio.get('/progress-photos?projectId=$projectId');
-    return (response.data as List).map((json) => ProgressPhoto.fromJson(json)).toList();
+    try {
+      final response = await _apiClient.dio.get('/progress-photos?projectId=$projectId');
+      if (response.data is List) {
+        return (response.data as List).map((json) => ProgressPhoto.fromJson(json)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<List<TimelineEvent>> getProjectTimeline(String projectId) async {
-    final response = await _apiClient.dio.get('/projects/$projectId/timeline');
-    return (response.data as List).map((json) => TimelineEvent.fromJson(json)).toList();
+    try {
+      final response = await _apiClient.dio.get('/projects/$projectId/timeline');
+      if (response.data is List) {
+        return (response.data as List).map((json) => TimelineEvent.fromJson(json)).toList();
+      }
+      return [];
+    } catch (_) {
+      return [];
+    }
   }
 
   Future<ProjectAnalytics> getProjectAnalytics(String projectId) async {
-    final response = await _apiClient.dio.get('/projects/$projectId/analytics');
-    return ProjectAnalytics.fromJson(response.data);
+    try {
+      final response = await _apiClient.dio.get('/projects/$projectId/analytics');
+      if (response.data is Map<String, dynamic>) {
+        return ProjectAnalytics.fromJson(response.data);
+      }
+      return ProjectAnalytics(
+        overallProgress: 0.0,
+        totalTasks: 0,
+        completedTasks: 0,
+        delayedTasks: 0,
+        totalMilestones: 0,
+        completedMilestones: 0,
+        delayedMilestones: 0,
+      );
+    } catch (_) {
+      return ProjectAnalytics(
+        overallProgress: 0.0,
+        totalTasks: 0,
+        completedTasks: 0,
+        delayedTasks: 0,
+        totalMilestones: 0,
+        completedMilestones: 0,
+        delayedMilestones: 0,
+      );
+    }
   }
   // --- MILESTONES ---
   Future<Milestone> createMilestone(Map<String, dynamic> data) async {

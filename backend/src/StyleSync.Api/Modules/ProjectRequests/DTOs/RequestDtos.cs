@@ -12,7 +12,8 @@ public record CreateRequestDto(
     decimal? Budget,
     string? Description,
     PaletteSelectionDto? Palette,
-    decimal? RoomSizeSqM = null
+    decimal? RoomSizeSqM = null,
+    List<string>? RequestedStyleTags = null
 );
 
 public record UpdateRequestDto(
@@ -21,7 +22,8 @@ public record UpdateRequestDto(
     decimal? Budget,
     string? Description,
     PaletteSelectionDto? Palette,
-    decimal? RoomSizeSqM = null
+    decimal? RoomSizeSqM = null,
+    List<string>? RequestedStyleTags = null
 );
 
 public record RequestSummaryDto(
@@ -60,7 +62,8 @@ public record RequestDetailDto(
     DateTime UpdatedAt,
     string? PaletteMode,
     string? PalettePresetId,
-    string? PaletteBaseHex
+    string? PaletteBaseHex,
+    List<string> RequestedStyleTags
 );
 
 public record PagedResult<T>(

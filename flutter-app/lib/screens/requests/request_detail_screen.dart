@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../modules/requests/models/request_models.dart';
 import '../../modules/requests/providers/requests_provider.dart';
+import '../../shared/widgets/main_bottom_nav_bar.dart';
 import 'new_request_screen.dart';
 import 'widgets/status_timeline.dart';
+import '../progress/project_timeline_screen.dart';
 
 class RequestDetailScreen extends ConsumerStatefulWidget {
   final String id;
@@ -214,15 +216,29 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
         ],
       ),
       body: _buildBody(),
-      bottomNavigationBar: _detail?.status == RequestStatus.draft
-          ? Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submitRequest,
-                child: _isSubmitting ? const CircularProgressIndicator(color: Colors.white) : const Text('Submit Request'),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_detail?.status == RequestStatus.draft)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submitRequest,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text('Submit Request'),
+                ),
               ),
-            )
-          : null,
+            ),
+          const MainBottomNavBar(currentIndex: 2),
+        ],
+      ),
     );
   }
 
@@ -269,6 +285,68 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
             history: _detail!.statusHistory,
             cancelReason: _detail!.cancelReason,
             flagReason: _detail!.flagReason,
+          ),
+          const SizedBox(height: 20),
+
+          // Live Project Execution & Progress Card
+          Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: const Color(0xFF8C4A3E).withValues(alpha: 0.25),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8C4A3E).withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.timeline_rounded, color: Color(0xFF8C4A3E), size: 24),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Project Execution & Progress',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Milestones, tasks, materials & site photos',
+                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8C4A3E),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProjectTimelineScreen(projectId: widget.id),
+                        ),
+                      );
+                    },
+                    child: const Text('Track Progress', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
           ),
           const SizedBox(height: 24),
 
