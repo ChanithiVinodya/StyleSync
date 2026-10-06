@@ -54,6 +54,11 @@ const AVAILABLE_CATEGORIES: string[] = [
   'Color Consultation'
 ];
 
+const normalizeListingStatus = (status: any): ListingStatus => {
+  if (status === 'Draft' || status === 0 || status === '0') return ListingStatus.Draft;
+  return ListingStatus.Published;
+};
+
 export const DesignerProfileForm: React.FC<DesignerProfileFormProps> = ({
   initialProfile,
   onSave,
@@ -70,7 +75,7 @@ export const DesignerProfileForm: React.FC<DesignerProfileFormProps> = ({
     ratePerSqFt: initialProfile?.ratePerSqFt?.toString() || '400',
     isAvailable: initialProfile?.isAvailable ?? true,
     maxConcurrentProjects: initialProfile?.maxConcurrentProjects?.toString() || '3',
-    listingStatus: initialProfile?.listingStatus ?? ListingStatus.Published,
+    listingStatus: normalizeListingStatus(initialProfile?.listingStatus),
   });
 
   const [customTagInput, setCustomTagInput] = useState('');
@@ -89,7 +94,7 @@ export const DesignerProfileForm: React.FC<DesignerProfileFormProps> = ({
         ratePerSqFt: initialProfile.ratePerSqFt?.toString() || '400',
         isAvailable: initialProfile.isAvailable ?? true,
         maxConcurrentProjects: initialProfile.maxConcurrentProjects?.toString() || '3',
-        listingStatus: initialProfile.listingStatus ?? ListingStatus.Published,
+        listingStatus: normalizeListingStatus(initialProfile.listingStatus),
       });
     }
   }, [initialProfile]);

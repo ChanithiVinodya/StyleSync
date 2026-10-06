@@ -186,6 +186,12 @@ public class DesignerService : IDesignerService
             ? request.MaxConcurrentProjects.Value 
             : (request.MaxConcurrentProjects ?? 3);
 
+        var status = request.ListingStatus ?? ListingStatus.Published;
+        if (!isAdmin && (status == ListingStatus.Suspended || status == ListingStatus.Archived))
+        {
+            status = ListingStatus.Published;
+        }
+
         var profile = new DesignerProfile
         {
             UserId = currentUserId,
@@ -198,7 +204,7 @@ public class DesignerService : IDesignerService
             RatePerSqFt = request.RatePerSqFt,
             IsAvailable = request.IsAvailable,
             MaxConcurrentProjects = maxProjects,
-            ListingStatus = ListingStatus.Draft, // new profiles start as Draft
+            ListingStatus = status,
             CreatedAtUtc = DateTime.UtcNow
         };
 

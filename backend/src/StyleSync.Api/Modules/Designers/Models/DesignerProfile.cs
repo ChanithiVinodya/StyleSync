@@ -22,7 +22,7 @@ public class DesignerProfile : BaseEntity
     public int MaxConcurrentProjects { get; set; } = 3;
     public decimal? AverageRating { get; set; }
 
-    public ListingStatus ListingStatus { get; set; } = ListingStatus.Draft;
+    public ListingStatus ListingStatus { get; set; } = ListingStatus.Published;
 
     public ICollection<PortfolioItem> PortfolioItems { get; set; } = new List<PortfolioItem>();
 }

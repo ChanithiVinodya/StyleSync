@@ -539,12 +539,20 @@ export const designerApi = {
 
       const created: PortfolioItem = await response.json();
       const designer = inMemoryDesigners.find(d => d.id === designerId);
-      if (designer && !designer.portfolioItems.some(i => i.id === created.id)) {
-        designer.portfolioItems = [created, ...designer.portfolioItems];
+      if (designer) {
+        const existingIdx = designer.portfolioItems.findIndex(i => i.id === created.id);
+        if (existingIdx >= 0) {
+          designer.portfolioItems[existingIdx] = created;
+        } else {
+          designer.portfolioItems = [created, ...designer.portfolioItems];
+        }
         saveStoredDesigners(inMemoryDesigners);
       }
       return created;
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof Error && !err.message.includes('fetch') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
       const newItem: PortfolioItem = {
         id: Date.now(),
         designerProfileId: designerId,
@@ -557,7 +565,7 @@ export const designerApi = {
         createdAtUtc: new Date().toISOString()
       };
       const designer = inMemoryDesigners.find(d => d.id === designerId);
-      if (designer && !designer.portfolioItems.some(i => i.id === newItem.id)) {
+      if (designer) {
         designer.portfolioItems = [newItem, ...designer.portfolioItems];
         saveStoredDesigners(inMemoryDesigners);
       }
@@ -590,7 +598,10 @@ export const designerApi = {
         saveStoredDesigners(inMemoryDesigners);
       }
       return updated;
-    } catch {
+    } catch (err: unknown) {
+      if (err instanceof Error && !err.message.includes('fetch') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
       const updatedItem: PortfolioItem = {
         id: itemId,
         designerProfileId: designerId,
@@ -673,7 +684,12 @@ export const designerApi = {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to delete portfolio item: ${response.statusText}`);
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `Failed to delete portfolio item: ${response.statusText}`);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && !err.message.includes('fetch') && !err.message.includes('Failed to fetch')) {
+        throw err;
       }
     } finally {
       const designer = inMemoryDesigners.find(d => d.id === designerId);

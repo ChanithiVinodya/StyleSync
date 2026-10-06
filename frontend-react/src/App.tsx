@@ -83,10 +83,26 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/designer/dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['Designer']}>
+                  <DesignerDashboard />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Client-only Routes */}
             <Route
               path="/client"
+              element={
+                <ProtectedRoute allowedRoles={['Client']}>
+                  <ClientDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client/dashboard"
               element={
                 <ProtectedRoute allowedRoles={['Client']}>
                   <ClientDashboard />

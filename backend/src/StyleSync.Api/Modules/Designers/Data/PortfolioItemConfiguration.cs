@@ -21,8 +21,8 @@ public class PortfolioItemConfiguration : IEntityTypeConfiguration<PortfolioItem
             .HasMaxLength(2000);
 
         builder.Property(p => p.ImageUrl)
-            .IsRequired()
-            .HasMaxLength(1000);
+            .HasColumnType("text")
+            .IsRequired();
 
         builder.Property(p => p.BudgetRangeLabel)
             .IsRequired()

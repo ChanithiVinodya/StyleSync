@@ -20,6 +20,8 @@ public static class DbSeeder
             try
             {
                 await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"ProjectRequests\" ADD COLUMN IF NOT EXISTS \"RequestedStyleTags\" text[] DEFAULT '{}';");
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"PortfolioItems\" ALTER COLUMN \"ImageUrl\" TYPE text;");
+                await context.Database.ExecuteSqlRawAsync("UPDATE \"DesignerProfiles\" SET \"ListingStatus\" = 1 WHERE \"ListingStatus\" = 0;");
             }
             catch
             {

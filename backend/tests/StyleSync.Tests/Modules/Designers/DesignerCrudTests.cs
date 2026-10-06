@@ -41,7 +41,7 @@ public class DesignerCrudTests
     }
 
     [Fact]
-    public async Task CreateProfile_ValidRequest_CreatesProfileAsDraft()
+    public async Task CreateProfile_ValidRequest_CreatesProfile()
     {
         using var context = CreateInMemoryDbContext();
         var service = CreateDesignerService(context);
@@ -55,7 +55,8 @@ public class DesignerCrudTests
             PriceRangeMin = 100000m,
             PriceRangeMax = 300000m,
             RatePerSqFt = 350m,
-            IsAvailable = true
+            IsAvailable = true,
+            ListingStatus = ListingStatus.Published
         };
 
         var currentUserId = Guid.NewGuid();
@@ -63,7 +64,7 @@ public class DesignerCrudTests
 
         Assert.NotNull(response);
         Assert.Equal("Test Studio", response.DisplayName);
-        Assert.Equal(ListingStatus.Draft, response.ListingStatus);
+        Assert.Equal(ListingStatus.Published, response.ListingStatus);
         Assert.Equal(3, response.MaxConcurrentProjects); // default 3
     }
 

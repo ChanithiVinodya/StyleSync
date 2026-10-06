@@ -93,6 +93,7 @@ export interface CreateDesignerProfileRequest {
   ratePerSqFt: number;
   isAvailable: boolean;
   maxConcurrentProjects?: number;
+  listingStatus?: ListingStatus;
 }
 
 export interface UpdateDesignerProfileRequest {

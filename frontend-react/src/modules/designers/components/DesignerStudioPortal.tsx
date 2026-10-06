@@ -23,7 +23,13 @@ export const DesignerStudioPortal: React.FC = () => {
   const [profile, setProfile] = useState<DesignerProfile | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<number | 'mine'>('mine');
   const [isCreating, setIsCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'profile' | 'portfolio'>('profile');
+  const [activeTab, setActiveTabState] = useState<'profile' | 'portfolio'>(() => {
+    return (sessionStorage.getItem('stylesync_studio_tab') as 'profile' | 'portfolio') || 'profile';
+  });
+  const setActiveTab = (tab: 'profile' | 'portfolio') => {
+    setActiveTabState(tab);
+    sessionStorage.setItem('stylesync_studio_tab', tab);
+  };
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
