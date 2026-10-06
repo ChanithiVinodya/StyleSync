@@ -159,6 +159,27 @@ public class DesignersController : ControllerBase
     }
 
     /// <summary>
+    /// Returns the authenticated designer's own profile, or 404 if not yet created.
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize(Roles = "Designer,Administrator,Admin")]
+    [ProducesResponseType(typeof(DesignerProfileResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized(new { message = "User ID could not be determined from authentication token." });
+
+        var profile = await _designerService.GetProfileByUserIdAsync(userId.Value);
+        if (profile == null)
+            return NotFound(new { message = "Designer profile not found for current user." });
+
+        return Ok(profile);
+    }
+
+    /// <summary>
     /// Public endpoint: returns full profile + portfolio gallery.
     /// </summary>
     [HttpGet("{id:int}")]

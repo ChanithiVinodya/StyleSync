@@ -27,7 +27,11 @@ export default function ProjectExecutionLayout() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-6">
-              <Link to="/admin/dashboard" className="text-[#57534E] dark:text-[#A8A29E] hover:text-[#C48A36] dark:hover:text-[#C48A36] transition-colors">
+              <Link
+                to={user?.role === 'Designer' ? '/designer' : user?.role === 'Client' ? '/client' : '/admin/dashboard'}
+                className="text-[#57534E] dark:text-[#A8A29E] hover:text-[#C48A36] dark:hover:text-[#C48A36] transition-colors"
+                title="Back to Dashboard"
+              >
                 <ArrowLeft className="w-5 h-5" />
               </Link>
               <div className="flex-shrink-0">

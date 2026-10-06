@@ -122,9 +122,43 @@ export const PortfolioManager: React.FC<PortfolioManagerProps> = ({
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
-        setFormState(prev => ({ ...prev, imageUrl: reader.result as string }));
-        setErrors(prev => ({ ...prev, imageUrl: undefined }));
-        setPreviewError(false);
+        const rawDataUrl = reader.result;
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1200;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const optimizedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+            setFormState(prev => ({ ...prev, imageUrl: optimizedDataUrl }));
+          } else {
+            setFormState(prev => ({ ...prev, imageUrl: rawDataUrl }));
+          }
+          setErrors(prev => ({ ...prev, imageUrl: undefined }));
+          setPreviewError(false);
+        };
+        img.onerror = () => {
+          setFormState(prev => ({ ...prev, imageUrl: rawDataUrl }));
+          setErrors(prev => ({ ...prev, imageUrl: undefined }));
+          setPreviewError(false);
+        };
+        img.src = rawDataUrl;
       }
     };
     reader.readAsDataURL(file);

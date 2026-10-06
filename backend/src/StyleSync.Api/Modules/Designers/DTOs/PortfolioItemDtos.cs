@@ -14,8 +14,6 @@ public class CreatePortfolioItemRequest
     public string Description { get; set; } = default!;
 
     [Required(ErrorMessage = "ImageUrl is required.")]
-    [Url(ErrorMessage = "ImageUrl must be a valid URL.")]
-    [StringLength(1000, ErrorMessage = "ImageUrl cannot exceed 1000 characters.")]
     public string ImageUrl { get; set; } = default!;
 
     [Required(ErrorMessage = "BudgetRangeLabel is required.")]

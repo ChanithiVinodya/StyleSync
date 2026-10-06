@@ -39,6 +39,7 @@ public class ExceptionHandlingMiddleware
             BadHttpRequestException badReq => ((int)HttpStatusCode.BadRequest, badReq.Message),
             InvalidOperationException conflict => ((int)HttpStatusCode.Conflict, conflict.Message),
             KeyNotFoundException notFound => ((int)HttpStatusCode.NotFound, notFound.Message),
+            Microsoft.EntityFrameworkCore.DbUpdateException dbEx => ((int)HttpStatusCode.InternalServerError, dbEx.InnerException?.Message ?? dbEx.Message),
             _ => ((int)HttpStatusCode.InternalServerError, exception.Message ?? "An unexpected error occurred.")
         };
 

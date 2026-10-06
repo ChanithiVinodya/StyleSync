@@ -21,9 +21,10 @@ import {
 } from '../types';
 
 interface DesignerProfileFormProps {
-  initialProfile: DesignerProfile;
-  onSave: (updated: UpdateDesignerProfileRequest) => Promise<void>;
+  initialProfile?: DesignerProfile | null;
+  onSave: (updated: any) => Promise<void>;
   isLoading?: boolean;
+  isCreateMode?: boolean;
 }
 
 const SUGGESTED_STYLES: string[] = [
@@ -53,22 +54,28 @@ const AVAILABLE_CATEGORIES: string[] = [
   'Color Consultation'
 ];
 
+const normalizeListingStatus = (status: any): ListingStatus => {
+  if (status === 'Draft' || status === 0 || status === '0') return ListingStatus.Draft;
+  return ListingStatus.Published;
+};
+
 export const DesignerProfileForm: React.FC<DesignerProfileFormProps> = ({
   initialProfile,
   onSave,
   isLoading = false,
+  isCreateMode = false,
 }) => {
   const [formState, setFormState] = useState<DesignerProfileFormState>({
-    displayName: initialProfile.displayName || '',
-    bio: initialProfile.bio || '',
-    styleTags: initialProfile.styleTags || [],
-    serviceCategories: initialProfile.serviceCategories || [],
-    priceRangeMin: initialProfile.priceRangeMin?.toString() || '100000',
-    priceRangeMax: initialProfile.priceRangeMax?.toString() || '500000',
-    ratePerSqFt: initialProfile.ratePerSqFt?.toString() || '400',
-    isAvailable: initialProfile.isAvailable ?? true,
-    maxConcurrentProjects: initialProfile.maxConcurrentProjects?.toString() || '3',
-    listingStatus: initialProfile.listingStatus ?? ListingStatus.Published,
+    displayName: initialProfile?.displayName || '',
+    bio: initialProfile?.bio || '',
+    styleTags: initialProfile?.styleTags || [],
+    serviceCategories: initialProfile?.serviceCategories || [],
+    priceRangeMin: initialProfile?.priceRangeMin?.toString() || '100000',
+    priceRangeMax: initialProfile?.priceRangeMax?.toString() || '500000',
+    ratePerSqFt: initialProfile?.ratePerSqFt?.toString() || '400',
+    isAvailable: initialProfile?.isAvailable ?? true,
+    maxConcurrentProjects: initialProfile?.maxConcurrentProjects?.toString() || '3',
+    listingStatus: normalizeListingStatus(initialProfile?.listingStatus),
   });
 
   const [customTagInput, setCustomTagInput] = useState('');
@@ -76,18 +83,20 @@ export const DesignerProfileForm: React.FC<DesignerProfileFormProps> = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    setFormState({
-      displayName: initialProfile.displayName || '',
-      bio: initialProfile.bio || '',
-      styleTags: initialProfile.styleTags || [],
-      serviceCategories: initialProfile.serviceCategories || [],
-      priceRangeMin: initialProfile.priceRangeMin?.toString() || '100000',
-      priceRangeMax: initialProfile.priceRangeMax?.toString() || '500000',
-      ratePerSqFt: initialProfile.ratePerSqFt?.toString() || '400',
-      isAvailable: initialProfile.isAvailable ?? true,
-      maxConcurrentProjects: initialProfile.maxConcurrentProjects?.toString() || '3',
-      listingStatus: initialProfile.listingStatus ?? ListingStatus.Published,
-    });
+    if (initialProfile) {
+      setFormState({
+        displayName: initialProfile.displayName || '',
+        bio: initialProfile.bio || '',
+        styleTags: initialProfile.styleTags || [],
+        serviceCategories: initialProfile.serviceCategories || [],
+        priceRangeMin: initialProfile.priceRangeMin?.toString() || '100000',
+        priceRangeMax: initialProfile.priceRangeMax?.toString() || '500000',
+        ratePerSqFt: initialProfile.ratePerSqFt?.toString() || '400',
+        isAvailable: initialProfile.isAvailable ?? true,
+        maxConcurrentProjects: initialProfile.maxConcurrentProjects?.toString() || '3',
+        listingStatus: normalizeListingStatus(initialProfile.listingStatus),
+      });
+    }
   }, [initialProfile]);
 
   const validateForm = (): boolean => {
@@ -547,7 +556,7 @@ export const DesignerProfileForm: React.FC<DesignerProfileFormProps> = ({
         <div className="flex items-start gap-2 p-3 rounded-xl bg-[#FAF3E8] dark:bg-[#241F1A] border border-[#EADBCA] dark:border-[#382F24] text-[11px] text-[#925C18] dark:text-[#E8A849]">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
           <span>
-            <strong>Capacity Guard Notice:</strong> Your concurrent project limit is currently set to <strong>{initialProfile.maxConcurrentProjects}</strong> (configured by Administrator). If your active projects reach this limit, the system will automatically hold new candidate assignments regardless of availability status.
+            <strong>Capacity Guard Notice:</strong> Your concurrent project limit is currently set to <strong>{initialProfile?.maxConcurrentProjects ?? 3}</strong> (configured by Administrator). If your active projects reach this limit, the system will automatically hold new candidate assignments regardless of availability status.
           </span>
         </div>
       </div>
@@ -560,7 +569,7 @@ export const DesignerProfileForm: React.FC<DesignerProfileFormProps> = ({
           className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full font-medium text-sm text-[#FAF8F5] dark:text-[#1C1917] bg-[#1C1917] dark:bg-[#FAF8F5] hover:bg-[#322C27] dark:hover:bg-[#EAE4D9] shadow-md hover:shadow-lg transition-all cursor-pointer disabled:opacity-50"
         >
           <Save className="w-4 h-4" />
-          <span>{isLoading ? 'Saving Changes...' : 'Save Profile Changes'}</span>
+          <span>{isLoading ? (isCreateMode ? 'Creating Profile...' : 'Saving Changes...') : (isCreateMode ? 'Create Studio Profile' : 'Save Profile Changes')}</span>
         </button>
       </div>
     </form>

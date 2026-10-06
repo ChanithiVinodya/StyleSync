@@ -55,7 +55,7 @@ public class DesignerProfileService : IDesignerProfileService
             RatePerSqFt = dto.RatePerSqFt,
             IsAvailable = dto.IsAvailable,
             MaxConcurrentProjects = dto.MaxConcurrentProjects ?? 3,
-            ListingStatus = ListingStatus.Draft,
+            ListingStatus = dto.ListingStatus ?? ListingStatus.Published,
             CreatedAtUtc = DateTime.UtcNow,
             UpdatedAtUtc = DateTime.UtcNow
         };

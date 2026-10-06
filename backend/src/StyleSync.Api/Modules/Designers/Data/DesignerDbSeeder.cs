@@ -9,6 +9,15 @@ public static class DesignerDbSeeder
 {
     public static async Task SeedAsync(AppDbContext context)
     {
+        if (context.Database.IsNpgsql())
+        {
+            try
+            {
+                await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"PortfolioItems\" ALTER COLUMN \"ImageUrl\" TYPE text;");
+            }
+            catch { }
+        }
+
         if (await context.DesignerProfiles.AnyAsync())
         {
             if (!await context.PortfolioItems.AnyAsync())

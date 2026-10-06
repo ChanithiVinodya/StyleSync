@@ -41,7 +41,7 @@ public class DesignerCrudTests
     }
 
     [Fact]
-    public async Task CreateProfile_ValidRequest_CreatesProfileAsDraft()
+    public async Task CreateProfile_ValidRequest_CreatesProfile()
     {
         using var context = CreateInMemoryDbContext();
         var service = CreateDesignerService(context);
@@ -55,7 +55,8 @@ public class DesignerCrudTests
             PriceRangeMin = 100000m,
             PriceRangeMax = 300000m,
             RatePerSqFt = 350m,
-            IsAvailable = true
+            IsAvailable = true,
+            ListingStatus = ListingStatus.Published
         };
 
         var currentUserId = Guid.NewGuid();
@@ -63,7 +64,7 @@ public class DesignerCrudTests
 
         Assert.NotNull(response);
         Assert.Equal("Test Studio", response.DisplayName);
-        Assert.Equal(ListingStatus.Draft, response.ListingStatus);
+        Assert.Equal(ListingStatus.Published, response.ListingStatus);
         Assert.Equal(3, response.MaxConcurrentProjects); // default 3
     }
 
@@ -258,5 +259,37 @@ public class DesignerCrudTests
 
         var items = await service.GetPortfolioItemsAsync(profile.Id, publicOnly: false);
         Assert.Empty(items);
+    }
+
+    [Fact]
+    public async Task GetProfileByUserId_ExistingProfile_ReturnsProfile()
+    {
+        using var context = CreateInMemoryDbContext();
+        var service = CreateDesignerService(context);
+
+        var ownerId = Guid.NewGuid();
+        var profile = new DesignerProfile
+        {
+            UserId = ownerId,
+            DisplayName = "Owner Studio",
+            Bio = "Interior Design Studio",
+            ListingStatus = ListingStatus.Published
+        };
+        context.DesignerProfiles.Add(profile);
+        await context.SaveChangesAsync();
+
+        var result = await service.GetProfileByUserIdAsync(ownerId);
+        Assert.NotNull(result);
+        Assert.Equal("Owner Studio", result.DisplayName);
+    }
+
+    [Fact]
+    public async Task GetProfileByUserId_NoProfileForUser_ReturnsNull()
+    {
+        using var context = CreateInMemoryDbContext();
+        var service = CreateDesignerService(context);
+
+        var result = await service.GetProfileByUserIdAsync(Guid.NewGuid());
+        Assert.Null(result);
     }
 }

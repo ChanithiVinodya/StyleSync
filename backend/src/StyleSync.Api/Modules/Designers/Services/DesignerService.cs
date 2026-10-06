@@ -150,6 +150,20 @@ public class DesignerService : IDesignerService
         return MapToResponse(profile, activeProjects, _capacityGuard.IsUnderCapacity(profile, activeProjects), includeUnpublished);
     }
 
+    public async Task<DesignerProfileResponse?> GetProfileByUserIdAsync(Guid userId)
+    {
+        var profile = await _context.DesignerProfiles
+            .Include(d => d.PortfolioItems)
+            .FirstOrDefaultAsync(d => d.UserId == userId);
+
+        if (profile == null)
+            return null;
+
+        var activeProjects = await _capacityGuard.GetActiveProjectCountAsync(profile.Id);
+
+        return MapToResponse(profile, activeProjects, _capacityGuard.IsUnderCapacity(profile, activeProjects), includeUnpublished: true);
+    }
+
     public async Task<DesignerProfileResponse> CreateProfileAsync(Guid currentUserId, bool isAdmin, CreateDesignerProfileRequest request)
     {
         if (request.PriceRangeMin > request.PriceRangeMax)
@@ -172,6 +186,12 @@ public class DesignerService : IDesignerService
             ? request.MaxConcurrentProjects.Value 
             : (request.MaxConcurrentProjects ?? 3);
 
+        var status = request.ListingStatus ?? ListingStatus.Published;
+        if (!isAdmin && (status == ListingStatus.Suspended || status == ListingStatus.Archived))
+        {
+            status = ListingStatus.Published;
+        }
+
         var profile = new DesignerProfile
         {
             UserId = currentUserId,
@@ -184,7 +204,7 @@ public class DesignerService : IDesignerService
             RatePerSqFt = request.RatePerSqFt,
             IsAvailable = request.IsAvailable,
             MaxConcurrentProjects = maxProjects,
-            ListingStatus = ListingStatus.Draft, // new profiles start as Draft
+            ListingStatus = status,
             CreatedAtUtc = DateTime.UtcNow
         };
 

@@ -27,6 +27,7 @@ public class CreateDesignerProfileRequest
 
     public bool IsAvailable { get; set; } = true;
     public int? MaxConcurrentProjects { get; set; }
+    public ListingStatus? ListingStatus { get; set; }
 }
 
 public class UpdateDesignerProfileRequest

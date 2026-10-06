@@ -37,6 +37,26 @@ public class DesignerProfilesController : ControllerBase
         return Ok(profile);
     }
 
+    [HttpGet("me")]
+    [Authorize(Roles = "Admin,Designer")]
+    [ProducesResponseType(typeof(DesignerProfileResponse), 200)]
+    [ProducesResponseType(404)]
+    [ProducesResponseType(401)]
+    public async Task<IActionResult> GetMyProfile()
+    {
+        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                          ?? User.FindFirst("sub")?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized();
+        }
+
+        var profile = await _service.GetByUserIdAsync(userId);
+        if (profile == null) return NotFound();
+        return Ok(profile);
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin,Designer")]
     [ProducesResponseType(typeof(DesignerProfileResponse), 201)]

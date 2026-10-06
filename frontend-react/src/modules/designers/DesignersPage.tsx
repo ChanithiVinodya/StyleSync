@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../auth/AuthContext';
 import { DesignerDirectoryPage } from './pages/DesignerDirectoryPage';
 import { DesignerProfileGalleryPage } from './pages/DesignerProfileGalleryPage';
 import { DesignerPortfolioGalleryPage } from './pages/DesignerPortfolioGalleryPage';
@@ -11,6 +12,7 @@ interface DesignersPageProps {
 }
 
 export default function DesignersPage({ initialRole = 'admin' }: DesignersPageProps) {
+  const { user } = useAuth();
   const { id } = useParams<{ id?: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -125,10 +127,16 @@ export default function DesignersPage({ initialRole = 'admin' }: DesignersPagePr
         <div className="bg-[#1C1917] text-[#FAF8F5] px-4 py-2.5 flex items-center justify-between text-xs border-b border-[#38312B]">
           <span className="font-semibold text-[#E8A849]">Designer Studio Management Workspace</span>
           <button
-            onClick={handleExitToDirectory}
+            onClick={() => {
+              if (user?.role === 'Designer') {
+                navigate('/designer');
+              } else {
+                handleExitToDirectory();
+              }
+            }}
             className="underline hover:text-white transition-colors cursor-pointer"
           >
-            ← Exit to Public Directory
+            {user?.role === 'Designer' ? '← Back to Designer Dashboard' : '← Exit to Public Directory'}
           </button>
         </div>
         <DesignerStudioPortal />
