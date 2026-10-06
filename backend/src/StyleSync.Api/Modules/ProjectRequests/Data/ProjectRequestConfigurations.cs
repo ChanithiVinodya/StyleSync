@@ -27,6 +27,8 @@ public class ProjectRequestConfigurations : IEntityTypeConfiguration<ProjectRequ
         builder.Property(x => x.RoomSizeSqFt)
             .HasColumnType("decimal(18,2)");
 
+        builder.Ignore(x => x.RequestedStyleTags);
+
         builder.HasIndex(x => new { x.ClientId, x.Status });
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.CreatedAt);

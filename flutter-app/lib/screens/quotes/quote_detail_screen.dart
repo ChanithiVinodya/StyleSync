@@ -1,5 +1,6 @@
 // TODO(Student 3): implement this screen — see PRD Section 3.1
 import 'package:flutter/material.dart';
+import '../../shared/widgets/main_bottom_nav_bar.dart';
 
 class QuoteDetailScreen extends StatelessWidget {
   final String? id;
@@ -12,6 +13,7 @@ class QuoteDetailScreen extends StatelessWidget {
       body: const Center(
         child: Text('Coming soon — build owned by Student 3'),
       ),
+      bottomNavigationBar: const MainBottomNavBar(currentIndex: 3),
     );
   }
 }

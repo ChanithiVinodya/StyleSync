@@ -36,9 +36,9 @@ public class RequestValidationRules
             errors.Add(new ValidationError("RoomSizeSqFt", "ROOM_SIZE_INVALID", "Length and width must produce a room size > 0 and <= 10000 sq ft if provided."));
         }
 
-        if (!string.IsNullOrEmpty(request.Description) && (request.Description.Length < 10 || request.Description.Length > 2000))
+        if (!string.IsNullOrEmpty(request.Description) && request.Description.Length > 2000)
         {
-            errors.Add(new ValidationError("Description", "DESCRIPTION_INVALID_LENGTH", "Description must be between 10 and 2000 characters."));
+            errors.Add(new ValidationError("Description", "DESCRIPTION_INVALID_LENGTH", "Description cannot exceed 2000 characters."));
         }
 
         ValidatePalette(request, errors);

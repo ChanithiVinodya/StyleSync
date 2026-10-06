@@ -4,6 +4,7 @@ import 'package:provider/provider.dart' as legacy_provider;
 import '../../main.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../routes.dart';
+import '../../shared/widgets/main_bottom_nav_bar.dart';
 
 /// Modern Profile & Settings Screen for StyleSync
 /// Implements user profile presentation, activity counters, modern aesthetics,
@@ -470,6 +471,7 @@ class ProfileScreen extends ConsumerWidget {
           const SizedBox(height: 20),
         ],
       ),
+      bottomNavigationBar: const MainBottomNavBar(currentIndex: 0),
     );
   }
 

@@ -174,6 +174,7 @@ class RequestDetail {
   final String? paletteMode;
   final String? palettePresetId;
   final String? paletteBaseHex;
+  final List<String> requestedStyleTags;
   final List<PaletteColour> palette;
   final List<MoodboardImage> moodboard;
   final List<StatusHistoryEntry> statusHistory;
@@ -198,6 +199,7 @@ class RequestDetail {
     this.paletteMode,
     this.palettePresetId,
     this.paletteBaseHex,
+    this.requestedStyleTags = const [],
     required this.palette,
     required this.moodboard,
     required this.statusHistory,
@@ -224,6 +226,7 @@ class RequestDetail {
       paletteMode: json['paletteMode'] as String?,
       palettePresetId: json['palettePresetId'] as String?,
       paletteBaseHex: json['paletteBaseHex'] as String?,
+      requestedStyleTags: ((json['requestedStyleTags'] ?? json['RequestedStyleTags']) as List?)?.map((e) => e.toString()).toList() ?? [],
       palette: ((json['palettes'] ?? json['palette']) as List?)?.map((e) => PaletteColour.fromJson(e as Map<String, dynamic>)).toList() ?? [],
       moodboard: ((json['moodboards'] ?? json['moodboard']) as List?)?.map((e) => MoodboardImage.fromJson(e as Map<String, dynamic>)).toList() ?? [],
       statusHistory: ((json['statusHistories'] ?? json['statusHistory']) as List?)?.map((e) => StatusHistoryEntry.fromJson(e as Map<String, dynamic>)).toList() ?? [],
@@ -310,10 +313,12 @@ class ApiProblem {
       }
     }
     
+    final msg = json['title'] as String? ?? json['message'] as String? ?? json['error'] as String? ?? 'An error occurred';
+    final det = json['detail'] as String? ?? json['message'] as String?;
     return ApiProblem(
-      title: json['title'] as String? ?? 'An error occurred',
+      title: msg,
       status: json['status'] as int? ?? 400,
-      detail: json['detail'] as String?,
+      detail: det,
       errors: errorsList,
     );
   }

@@ -6,6 +6,7 @@ import '../../modules/requests/models/request_models.dart';
 import '../../modules/requests/providers/requests_provider.dart';
 import 'new_request_screen.dart';
 import 'request_detail_screen.dart';
+import '../progress/project_timeline_screen.dart';
 
 class MyRequestsScreen extends ConsumerStatefulWidget {
   const MyRequestsScreen({super.key});
@@ -417,6 +418,33 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                 itemBuilder: (ctx) => [
                   const PopupMenuItem(value: 'edit', child: Text('Edit')),
                   const PopupMenuItem(value: 'delete', child: Text('Delete', style: TextStyle(color: Colors.red))),
+                ],
+              )
+            else
+              PopupMenuButton<String>(
+                onSelected: (val) {
+                  if (val == 'progress') {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ProjectTimelineScreen(projectId: req.id)),
+                    );
+                  } else if (val == 'details') {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => RequestDetailScreen(id: req.id)))
+                        .then((_) => _fetchRequests(refresh: true));
+                  }
+                },
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(
+                    value: 'progress',
+                    child: Row(
+                      children: [
+                        Icon(Icons.timeline_rounded, size: 18, color: Color(0xFF8C4A3E)),
+                        SizedBox(width: 8),
+                        Text('Track Progress'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(value: 'details', child: Text('View Details')),
                 ],
               ),
           ],

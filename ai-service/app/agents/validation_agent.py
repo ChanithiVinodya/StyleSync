@@ -9,7 +9,10 @@ See app/schemas.py for the expected ValidationResult output shape.
 """
 import os
 import json
-from langchain_openai import ChatOpenAI
+try:
+    from langchain_openai import ChatOpenAI
+except ImportError:
+    ChatOpenAI = None
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.schemas import DesignerMatch, ProjectScope, ValidationResult, RuleCheck, WorkflowState
@@ -58,32 +61,27 @@ Do not create additional validation rules.
 The validate() tool is the sole authority for determining whether each validation rule passes or fails.
 """
 
-    llm = ChatOpenAI(
-        model="gpt-4o",
-        temperature=0.0,
-        api_key=os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
-    ).bind_tools([validate], tool_choice="validate")
+    if ChatOpenAI is not None:
+        try:
+            llm = ChatOpenAI(
+                model="gpt-4o",
+                temperature=0.0,
+                api_key=os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+            ).bind_tools([validate], tool_choice="validate")
 
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=f"Please validate this proposal: {json.dumps(proposal_data)}")
-    ]
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=f"Please validate this proposal: {json.dumps(proposal_data)}")
+            ]
 
-    try:
-        response = llm.invoke(messages)
-        tool_call = response.tool_calls[0]
-        # Instead of parsing tool response recursively with LLM, we just execute the deterministic tool directly
-        # based on the LLM's chosen tool call (which is forced to be `validate` with the provided args).
-        tool_args = tool_call["args"]
-        # In this specific architecture rule, we can execute the tool locally for security boundary:
-        raw_result = validate.invoke(tool_args)
-    except Exception as e:
-        # Fallback in case of unexpected errors, fail closed
-        raw_result = {
-            "valid": False,
-            "checks": [],
-            "errors": [f"Validation tool error: {str(e)}"]
-        }
+            response = llm.invoke(messages)
+            tool_call = response.tool_calls[0]
+            tool_args = tool_call["args"]
+            raw_result = validate.invoke(tool_args)
+        except Exception as e:
+            raw_result = validate.invoke({"proposal": proposal_data})
+    else:
+        raw_result = validate.invoke({"proposal": proposal_data})
 
     # Map raw_result back to our ValidationResult schema
     checks = []

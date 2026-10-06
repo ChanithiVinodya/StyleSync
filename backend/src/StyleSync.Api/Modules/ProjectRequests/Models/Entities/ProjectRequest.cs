@@ -45,6 +45,9 @@ public class ProjectRequest
     public string? PalettePresetId { get; set; }
     public string? PaletteBaseHex { get; set; }
 
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public List<string> RequestedStyleTags { get; set; } = new();
+
     public List<MoodboardImage> MoodboardImages { get; set; } = new();
     public List<SuggestedPalette> SuggestedPalettes { get; set; } = new();
     public List<RequestStatusHistory> StatusHistories { get; set; } = new();

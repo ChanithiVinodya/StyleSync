@@ -280,6 +280,39 @@ public class DesignersController : ControllerBase
     }
 
     /// <summary>
+    /// Designer updates their own portfolio item.
+    /// </summary>
+    [HttpPut("{id:int}/portfolio/{itemId:int}")]
+    [Authorize(Roles = "Designer,Administrator,Admin")]
+    [ProducesResponseType(typeof(PortfolioItemResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdatePortfolioItem(int id, int itemId, [FromBody] UpdatePortfolioItemRequest request)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var userId = User.GetUserId();
+        if (userId == null)
+            return Unauthorized(new { message = "User ID could not be determined from authentication token." });
+
+        try
+        {
+            var updated = await _designerService.UpdatePortfolioItemAsync(id, itemId, userId.Value, User.IsAdmin(), request);
+            if (updated == null)
+                return NotFound(new { message = $"Portfolio item with ID {itemId} not found for designer {id}." });
+
+            return Ok(updated);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
+    }
+
+    /// <summary>
     /// List portfolio items for gallery view.
     /// </summary>
     [HttpGet("{id:int}/portfolio")]

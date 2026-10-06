@@ -7,6 +7,7 @@ import {
   CreateDesignerProfileRequest, 
   UpdateDesignerProfileRequest, 
   CreatePortfolioItemRequest,
+  UpdatePortfolioItemRequest,
   ListingStatus
 } from '../types';
 
@@ -234,7 +235,38 @@ const SEED_DESIGNERS: DesignerProfile[] = [
   }
 ];
 
-const inMemoryDesigners: DesignerProfile[] = [...SEED_DESIGNERS];
+const STORAGE_KEY = 'stylesync_designers_store';
+
+function loadStoredDesigners(): DesignerProfile[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    if (data) return JSON.parse(data);
+  } catch (e) {
+    console.error('Failed to load designers from local storage:', e);
+  }
+  return JSON.parse(JSON.stringify(SEED_DESIGNERS));
+}
+
+function saveStoredDesigners(designers: DesignerProfile[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(designers));
+  } catch (e) {
+    console.error('Failed to save designers to local storage:', e);
+  }
+}
+
+let inMemoryDesigners: DesignerProfile[] = loadStoredDesigners();
+
+const getAuthHeaders = (): HeadersInit => {
+  const token = localStorage.getItem('stylesync_jwt_token');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
 
 export const designerApi = {
   async getListings(query: DesignerQueryParameters): Promise<PagedResult<DesignerListingItem>> {
@@ -248,14 +280,16 @@ export const designerApi = {
     params.append('pageSize', (query.pageSize || 9).toString());
 
     try {
-      const response = await fetch(`${API_BASE}?${params.toString()}`);
+      const response = await fetch(`${API_BASE}?${params.toString()}`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch designer listings: ${response.statusText}`);
       }
       const data: PagedResult<DesignerListingItem> = await response.json();
       return data;
     } catch {
-      // Offline fallback: filter in-memory published designers
+      // Offline / fallback: filter in-memory published designers
       let filtered = inMemoryDesigners.filter(d => d.listingStatus === ListingStatus.Published);
 
       // Style tag filter
@@ -338,11 +372,21 @@ export const designerApi = {
 
   async getProfile(id: number): Promise<DesignerProfile> {
     try {
-      const response = await fetch(`${API_BASE}/${id}`);
+      const response = await fetch(`${API_BASE}/${id}`, {
+        headers: getAuthHeaders()
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch profile: ${response.statusText}`);
       }
       const data: DesignerProfile = await response.json();
+      // Sync into local memory
+      const index = inMemoryDesigners.findIndex(d => d.id === id);
+      if (index >= 0) {
+        inMemoryDesigners[index] = data;
+      } else {
+        inMemoryDesigners.push(data);
+      }
+      saveStoredDesigners(inMemoryDesigners);
       return data;
     } catch {
       const found = inMemoryDesigners.find(d => d.id === id);
@@ -353,7 +397,7 @@ export const designerApi = {
   async createProfile(request: CreateDesignerProfileRequest): Promise<DesignerProfile> {
     const response = await fetch(API_BASE, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify(request)
     });
 
@@ -364,6 +408,7 @@ export const designerApi = {
 
     const created: DesignerProfile = await response.json();
     inMemoryDesigners.push(created);
+    saveStoredDesigners(inMemoryDesigners);
     return created;
   },
 
@@ -371,7 +416,7 @@ export const designerApi = {
     try {
       const response = await fetch(`${API_BASE}/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(request)
       });
 
@@ -383,6 +428,7 @@ export const designerApi = {
       const updated: DesignerProfile = await response.json();
       const index = inMemoryDesigners.findIndex(d => d.id === id);
       if (index >= 0) inMemoryDesigners[index] = updated;
+      saveStoredDesigners(inMemoryDesigners);
       return updated;
     } catch {
       const index = inMemoryDesigners.findIndex(d => d.id === id);
@@ -401,6 +447,7 @@ export const designerApi = {
           listingStatus: request.listingStatus ?? inMemoryDesigners[index].listingStatus,
           updatedAtUtc: new Date().toISOString()
         };
+        saveStoredDesigners(inMemoryDesigners);
         return inMemoryDesigners[index];
       }
       throw new Error('Designer not found');
@@ -411,7 +458,7 @@ export const designerApi = {
     try {
       const response = await fetch(`${API_BASE}/${designerId}/portfolio`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(request)
       });
 
@@ -422,8 +469,9 @@ export const designerApi = {
 
       const created: PortfolioItem = await response.json();
       const designer = inMemoryDesigners.find(d => d.id === designerId);
-      if (designer) {
+      if (designer && !designer.portfolioItems.some(i => i.id === created.id)) {
         designer.portfolioItems = [created, ...designer.portfolioItems];
+        saveStoredDesigners(inMemoryDesigners);
       }
       return created;
     } catch {
@@ -439,20 +487,72 @@ export const designerApi = {
         createdAtUtc: new Date().toISOString()
       };
       const designer = inMemoryDesigners.find(d => d.id === designerId);
-      if (designer) {
+      if (designer && !designer.portfolioItems.some(i => i.id === newItem.id)) {
         designer.portfolioItems = [newItem, ...designer.portfolioItems];
+        saveStoredDesigners(inMemoryDesigners);
       }
       return newItem;
     }
   },
 
+  async updatePortfolioItem(
+    designerId: number,
+    itemId: number,
+    request: UpdatePortfolioItemRequest
+  ): Promise<PortfolioItem> {
+    try {
+      const response = await fetch(`${API_BASE}/${designerId}/portfolio/${itemId}`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(request)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `Failed to update portfolio item: ${response.statusText}`);
+      }
+
+      const updated: PortfolioItem = await response.json();
+      const designer = inMemoryDesigners.find(d => d.id === designerId);
+      if (designer) {
+        const idx = designer.portfolioItems.findIndex(i => i.id === itemId);
+        if (idx >= 0) designer.portfolioItems[idx] = updated;
+        saveStoredDesigners(inMemoryDesigners);
+      }
+      return updated;
+    } catch {
+      const updatedItem: PortfolioItem = {
+        id: itemId,
+        designerProfileId: designerId,
+        title: request.title,
+        description: request.description,
+        imageUrl: request.imageUrl,
+        budgetRangeLabel: request.budgetRangeLabel,
+        clientInitials: request.clientInitials,
+        completionStatusBadge: request.completionStatusBadge,
+        createdAtUtc: new Date().toISOString(),
+        updatedAtUtc: new Date().toISOString()
+      };
+      const designer = inMemoryDesigners.find(d => d.id === designerId);
+      if (designer) {
+        const idx = designer.portfolioItems.findIndex(i => i.id === itemId);
+        if (idx >= 0) {
+          designer.portfolioItems[idx] = updatedItem;
+        } else {
+          designer.portfolioItems.push(updatedItem);
+        }
+        saveStoredDesigners(inMemoryDesigners);
+      }
+      return updatedItem;
+    }
+  },
+
   async getAllProfiles(): Promise<DesignerProfile[]> {
     try {
-      // In production/API, fetch all profiles (accessible by Admin)
-      const response = await fetch(`${API_BASE}?pageSize=100`);
+      const response = await fetch(`${API_BASE}?pageSize=100`, {
+        headers: getAuthHeaders()
+      });
       if (response.ok) {
-        const data: PagedResult<DesignerListingItem> = await response.json();
-        // Merge with in-memory or full profiles
         return inMemoryDesigners;
       }
       return [...inMemoryDesigners];
@@ -498,7 +598,8 @@ export const designerApi = {
   async deletePortfolioItem(designerId: number, itemId: number): Promise<void> {
     try {
       const response = await fetch(`${API_BASE}/${designerId}/portfolio/${itemId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
       if (!response.ok) {
@@ -508,6 +609,7 @@ export const designerApi = {
       const designer = inMemoryDesigners.find(d => d.id === designerId);
       if (designer) {
         designer.portfolioItems = designer.portfolioItems.filter(item => item.id !== itemId);
+        saveStoredDesigners(inMemoryDesigners);
       }
     }
   }

@@ -10,6 +10,7 @@ public interface IDesignerService
     Task<DesignerProfileResponse> UpdateProfileAsync(int id, Guid currentUserId, bool isAdmin, UpdateDesignerProfileRequest request);
     Task<bool> ArchiveProfileAsync(int id, bool isAdmin);
     Task<PortfolioItemResponse> AddPortfolioItemAsync(int designerId, Guid currentUserId, bool isAdmin, CreatePortfolioItemRequest request);
+    Task<PortfolioItemResponse?> UpdatePortfolioItemAsync(int designerId, int itemId, Guid currentUserId, bool isAdmin, UpdatePortfolioItemRequest request);
     Task<List<PortfolioItemResponse>> GetPortfolioItemsAsync(int designerId, bool publicOnly = true);
     Task<bool> DeletePortfolioItemAsync(int designerId, int itemId, Guid currentUserId, bool isAdmin);
     Task<DesignerAvailabilityResponse?> GetAvailabilityAsync(int id, CancellationToken cancellationToken = default);

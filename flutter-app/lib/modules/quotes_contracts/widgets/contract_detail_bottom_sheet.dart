@@ -4,6 +4,7 @@ import '../models/quote.dart';
 import '../services/quotes_contracts_service.dart';
 import '../theme/qc_theme.dart';
 import 'status_badge.dart';
+import '../../../screens/progress/project_timeline_screen.dart';
 
 class ContractDetailBottomSheet extends StatefulWidget {
   final Contract contract;
@@ -309,6 +310,36 @@ class _ContractDetailBottomSheetState extends State<ContractDetailBottomSheet> {
                       ),
                     ],
                   ),
+                  if (_contract.projectRequestId != null || quote?.projectRequestId != null) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: QcTheme.gold,
+                          foregroundColor: Colors.black,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 0,
+                        ),
+                        onPressed: () {
+                          final pId = _contract.projectRequestId ?? quote?.projectRequestId;
+                          Navigator.of(context).pop();
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProjectTimelineScreen(projectId: pId),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.timeline_rounded, size: 18),
+                        label: const Text(
+                          'Track Live Project Progress',
+                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
 
                   // Fully submitted quote details Section Header

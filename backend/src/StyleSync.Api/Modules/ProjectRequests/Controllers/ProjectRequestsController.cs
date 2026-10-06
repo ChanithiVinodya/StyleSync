@@ -77,13 +77,24 @@ public class ProjectRequestsController : ControllerBase
     [Authorize(Roles = "Client")]
     public async Task<IActionResult> CreateDraft([FromBody] CreateRequestDto dto)
     {
+        var initialDesc = dto.Description ?? string.Empty;
+        if (dto.RequestedStyleTags != null && dto.RequestedStyleTags.Any())
+        {
+            var styleTag = $"[Styles: {string.Join(", ", dto.RequestedStyleTags)}]";
+            if (!initialDesc.Contains("[Styles:"))
+            {
+                initialDesc = string.IsNullOrEmpty(initialDesc) ? styleTag : $"{initialDesc}\n\n{styleTag}";
+            }
+        }
+
         var request = new ProjectRequest
         {
             ClientId = _currentUser.Id,
             RoomType = dto.RoomType ?? RoomType.LivingRoom,
             RoomSizeSqFt = dto.RoomSizeSqFt ?? dto.RoomSizeSqM ?? 0m,
             Budget = dto.Budget ?? 0m,
-            Description = dto.Description ?? string.Empty,
+            Description = initialDesc,
+            RequestedStyleTags = dto.RequestedStyleTags ?? new List<string>(),
             Status = RequestStatus.Draft,
             ReferenceCode = $"REQ-{new Random().Next(100000, 999999)}"
         };
@@ -183,6 +194,19 @@ public class ProjectRequestsController : ControllerBase
         request.RoomSizeSqFt = dto.RoomSizeSqFt ?? dto.RoomSizeSqM ?? request.RoomSizeSqFt;
         request.Budget = dto.Budget ?? request.Budget;
         request.Description = dto.Description ?? request.Description;
+        if (dto.RequestedStyleTags != null && dto.RequestedStyleTags.Any())
+        {
+            request.RequestedStyleTags = dto.RequestedStyleTags;
+            var styleTag = $"[Styles: {string.Join(", ", dto.RequestedStyleTags)}]";
+            if (!string.IsNullOrEmpty(request.Description) && !request.Description.Contains("[Styles:"))
+            {
+                request.Description = $"{request.Description}\n\n{styleTag}";
+            }
+            else if (string.IsNullOrEmpty(request.Description))
+            {
+                request.Description = styleTag;
+            }
+        }
         request.UpdatedAt = DateTime.UtcNow;
 
         ApplyPaletteSelection(request, dto.Palette);
@@ -487,6 +511,16 @@ public class ProjectRequestsController : ControllerBase
 
     private RequestDetailDto MapToDetailDto(ProjectRequest request)
     {
+        var styles = request.RequestedStyleTags ?? new List<string>();
+        if (!styles.Any() && !string.IsNullOrEmpty(request.Description))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(request.Description, @"\[Styles:\s*([^\]]+)\]");
+            if (match.Success)
+            {
+                styles = match.Groups[1].Value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+            }
+        }
+
         return new RequestDetailDto(
             Id: request.Id,
             ReferenceCode: request.ReferenceCode,
@@ -506,7 +540,8 @@ public class ProjectRequestsController : ControllerBase
             UpdatedAt: request.UpdatedAt,
             PaletteMode: request.PaletteMode,
             PalettePresetId: request.PalettePresetId,
-            PaletteBaseHex: request.PaletteBaseHex
+            PaletteBaseHex: request.PaletteBaseHex,
+            RequestedStyleTags: styles
         );
     }
 

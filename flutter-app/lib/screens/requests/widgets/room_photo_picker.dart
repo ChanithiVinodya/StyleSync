@@ -130,28 +130,40 @@ class _RoomPhotoPickerState extends ConsumerState<RoomPhotoPicker> {
   }
 
   Future<void> _uploadImage(String path, {Uint8List? bytes, String? filename}) async {
-    String? id = widget.requestId;
-    if (id == null) {
-      setState(() => _isUploading = true);
-      id = await widget.onCreateDraft();
-      if (!mounted) return;
-      if (id == null) {
-        setState(() => _isUploading = false);
-        return; // Failed to create draft
-      }
-    }
-
-    if (!mounted) return;
     setState(() {
       _uploadingPath = path;
       _uploadingBytes = bytes;
       _uploadingFileName = filename;
-      if (!kIsWeb) {
-        _uploadingFile = File(path);
+      if (!kIsWeb && path.isNotEmpty) {
+        try {
+          _uploadingFile = File(path);
+        } catch (_) {}
       }
       _isUploading = true;
       _uploadError = null;
     });
+
+    String? id = widget.requestId;
+    if (id == null) {
+      try {
+        id = await widget.onCreateDraft();
+      } catch (e) {
+        if (!mounted) return;
+        setState(() {
+          _isUploading = false;
+          _uploadError = 'Could not create draft for upload: $e';
+        });
+        return;
+      }
+      if (!mounted) return;
+      if (id == null) {
+        setState(() {
+          _isUploading = false;
+          _uploadError = 'Could not create draft. Please try again.';
+        });
+        return; // Failed to create draft
+      }
+    }
 
     try {
       final repo = ref.read(requestsRepositoryProvider);
@@ -168,7 +180,7 @@ class _RoomPhotoPickerState extends ConsumerState<RoomPhotoPicker> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _uploadError = 'Upload failed. Tap to retry.';
+        _uploadError = 'Upload failed: ${e.toString()}';
       });
     } finally {
       if (mounted) {
@@ -180,6 +192,15 @@ class _RoomPhotoPickerState extends ConsumerState<RoomPhotoPicker> {
   }
 
   Future<void> _removeImage() async {
+    if (widget.requestId == null && _photoUrl != null) {
+      setState(() {
+        _photoUrl = null;
+        _uploadingFile = null;
+        _uploadingBytes = null;
+      });
+      widget.onPhotoUpdated?.call(null);
+      return;
+    }
     if (widget.requestId == null) return;
     
     final confirm = await showDialog<bool>(
@@ -234,11 +255,76 @@ class _RoomPhotoPickerState extends ConsumerState<RoomPhotoPicker> {
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text('Choose from gallery'),
+              title: const Text('Choose from gallery / files'),
               onTap: () => _pickImage(ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.link),
+              title: const Text('Paste image web URL'),
+              onTap: () {
+                Navigator.pop(context);
+                _showUrlInputDialog();
+              },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showUrlInputDialog() {
+    final controller = TextEditingController(text: _photoUrl ?? '');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Enter Room Photo URL'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Paste a public direct link to an image (e.g. from Unsplash):',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'https://images.unsplash.com/...',
+                labelText: 'Image URL',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.link),
+              ),
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final url = controller.text.trim();
+              if (url.isNotEmpty && (url.startsWith('http://') || url.startsWith('https://'))) {
+                Navigator.pop(ctx);
+                setState(() {
+                  _photoUrl = url;
+                  _uploadingFile = null;
+                  _uploadingBytes = null;
+                  _uploadError = null;
+                });
+                widget.onPhotoUpdated?.call(url);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please enter a valid HTTP or HTTPS image URL.')),
+                );
+              }
+            },
+            child: const Text('Use Photo'),
+          ),
+        ],
       ),
     );
   }

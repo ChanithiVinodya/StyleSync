@@ -78,6 +78,7 @@ builder.Services.AddSingleton(new StyleSync.Api.Modules.ProjectRequests.Configur
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.PaletteService>();
+builder.Services.AddScoped<StyleSync.Api.Common.Storage.IFileStorage, StyleSync.Api.Common.Storage.LocalFileStorageService>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestStatusService>();
 
@@ -161,6 +162,17 @@ app.UseSwaggerUI(c =>
 
 app.UseCors("AllowFrontend");
 app.UseStaticFiles();
+
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
 
 if (!app.Environment.IsDevelopment())
 {

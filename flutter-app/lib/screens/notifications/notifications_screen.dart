@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../shared/widgets/main_bottom_nav_bar.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -149,6 +150,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
           _buildNotificationList(updateNotifications, isDark, cardBg, borderColor, primaryColor, subtitleColor),
         ],
       ),
+      bottomNavigationBar: const MainBottomNavBar(currentIndex: 0),
     );
   }
 

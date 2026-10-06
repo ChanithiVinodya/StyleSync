@@ -9,11 +9,13 @@ import 'match_score_breakdown_screen.dart';
 class DesignerProfileScreen extends StatefulWidget {
   final int designerId;
   final DesignersApiService? apiService;
+  final Widget? bottomNavigationBar;
 
   const DesignerProfileScreen({
     super.key,
     required this.designerId,
     this.apiService,
+    this.bottomNavigationBar,
   });
 
   @override
@@ -784,6 +786,7 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
           );
         },
       ),
+      bottomNavigationBar: widget.bottomNavigationBar,
     );
   }
 

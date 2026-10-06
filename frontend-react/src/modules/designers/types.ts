@@ -117,6 +117,15 @@ export interface CreatePortfolioItemRequest {
   completionStatusBadge: ListingStatus;
 }
 
+export interface UpdatePortfolioItemRequest {
+  title: string;
+  description: string;
+  imageUrl: string;
+  budgetRangeLabel: string;
+  clientInitials: string;
+  completionStatusBadge: ListingStatus;
+}
+
 export interface DesignerProfileFormState {
   displayName: string;
   bio: string;

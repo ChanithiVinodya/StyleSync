@@ -7,12 +7,14 @@ class AppStyleItem {
   final String tag;
   final String? assetPath;
   final String fallbackUrl;
+  final String? description;
 
   const AppStyleItem({
     required this.title,
     required this.tag,
     this.assetPath,
     required this.fallbackUrl,
+    this.description,
   });
 }
 
@@ -27,13 +29,13 @@ class AppStyleConstants {
     'Traditional',
   ];
 
-  /// Curated styles for the Home screen discovery row
+  /// Curated styles for the Home screen discovery row and Request style picker
   static const List<AppStyleItem> homeStyles = [
     AppStyleItem(
       title: 'Modern Minimalist',
-      tag: 'Minimalist',
+      tag: 'Modern Minimalist',
       assetPath: null,
-      // TODO: replace with curated style reference images
+      description: 'Clean lines, uncluttered spaces, and neutral palettes',
       fallbackUrl:
           'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80',
     ),
@@ -41,7 +43,7 @@ class AppStyleConstants {
       title: 'Scandinavian',
       tag: 'Scandinavian',
       assetPath: null,
-      // TODO: replace with curated style reference images
+      description: 'Light wood, soft neutrals, function first',
       fallbackUrl:
           'https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80',
     ),
@@ -49,15 +51,15 @@ class AppStyleConstants {
       title: 'Industrial',
       tag: 'Industrial',
       assetPath: null,
-      // TODO: replace with curated style reference images
+      description: 'Raw materials, exposed brick & metal, urban edge',
       fallbackUrl:
           'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80',
     ),
     AppStyleItem(
       title: 'Bohemian',
-      tag: 'Boho Chic',
+      tag: 'Bohemian',
       assetPath: null,
-      // TODO: replace with curated style reference images
+      description: 'Eclectic textures, earthy tones, relaxed & warm',
       fallbackUrl:
           'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
     ),
@@ -65,7 +67,7 @@ class AppStyleConstants {
       title: 'Coastal',
       tag: 'Coastal',
       assetPath: null,
-      // TODO: replace with curated style reference images
+      description: 'Breezy airy tones, natural light, seaside feel',
       fallbackUrl:
           'https://images.unsplash.com/photo-1507652313519-d4e9174996dd?auto=format&fit=crop&w=800&q=80',
     ),
@@ -73,7 +75,7 @@ class AppStyleConstants {
       title: 'Traditional',
       tag: 'Traditional',
       assetPath: null,
-      // TODO: replace with curated style reference images
+      description: 'Classic elegance, rich woodwork, timeless symmetry',
       fallbackUrl:
           'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=800&q=80',
     ),
