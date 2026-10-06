@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { ShieldCheck, Users, LogOut, FileText } from 'lucide-react';
 import { Logo } from '../../components/Logo';
@@ -8,6 +8,34 @@ import { RequestAnalyticsPanel } from '../../features/requests/components/Reques
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [designers, setDesigners] = useState<User[]>([]);
+  const [selectedDesignerId, setSelectedDesignerId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
+  // Mock projects since the Project Request module is not yet built
+  const mockProjects = [
+    { id: '123e4567-e89b-12d3-a456-426614174000', name: 'Luxury Villa Renovation' },
+    { id: '223e4567-e89b-12d3-a456-426614174001', name: 'Downtown Penthouse Remodel' }
+  ];
+
+  useEffect(() => {
+    const fetchDesigners = async () => {
+      try {
+        const res = await api.get<User[]>('/admin/users');
+        setDesigners(res.data.filter(u => u.role === 'Designer'));
+      } catch (err) {
+        console.error('Failed to fetch designers', err);
+      }
+    };
+    fetchDesigners();
+  }, []);
+
+  const handleNavigate = () => {
+    if (selectedProjectId) {
+      navigate(`/projects/${selectedProjectId}/execution`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#12100E] text-[#1C1917] dark:text-[#FAF8F5] p-6 sm:p-10">

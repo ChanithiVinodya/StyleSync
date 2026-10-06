@@ -273,12 +273,23 @@ def build_workflow_graph() -> StateGraph:
     builder.add_node("budget_scope", budget_scope_node)
     builder.add_node("validation_approval", validation_approval_node)
 
+    def route_after_validation(state: WorkflowState) -> str:
+        if state.validation_result and state.validation_result.is_valid:
+            return END
+        return "budget_scope"
+
     # 2. Add sequential delegation edges
     builder.add_edge(START, "style_analysis")
     builder.add_edge("style_analysis", "designer_matching")
     builder.add_edge("designer_matching", "budget_scope")
     builder.add_edge("budget_scope", "validation_approval")
-    builder.add_edge("validation_approval", END)
+    
+    # 3. Add conditional edge for validation
+    builder.add_conditional_edges(
+        "validation_approval", 
+        route_after_validation, 
+        {END: END, "budget_scope": "budget_scope"}
+    )
 
     return builder
 

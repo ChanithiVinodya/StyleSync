@@ -103,12 +103,19 @@ class ProjectScope(BaseModel):
     estimated_total: float = 0.0
 
 
+class RuleCheck(BaseModel):
+    rule: str
+    passed: bool
+    errors: list[str] = Field(default_factory=list)
+
+
 class ValidationResult(BaseModel):
     budget_status: str = "PENDING"     # PASS | FAIL | PENDING
     scope_status: str = "PENDING"
     designer_match_status: str = "PENDING"
     required_data_status: str = "PENDING"
     is_valid: bool = False
+    checks: list[RuleCheck] = Field(default_factory=list)
     errors: list[str] = Field(default_factory=list)
 
 
