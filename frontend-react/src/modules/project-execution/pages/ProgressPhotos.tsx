@@ -140,7 +140,7 @@ export default function ProgressPhotos() {
             <div key={photo.photoId} className="bg-white dark:bg-[#1A1715] rounded-3xl shadow-sm border border-[#E7E1D7] dark:border-[#2E2824] overflow-hidden group hover:border-[#C48A36]/50 transition-colors">
               <div className="aspect-[4/3] bg-[#FAF8F5] dark:bg-[#12100E] relative overflow-hidden">
                 <img 
-                  src={photo.fileUrl.startsWith('http') ? photo.fileUrl : `http://localhost:5000${photo.fileUrl}`} 
+                  src={photo.fileUrl.startsWith('http') ? photo.fileUrl : `${(import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5000').replace(/\/api\/?$/, '')}${photo.fileUrl}`} 
                   alt={photo.caption || 'Progress Photo'} 
                   className="object-cover w-full h-full transform group-hover:scale-105 transition-transform duration-500"
                   onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x300?text=Image+Not+Found' }}
