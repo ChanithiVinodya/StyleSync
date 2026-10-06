@@ -4,6 +4,97 @@ import 'package:http/http.dart' as http;
 import '../models/quote.dart';
 import '../models/contract.dart';
 import '../models/quote_item.dart';
+import '../../../services/auth/token_storage_service.dart';
+
+class QuoteFormPayload {
+  final String projectRequestId;
+  final String designerId;
+  final String scopeSummary;
+  final String notes;
+  final bool isAiGenerated;
+  final List<QuoteItem> items;
+
+  QuoteFormPayload({
+    required this.projectRequestId,
+    required this.designerId,
+    required this.scopeSummary,
+    required this.notes,
+    required this.isAiGenerated,
+    required this.items,
+  });
+}
+
+class AiDraftPayload {
+  final String projectRequestId;
+  final String designerId;
+  final String roomType;
+  final double roomSizeSqft;
+  final double budgetMin;
+  final double budgetMax;
+  final String styleProfile;
+  final String naturalLanguageScope;
+
+  final double styleConfidence;
+  final List<String> preferences;
+
+  AiDraftPayload({
+    required this.projectRequestId,
+    required this.designerId,
+    required this.roomType,
+    required this.roomSizeSqft,
+    required this.budgetMin,
+    required this.budgetMax,
+    required this.styleProfile,
+    required this.naturalLanguageScope,
+    this.styleConfidence = 0.8,
+    this.preferences = const [],
+  });
+
+  Map<String, dynamic> toJson() => {
+        'projectRequestId': projectRequestId,
+        'designerId': designerId,
+        'roomType': roomType,
+        'roomSizeSqft': roomSizeSqft,
+        'budgetMin': budgetMin,
+        'budgetMax': budgetMax,
+        'styleProfile': styleProfile,
+        'naturalLanguageScope': naturalLanguageScope,
+        'styleConfidence': styleConfidence,
+        'preferences': preferences,
+      };
+}
+
+class AgentBudgetScopeResponse {
+  final String scopeSummary;
+  final List<QuoteItem> items;
+  final String notes;
+  final double estimatedTotal;
+  final bool withinBudget;
+  final String source;
+
+  AgentBudgetScopeResponse({
+    required this.scopeSummary,
+    required this.items,
+    required this.notes,
+    required this.estimatedTotal,
+    required this.withinBudget,
+    required this.source,
+  });
+
+  factory AgentBudgetScopeResponse.fromJson(Map<String, dynamic> json) {
+    return AgentBudgetScopeResponse(
+      scopeSummary: json['scopeSummary'] ?? '',
+      items: (json['items'] as List?)
+              ?.map((i) => QuoteItem.fromJson(Map<String, dynamic>.from(i)))
+              .toList() ??
+          [],
+      notes: json['notes'] ?? '',
+      estimatedTotal: (json['estimatedTotal'] ?? 0).toDouble(),
+      withinBudget: json['withinBudget'] ?? false,
+      source: json['source'] ?? 'unknown',
+    );
+  }
+}
 
 class QuotesContractsService {
   static final QuotesContractsService _instance = QuotesContractsService._internal();
@@ -39,10 +130,14 @@ class QuotesContractsService {
     debugPrint('[QuotesContractsService] Base URL set to: $baseUrl');
   }
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await TokenStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
 
   // Local in-memory caches used as offline fallback
   final List<Quote> _localQuotes = [];
@@ -88,7 +183,8 @@ class QuotesContractsService {
   Future<bool> checkConnection() async {
     try {
       final uri = Uri.parse('$_baseUrl/quotes?pageSize=1');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 4));
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (_) {
       return false;
@@ -109,7 +205,8 @@ class QuotesContractsService {
 
       final uri = Uri.parse('$_baseUrl/quotes').replace(queryParameters: queryParams.isEmpty ? null : queryParams);
       debugPrint('[QuotesContractsService] Fetching quotes from $uri');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
@@ -178,9 +275,10 @@ class QuotesContractsService {
     final uri = Uri.parse('$_baseUrl/quotes');
     debugPrint('[QuotesContractsService] POST $uri body: ${jsonEncode(reqBody)}');
 
+    final headers = await _getHeaders();
     final res = await http.post(
       uri,
-      headers: _headers,
+      headers: headers,
       body: jsonEncode(reqBody),
     ).timeout(const Duration(seconds: 10));
 
@@ -208,9 +306,10 @@ class QuotesContractsService {
     };
 
     final uri = Uri.parse('$_baseUrl/quotes/$id');
+    final headers = await _getHeaders();
     final res = await http.put(
       uri,
-      headers: _headers,
+      headers: headers,
       body: jsonEncode(reqBody),
     ).timeout(const Duration(seconds: 10));
 
@@ -227,9 +326,10 @@ class QuotesContractsService {
 
   Future<Quote> updateQuoteStatus(String id, String status) async {
     final uri = Uri.parse('$_baseUrl/quotes/$id/status');
+    final headers = await _getHeaders();
     final res = await http.patch(
       uri,
-      headers: _headers,
+      headers: headers,
       body: jsonEncode({'status': status}),
     ).timeout(const Duration(seconds: 8));
 
@@ -248,7 +348,8 @@ class QuotesContractsService {
     final url = clientId != null
         ? '$_baseUrl/quotes/$id/accept?clientId=$clientId'
         : '$_baseUrl/quotes/$id/accept';
-    final res = await http.post(Uri.parse(url), headers: _headers).timeout(const Duration(seconds: 10));
+    final headers = await _getHeaders();
+    final res = await http.post(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 10));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -266,7 +367,8 @@ class QuotesContractsService {
 
   Future<void> deleteQuote(String id) async {
     final uri = Uri.parse('$_baseUrl/quotes/$id');
-    final res = await http.delete(uri, headers: _headers).timeout(const Duration(seconds: 8));
+    final headers = await _getHeaders();
+    final res = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 8));
     if (res.statusCode >= 200 && res.statusCode < 300) {
       _localQuotes.removeWhere((q) => q.id == id);
     } else {
@@ -279,9 +381,10 @@ class QuotesContractsService {
   Future<AgentBudgetScopeResponse> previewQuoteFromAgent(AiDraftPayload payload) async {
     try {
       final uri = Uri.parse('$_baseUrl/quotes/draft-preview');
+      final headers = await _getHeaders();
       final res = await http.post(
         uri,
-        headers: _headers,
+        headers: headers,
         body: jsonEncode(payload.toJson()),
       ).timeout(const Duration(seconds: 8));
 
@@ -347,9 +450,10 @@ class QuotesContractsService {
 
     try {
       final uri = Uri.parse('$_baseUrl/quotes/draft-from-agent');
+      final headers = await _getHeaders();
       final res = await http.post(
         uri,
-        headers: _headers,
+        headers: headers,
         body: jsonEncode(reqBody),
       ).timeout(const Duration(seconds: 15));
 
@@ -367,7 +471,7 @@ class QuotesContractsService {
     final preview = await previewQuoteFromAgent(payload);
     return await createQuote(QuoteFormPayload(
       scopeSummary: preview.scopeSummary,
-      notes: preview.notes ?? 'Drafted by AI Agent',
+      notes: preview.notes,
       items: preview.items,
       projectRequestId: projectReqId,
       designerId: designerId,
@@ -386,7 +490,8 @@ class QuotesContractsService {
 
       final uri = Uri.parse('$_baseUrl/contracts').replace(queryParameters: queryParams.isEmpty ? null : queryParams);
       debugPrint('[QuotesContractsService] Fetching contracts from $uri');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
@@ -430,9 +535,10 @@ class QuotesContractsService {
 
   Future<Contract> signContract(String id) async {
     final uri = Uri.parse('$_baseUrl/contracts/$id/sign');
+    final headers = await _getHeaders();
     final res = await http.post(
       uri,
-      headers: _headers,
+      headers: headers,
       body: jsonEncode({'signedAt': DateTime.now().toUtc().toIso8601String()}),
     ).timeout(const Duration(seconds: 8));
 
@@ -449,7 +555,8 @@ class QuotesContractsService {
 
   Future<Contract> cancelContract(String id) async {
     final uri = Uri.parse('$_baseUrl/contracts/$id/cancel');
-    final res = await http.post(uri, headers: _headers).timeout(const Duration(seconds: 8));
+    final headers = await _getHeaders();
+    final res = await http.post(uri, headers: headers).timeout(const Duration(seconds: 8));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -465,7 +572,8 @@ class QuotesContractsService {
   Future<Contract?> getContract(String id) async {
     try {
       final uri = Uri.parse('$_baseUrl/contracts/$id');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
         return Contract.fromJson(Map<String, dynamic>.from(decoded as Map));
@@ -480,7 +588,8 @@ class QuotesContractsService {
   Future<Quote?> getQuote(String id) async {
     try {
       final uri = Uri.parse('$_baseUrl/quotes/$id');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 6));
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
         return Quote.fromJson(Map<String, dynamic>.from(decoded as Map));

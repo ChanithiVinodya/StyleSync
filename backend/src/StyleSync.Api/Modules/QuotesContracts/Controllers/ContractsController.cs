@@ -3,7 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using StyleSync.Api.Data;
+using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.DTOs;
 using StyleSync.Api.Models;
 

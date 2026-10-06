@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../providers/auth/auth_provider.dart';
 import 'models/quote.dart';
 import 'models/contract.dart';
 import 'services/quotes_contracts_service.dart';
@@ -10,18 +12,15 @@ import 'widgets/quote_form_bottom_sheet.dart';
 import 'widgets/quote_detail_bottom_sheet.dart';
 import 'widgets/contract_detail_bottom_sheet.dart';
 
-class QuotesContractsPage extends StatefulWidget {
+class QuotesContractsPage extends ConsumerStatefulWidget {
   const QuotesContractsPage({super.key});
 
   @override
-  State<QuotesContractsPage> createState() => _QuotesContractsPageState();
+  ConsumerState<QuotesContractsPage> createState() => _QuotesContractsPageState();
 }
 
-class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTickerProviderStateMixin {
+class _QuotesContractsPageState extends ConsumerState<QuotesContractsPage> with SingleTickerProviderStateMixin {
   final _service = QuotesContractsService();
-
-  // Active view: 0 = Quotes, 1 = Contracts
-  int _activeTab = 0;
 
   // Quotes state
   List<Quote> _quotes = [];
@@ -32,6 +31,7 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
 
   // Contracts state
   List<Contract> _contracts = [];
+  List<Quote> _pendingQuotes = [];
   bool _isLoadingContracts = true;
   String? _contractsError;
   String _contractStatusFilter = 'All statuses';
@@ -104,9 +104,12 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
       final list = await _service.listContracts(
         status: _contractStatusFilter == 'All statuses' ? null : _contractStatusFilter,
       );
+      final pendingQuotesList = await _service.listQuotes(status: 'Submitted');
+
       if (mounted) {
         setState(() {
           _contracts = list;
+          _pendingQuotes = pendingQuotesList;
           _isLoadingContracts = false;
         });
       }
@@ -195,11 +198,6 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
           SnackBar(
             content: Text('Quote accepted! Contract #${contract?.id ?? ""} automatically generated.'),
             backgroundColor: QcTheme.success,
-            action: SnackBarAction(
-              label: 'View Contracts',
-              textColor: Colors.white,
-              onPressed: () => setState(() => _activeTab = 1),
-            ),
           ),
         );
       }
@@ -488,6 +486,8 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
 
   @override
   Widget build(BuildContext context) {
+    final isDesigner = ref.watch(authProvider).isDesigner;
+
     return Scaffold(
       backgroundColor: QcTheme.bg,
       body: SafeArea(
@@ -498,12 +498,11 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
 
             // Main Content Area
             Expanded(
-              child: _activeTab == 0 ? _buildQuotesTab() : _buildContractsTab(),
+              child: isDesigner ? _buildContractsTab() : _buildQuotesTab(),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
@@ -591,96 +590,6 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
       ),
     );
   }
-
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFF161411),
-        border: Border(top: BorderSide(color: Color(0xFF24201D), width: 1)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SafeArea(
-        top: false,
-        child: Row(
-          children: [
-            // Tab 0: Quotes
-            Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _activeTab = 0),
-                borderRadius: BorderRadius.circular(14),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _activeTab == 0 ? const Color(0xFF2E2721) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
-                    border: _activeTab == 0 ? Border.all(color: const Color(0xFF38312B), width: 1) : null,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 18,
-                        color: _activeTab == 0 ? QcTheme.gold : const Color(0xFF78716C),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Quotes',
-                        style: TextStyle(
-                          color: _activeTab == 0 ? QcTheme.gold : const Color(0xFF78716C),
-                          fontSize: 13,
-                          fontWeight: _activeTab == 0 ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-
-            // Tab 1: Contracts
-            Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _activeTab = 1),
-                borderRadius: BorderRadius.circular(14),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: _activeTab == 1 ? const Color(0xFF2E2721) : Colors.transparent,
-                    borderRadius: BorderRadius.circular(14),
-                    border: _activeTab == 1 ? Border.all(color: const Color(0xFF38312B), width: 1) : null,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.assignment_outlined,
-                        size: 18,
-                        color: _activeTab == 1 ? QcTheme.gold : const Color(0xFF78716C),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Contracts',
-                        style: TextStyle(
-                          color: _activeTab == 1 ? QcTheme.gold : const Color(0xFF78716C),
-                          fontSize: 13,
-                          fontWeight: _activeTab == 1 ? FontWeight.w700 : FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ================= QUOTES TAB (Image 1) =================
   Widget _buildQuotesTab() {
     return RefreshIndicator(
@@ -901,9 +810,6 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
               onTap: () => QuoteDetailBottomSheet.show(
                 context,
                 quote: quote,
-                onEdit: () => _openNewQuote(quoteToEdit: quote),
-                onSubmit: () => _handleAdvanceQuote(quote),
-                onDelete: () => _handleDeleteQuote(quote),
               ),
               onEdit: () => _openNewQuote(quoteToEdit: quote),
               onSubmit: () => _handleAdvanceQuote(quote),
@@ -1005,7 +911,7 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
                 ],
               ),
             ),
-          ] else if (_contracts.isEmpty) ...[
+          ] else if (_contracts.isEmpty && _pendingQuotes.isEmpty) ...[
             Container(
               padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
               alignment: Alignment.center,
@@ -1013,19 +919,34 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
                 children: [
                   const Icon(Icons.verified_outlined, size: 48, color: QcTheme.borderLight),
                   const SizedBox(height: 12),
-                  const Text('No contracts yet', style: TextStyle(color: QcTheme.textMain, fontSize: 16, fontWeight: FontWeight.w600)),
+                  const Text('No contracts or pending quotes yet', style: TextStyle(color: QcTheme.textMain, fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 4),
-                  const Text('Accept a quote in the Quotes tab to automatically generate a contract.', textAlign: TextAlign.center, style: TextStyle(color: QcTheme.textSubtle, fontSize: 13)),
+                  const Text('When a client submits a quote, it will appear here for you to accept and convert into a contract.', textAlign: TextAlign.center, style: TextStyle(color: QcTheme.textSubtle, fontSize: 13)),
                   const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => setState(() => _activeTab = 0),
-                    style: ElevatedButton.styleFrom(backgroundColor: QcTheme.primary),
-                    child: const Text('View Quotes', style: TextStyle(color: Colors.white)),
-                  ),
                 ],
               ),
             ),
           ] else ...[
+            if (_pendingQuotes.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8, top: 8),
+                child: Text('Pending Quotes', style: TextStyle(color: QcTheme.textMain, fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+              ..._pendingQuotes.map((quote) => QuoteCard(
+                quote: quote,
+                onTap: () => QuoteDetailBottomSheet.show(
+                  context,
+                  quote: quote,
+                ),
+                onEdit: null,
+                onSubmit: () => _handleAcceptQuote(quote),
+                onDelete: null,
+              )),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8, top: 16),
+                child: Text('Active Contracts', style: TextStyle(color: QcTheme.textMain, fontSize: 16, fontWeight: FontWeight.w700)),
+              ),
+            ],
             ..._contracts.map((contract) => ContractCard(
               contract: contract,
               onTap: () => ContractDetailBottomSheet.show(

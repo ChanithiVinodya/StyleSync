@@ -35,7 +35,7 @@ namespace StyleSync.Api.Services
         {
             var itemList = items.Select(i => new QuoteVersionItem
             {
-                Id = i.Id ?? Guid.NewGuid(),
+                Id = Guid.NewGuid(),
                 Description = i.Description.Trim(),
                 Category = i.Category,
                 Quantity = i.Quantity,

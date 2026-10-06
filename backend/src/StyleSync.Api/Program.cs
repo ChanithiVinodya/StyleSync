@@ -60,13 +60,31 @@ builder.Services.AddSwaggerGen(options =>
 // DbContexts
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddDbContext<StyleSync.Api.Data.AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+builder.Services.AddHttpContextAccessor();
 
 // Identity & Auth Services
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<StyleSync.Api.Common.Identity.ICurrentUser, StyleSync.Api.Common.Identity.CurrentUser>();
+builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, StyleSync.Api.Integrations.HttpContextUserContext>();
+
+// Domain Services
+builder.Services.AddSingleton(new StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules());
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.PaletteService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestStatusService>();
+
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.ICapacityGuardService, StyleSync.Api.Modules.Designers.Services.CapacityGuardService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.IMatchScoreEngine, StyleSync.Api.Modules.Designers.Services.MatchScoreEngine>();
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.IDesignerService, StyleSync.Api.Modules.Designers.Services.DesignerService>();
+
+builder.Services.AddScoped<StyleSync.Api.Services.IBudgetGuard, StyleSync.Api.Services.BudgetGuard>();
+builder.Services.AddScoped<StyleSync.Api.Services.IQuotationEngine, StyleSync.Api.Services.QuotationEngine>();
+builder.Services.AddScoped<StyleSync.Api.Services.IQuoteExportService, StyleSync.Api.Services.QuoteExportService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>

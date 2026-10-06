@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.Designers.DTOs;
 using StyleSync.Api.Modules.Designers.Models;
+using StyleSync.Api.Models;
 using StyleSync.Api.Modules.Designers.Services;
 using Xunit;
 
@@ -97,8 +98,8 @@ public class DesignerListingTests
 
         // Designer 2 is at capacity (2 active contracts / max 2)
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = designer2.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = designer2.Id, Status = ContractStatus.Active }
+            new Contract { DesignerId = designer2.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designer2.UserId, Status = ContractStatus.Active }
         );
 
         context.SaveChanges();
@@ -230,3 +231,6 @@ public class DesignerListingTests
         }
     }
 }
+
+
+
