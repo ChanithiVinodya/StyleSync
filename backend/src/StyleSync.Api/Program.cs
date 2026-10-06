@@ -151,18 +151,17 @@ var app = builder.Build();
 // ---- Middleware pipeline ----
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (app.Environment.IsDevelopment())
+// Enable Swagger across environments for interactive documentation
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "StyleSync API v1");
+    c.RoutePrefix = "swagger";
+});
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
 app.UseCors("AllowFrontend");
 app.UseStaticFiles();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -172,6 +171,15 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "StyleSync API",
+    status = "Online",
+    version = "v1",
+    documentation = "/swagger",
+    health = "/health",
+    timestampUtc = DateTime.UtcNow
+}));
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestampUtc = DateTime.UtcNow }));
 
 // Seed initial Admin user idempotently
