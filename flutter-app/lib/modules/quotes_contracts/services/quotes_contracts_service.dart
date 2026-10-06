@@ -4,93 +4,191 @@ import 'package:http/http.dart' as http;
 import '../models/quote.dart';
 import '../models/contract.dart';
 import '../models/quote_item.dart';
+import '../../../services/auth/token_storage_service.dart';
+
+class QuoteFormPayload {
+  final String projectRequestId;
+  final String designerId;
+  final String scopeSummary;
+  final String notes;
+  final bool isAiGenerated;
+  final List<QuoteItem> items;
+
+  QuoteFormPayload({
+    required this.projectRequestId,
+    required this.designerId,
+    required this.scopeSummary,
+    required this.notes,
+    required this.isAiGenerated,
+    required this.items,
+  });
+}
+
+class AiDraftPayload {
+  final String projectRequestId;
+  final String designerId;
+  final String roomType;
+  final double roomSizeSqft;
+  final double budgetMin;
+  final double budgetMax;
+  final String styleProfile;
+  final String naturalLanguageScope;
+
+  final double styleConfidence;
+  final List<String> preferences;
+
+  AiDraftPayload({
+    required this.projectRequestId,
+    required this.designerId,
+    required this.roomType,
+    required this.roomSizeSqft,
+    required this.budgetMin,
+    required this.budgetMax,
+    required this.styleProfile,
+    required this.naturalLanguageScope,
+    this.styleConfidence = 0.8,
+    this.preferences = const [],
+  });
+
+  Map<String, dynamic> toJson() => {
+        'projectRequestId': projectRequestId,
+        'designerId': designerId,
+        'roomType': roomType,
+        'roomSizeSqft': roomSizeSqft,
+        'budgetMin': budgetMin,
+        'budgetMax': budgetMax,
+        'styleProfile': styleProfile,
+        'naturalLanguageScope': naturalLanguageScope,
+        'styleConfidence': styleConfidence,
+        'preferences': preferences,
+      };
+}
+
+class AgentBudgetScopeResponse {
+  final String scopeSummary;
+  final List<QuoteItem> items;
+  final String notes;
+  final double estimatedTotal;
+  final bool withinBudget;
+  final String source;
+
+  AgentBudgetScopeResponse({
+    required this.scopeSummary,
+    required this.items,
+    required this.notes,
+    required this.estimatedTotal,
+    required this.withinBudget,
+    required this.source,
+  });
+
+  factory AgentBudgetScopeResponse.fromJson(Map<String, dynamic> json) {
+    return AgentBudgetScopeResponse(
+      scopeSummary: json['scopeSummary'] ?? '',
+      items: (json['items'] as List?)
+              ?.map((i) => QuoteItem.fromJson(Map<String, dynamic>.from(i)))
+              .toList() ??
+          [],
+      notes: json['notes'] ?? '',
+      estimatedTotal: (json['estimatedTotal'] ?? 0).toDouble(),
+      withinBudget: json['withinBudget'] ?? false,
+      source: json['source'] ?? 'unknown',
+    );
+  }
+}
 
 class QuotesContractsService {
   static final QuotesContractsService _instance = QuotesContractsService._internal();
   factory QuotesContractsService() => _instance;
 
-  QuotesContractsService._internal() {
-    _initLocalStore();
-  }
+  QuotesContractsService._internal();
+
+  // Known presets
+  static const String emulatorBaseUrl = 'http://10.0.2.2:5000/api';
+  static const String localhostBaseUrl = 'http://localhost:5000/api';
+  static const String lanBaseUrl = 'http://192.168.8.117:5000/api';
 
   // Base URL logic: Localhost on web/desktop, 10.0.2.2 on Android emulator
   static String get defaultBaseUrl {
-    if (kIsWeb) return 'http://localhost:5000/api';
+    if (kIsWeb) return localhostBaseUrl;
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return 'http://10.0.2.2:5000/api';
+        return emulatorBaseUrl;
       default:
-        return 'http://localhost:5000/api';
+        return localhostBaseUrl;
     }
   }
 
   String baseUrl = defaultBaseUrl;
   String get _baseUrl => baseUrl;
 
-  Map<String, String> get _headers => {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      };
+  void setBaseUrl(String newUrl) {
+    var cleaned = newUrl.trim();
+    if (cleaned.endsWith('/')) {
+      cleaned = cleaned.substring(0, cleaned.length - 1);
+    }
+    baseUrl = cleaned;
+    debugPrint('[QuotesContractsService] Base URL set to: $baseUrl');
+  }
 
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await TokenStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // Local in-memory caches used as offline fallback
   final List<Quote> _localQuotes = [];
   final List<Contract> _localContracts = [];
 
-  void _initLocalStore() {
-    final releasedQuote = Quote(
-      id: 'f315971a-0000-0000-0000-000000000001',
-      projectRequestId: '7c88187a-7133-4fd2-0000-000000000001',
-      designerId: '22222222-2222-2222-2222-222222222222',
-      scopeSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
-      notes: 'Released proposal approved by Admin for Client Stage 2 decision.',
-      isAiGenerated: false,
-      status: 'Stage1Released',
-      totalCost: 190000.00,
-      createdAt: DateTime(2026, 9, 29),
-      updatedAt: DateTime(2026, 9, 29),
-      currentVersion: QuoteVersion(
-        id: 'v-1',
-        versionNumber: 1,
-        authorId: '22222222-2222-2222-2222-222222222222',
-        authorRole: 'Designer',
-        materialsSubtotal: 110000,
-        laborSubtotal: 45000,
-        designFee: 15500,
-        contingencyAmount: 8525,
-        taxAmount: 10975,
-        totalCost: 190000,
-        createdAt: DateTime(2026, 9, 29),
-        items: [
-          QuoteVersionItem(id: 'i-w1', description: 'Wardrobe & Storage', category: 'Furniture', quantity: 1, unitCost: 45000, lineTotal: 45000),
-          QuoteVersionItem(id: 'i-w2', description: 'Bed frame', category: 'Furniture', quantity: 1, unitCost: 65000, lineTotal: 65000),
-          QuoteVersionItem(id: 'i-w3', description: 'Wall painting & finishing', category: 'Labor', quantity: 1, unitCost: 45000, lineTotal: 45000),
-        ],
-      ),
-      items: [
-        QuoteItem(id: 'i-w1', description: 'Wardrobe & Storage', category: 'Furniture', quantity: 1, unitCost: 45000, totalCost: 45000),
-        QuoteItem(id: 'i-w2', description: 'Bed frame', category: 'Furniture', quantity: 1, unitCost: 65000, totalCost: 65000),
-        QuoteItem(id: 'i-w3', description: 'Wall painting & finishing', category: 'Labor', quantity: 1, unitCost: 45000, totalCost: 45000),
-      ],
-    );
+  List<Quote> get cachedQuotes => List.unmodifiable(_localQuotes);
+  List<Contract> get cachedContracts => List.unmodifiable(_localContracts);
 
-    _localQuotes.add(releasedQuote);
+  // Category sanitizer mapping Flutter categories to backend enum
+  static String sanitizeCategory(String cat) {
+    const valid = [
+      'Design',
+      'Labor',
+      'Materials',
+      'Furniture',
+      'Carpentry',
+      'Electrical',
+      'Painting',
+      'Plumbing',
+      'Textiles',
+      'Other',
+    ];
+    for (final v in valid) {
+      if (v.toLowerCase() == cat.trim().toLowerCase()) return v;
+    }
+    return 'Other';
+  }
 
-    final contract = Contract(
-      id: '83239481-0000-0000-0000-000000000001',
-      quoteId: releasedQuote.id,
-      projectRequestId: releasedQuote.projectRequestId,
-      designerId: releasedQuote.designerId,
-      clientId: '11111111-1111-1111-1111-111111111111',
-      status: 'PendingSignature',
-      totalAmount: 190000.00,
-      termsSummary: 'Minimalist bedroom redesign with furniture, lighting and wall finishing',
-      terms: 'Official StyleSync Agreement. 50% advance deposit due upon signing, 50% upon handover.',
-      signedAt: null,
-      createdAt: DateTime(2026, 9, 29),
-      updatedAt: DateTime(2026, 9, 29),
-      quote: releasedQuote,
-    );
+  // Ensures any ID sent to backend is a valid UUID format
+  static String ensureValidGuid(String? val) {
+    if (val == null || val.trim().isEmpty) {
+      return '00000000-0000-0000-0000-000000000001';
+    }
+    final trimmed = val.trim();
+    final uuidRegex = RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$');
+    if (uuidRegex.hasMatch(trimmed)) {
+      return trimmed;
+    }
+    return '00000000-0000-0000-0000-000000000001';
+  }
 
-    _localContracts.add(contract);
+  // Quick live connection test
+  Future<bool> checkConnection() async {
+    try {
+      final uri = Uri.parse('$_baseUrl/quotes?pageSize=1');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 4));
+      return res.statusCode >= 200 && res.statusCode < 300;
+    } catch (_) {
+      return false;
+    }
   }
 
   // ================= QUOTES ENDPOINTS =================
@@ -106,25 +204,45 @@ class QuotesContractsService {
       }
 
       final uri = Uri.parse('$_baseUrl/quotes').replace(queryParameters: queryParams.isEmpty ? null : queryParams);
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      debugPrint('[QuotesContractsService] Fetching quotes from $uri');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
         List<dynamic> items = [];
-        if (decoded is Map<String, dynamic> && decoded.containsKey('items')) {
-          items = decoded['items'] as List<dynamic>;
+        if (decoded is Map && decoded.containsKey('items')) {
+          items = (decoded['items'] as List<dynamic>?) ?? [];
         } else if (decoded is List) {
           items = decoded;
         }
-        final quotes = items.map((e) => Quote.fromJson(e as Map<String, dynamic>)).toList();
-        if (quotes.isNotEmpty) {
-          return quotes;
+
+        final quotes = <Quote>[];
+        for (final item in items) {
+          if (item is Map) {
+            try {
+              quotes.add(Quote.fromJson(Map<String, dynamic>.from(item)));
+            } catch (e) {
+              debugPrint('[QuotesContractsService] Quote parsing error: $e');
+            }
+          }
         }
+
+        // Cache the latest server response
+        if (status == null || status == 'All statuses') {
+          _localQuotes.clear();
+          _localQuotes.addAll(quotes);
+        }
+
+        return quotes;
+      } else {
+        debugPrint('[QuotesContractsService] listQuotes server error status: ${res.statusCode}');
       }
     } catch (e) {
-      debugPrint('[QuotesContractsService] Live API quotes fetch failed: $e. Using local store.');
+      debugPrint('[QuotesContractsService] listQuotes API error: $e. Returning cached store.');
     }
 
+    // Offline / fallback cache
     var filtered = List<Quote>.from(_localQuotes);
     if (status != null && status.isNotEmpty && status != 'All statuses') {
       filtered = filtered.where((q) => q.status.toLowerCase() == status.toLowerCase()).toList();
@@ -136,99 +254,229 @@ class QuotesContractsService {
     return filtered;
   }
 
-  Future<Quote?> getQuote(String id) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/quotes/$id');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        return Quote.fromJson(decoded as Map<String, dynamic>);
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] getQuote API failed: $e.');
+  Future<Quote> createQuote(QuoteFormPayload payload) async {
+    final projectReqId = ensureValidGuid(payload.projectRequestId);
+    final designerId = ensureValidGuid(payload.designerId);
+
+    final reqBody = {
+      'projectRequestId': projectReqId,
+      'designerId': designerId,
+      'scopeSummary': payload.scopeSummary,
+      'notes': payload.notes,
+      'isAiGenerated': payload.isAiGenerated,
+      'items': payload.items.map((i) => {
+        'description': i.description,
+        'category': sanitizeCategory(i.category),
+        'quantity': i.quantity,
+        'unitCost': i.unitCost,
+      }).toList(),
+    };
+
+    final uri = Uri.parse('$_baseUrl/quotes');
+    debugPrint('[QuotesContractsService] POST $uri body: ${jsonEncode(reqBody)}');
+
+    final headers = await _getHeaders();
+    final res = await http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(reqBody),
+    ).timeout(const Duration(seconds: 10));
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final decoded = jsonDecode(res.body);
+      final created = Quote.fromJson(Map<String, dynamic>.from(decoded as Map));
+      _localQuotes.insert(0, created);
+      return created;
+    } else {
+      debugPrint('[QuotesContractsService] createQuote failed: ${res.statusCode} ${res.body}');
+      throw Exception('Server error (${res.statusCode}): ${res.body}');
     }
-    final idx = _localQuotes.indexWhere((q) => q.id == id);
-    return idx != -1 ? _localQuotes[idx] : null;
   }
 
-  // Stage 2 Decision (Client: Approve, RequestChanges, Reject)
-  Future<dynamic> stage2Decision(String id, String action, {String? feedback}) async {
+  Future<Quote> updateQuote(String id, QuoteFormPayload payload) async {
+    final reqBody = {
+      'scopeSummary': payload.scopeSummary,
+      'notes': payload.notes,
+      'items': payload.items.map((i) => {
+        'description': i.description,
+        'category': sanitizeCategory(i.category),
+        'quantity': i.quantity,
+        'unitCost': i.unitCost,
+      }).toList(),
+    };
+
+    final uri = Uri.parse('$_baseUrl/quotes/$id');
+    final headers = await _getHeaders();
+    final res = await http.put(
+      uri,
+      headers: headers,
+      body: jsonEncode(reqBody),
+    ).timeout(const Duration(seconds: 10));
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final decoded = jsonDecode(res.body);
+      final updated = Quote.fromJson(Map<String, dynamic>.from(decoded as Map));
+      final idx = _localQuotes.indexWhere((q) => q.id == id);
+      if (idx != -1) _localQuotes[idx] = updated;
+      return updated;
+    } else {
+      throw Exception('Failed to update quote (${res.statusCode}): ${res.body}');
+    }
+  }
+
+  Future<Quote> updateQuoteStatus(String id, String status) async {
+    final uri = Uri.parse('$_baseUrl/quotes/$id/status');
+    final headers = await _getHeaders();
+    final res = await http.patch(
+      uri,
+      headers: headers,
+      body: jsonEncode({'status': status}),
+    ).timeout(const Duration(seconds: 8));
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final decoded = jsonDecode(res.body);
+      final updated = Quote.fromJson(Map<String, dynamic>.from(decoded as Map));
+      final idx = _localQuotes.indexWhere((q) => q.id == id);
+      if (idx != -1) _localQuotes[idx] = updated;
+      return updated;
+    } else {
+      throw Exception('Failed to update quote status (${res.statusCode}): ${res.body}');
+    }
+  }
+
+  Future<Contract?> acceptQuote(String id, {String? clientId}) async {
+    final url = clientId != null
+        ? '$_baseUrl/quotes/$id/accept?clientId=$clientId'
+        : '$_baseUrl/quotes/$id/accept';
+    final headers = await _getHeaders();
+    final res = await http.post(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 10));
+
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final decoded = jsonDecode(res.body);
+      final contract = Contract.fromJson(Map<String, dynamic>.from(decoded as Map));
+      _localContracts.insert(0, contract);
+      final idx = _localQuotes.indexWhere((q) => q.id == id);
+      if (idx != -1) {
+        _localQuotes[idx] = _localQuotes[idx].copyWith(status: 'Accepted', updatedAt: DateTime.now(), contractId: contract.id);
+      }
+      return contract;
+    } else {
+      throw Exception('Failed to accept quote (${res.statusCode}): ${res.body}');
+    }
+  }
+
+  Future<void> deleteQuote(String id) async {
+    final uri = Uri.parse('$_baseUrl/quotes/$id');
+    final headers = await _getHeaders();
+    final res = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 8));
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      _localQuotes.removeWhere((q) => q.id == id);
+    } else {
+      throw Exception('Failed to delete quote (${res.statusCode}): ${res.body}');
+    }
+  }
+
+  // ================= AI AGENT DRAFT ENDPOINTS =================
+
+  Future<AgentBudgetScopeResponse> previewQuoteFromAgent(AiDraftPayload payload) async {
     try {
-      final uri = Uri.parse('$_baseUrl/quotes/$id/stage2-decision');
+      final uri = Uri.parse('$_baseUrl/quotes/draft-preview');
+      final headers = await _getHeaders();
       final res = await http.post(
         uri,
-        headers: _headers,
-        body: jsonEncode({
-          'action': action,
-          'feedback': feedback,
-        }),
-      ).timeout(const Duration(seconds: 5));
+        headers: headers,
+        body: jsonEncode(payload.toJson()),
+      ).timeout(const Duration(seconds: 8));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
-        if (action == 'Approve') {
-          final contract = Contract.fromJson(decoded as Map<String, dynamic>);
-          _localContracts.insert(0, contract);
-          final idx = _localQuotes.indexWhere((q) => q.id == id);
-          if (idx != -1) {
-            _localQuotes[idx] = _localQuotes[idx].copyWith(status: 'Stage2Approved', updatedAt: DateTime.now());
-          }
-          return contract;
-        }
-        return decoded;
+        return AgentBudgetScopeResponse.fromJson(Map<String, dynamic>.from(decoded as Map));
       }
     } catch (e) {
-      debugPrint('[QuotesContractsService] stage2Decision API failed: $e.');
+      debugPrint('[QuotesContractsService] previewQuoteFromAgent live API failed: $e. Using mathematical formula.');
     }
 
-    final idx = _localQuotes.indexWhere((q) => q.id == id);
-    if (idx != -1) {
-      if (action == 'Approve') {
-        final approvedQuote = _localQuotes[idx].copyWith(status: 'Stage2Approved', updatedAt: DateTime.now());
-        _localQuotes[idx] = approvedQuote;
+    // Deterministic mathematical algorithm mirroring backend budget_scope_agent.py
+    final target = (payload.budgetMin + payload.budgetMax) / 2 > 0
+        ? (payload.budgetMin + payload.budgetMax) / 2
+        : (payload.roomSizeSqft * 800);
 
-        final contract = Contract(
-          id: 'cnt-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}',
-          quoteId: approvedQuote.id,
-          projectRequestId: approvedQuote.projectRequestId,
-          designerId: approvedQuote.designerId,
-          clientId: 'client-1',
-          status: 'PendingSignature',
-          totalAmount: approvedQuote.totalCost,
-          termsSummary: approvedQuote.scopeSummary,
-          terms: 'Official contract for ${approvedQuote.scopeSummary}. 50% upfront deposit, 50% upon project completion.',
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          quote: approvedQuote,
-        );
-        _localContracts.insert(0, contract);
-        return contract;
-      } else if (action == 'RequestChanges') {
-        final changedQuote = _localQuotes[idx].copyWith(status: 'Stage2ChangesRequested', updatedAt: DateTime.now());
-        _localQuotes[idx] = changedQuote;
-        return {'message': 'Revision requested'};
-      } else {
-        final rejectedQuote = _localQuotes[idx].copyWith(status: 'Stage2Rejected', updatedAt: DateTime.now());
-        _localQuotes[idx] = rejectedQuote;
-        return {'message': 'Quote rejected'};
-      }
-    }
-    throw Exception('Quote not found');
+    final splits = [
+      {'cat': 'Design', 'pct': 0.10, 'desc': 'Design — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} concept & planning'},
+      {'cat': 'Labor', 'pct': 0.30, 'desc': 'Labor — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} installation & craftsmanship'},
+      {'cat': 'Materials', 'pct': 0.35, 'desc': 'Materials — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} fixtures & finishes'},
+      {'cat': 'Furniture', 'pct': 0.25, 'desc': 'Furniture — ${payload.styleProfile.toLowerCase()} ${payload.roomType.toLowerCase()} curated styling'},
+    ];
+
+    final items = splits.map((s) {
+      final cost = ((target * (s['pct'] as double)) / 100).round() * 100.0;
+      return QuoteItem(
+        id: null,
+        description: s['desc'] as String,
+        category: s['cat'] as String,
+        quantity: 1,
+        unitCost: cost,
+        totalCost: cost,
+      );
+    }).toList();
+
+    final total = items.fold(0.0, (sum, i) => sum + i.calculatedTotal);
+
+    return AgentBudgetScopeResponse(
+      scopeSummary: '${payload.styleProfile} ${payload.roomType.toLowerCase()} refresh, ${payload.roomSizeSqft.toStringAsFixed(0)} sq ft.',
+      items: items,
+      notes: 'Estimate generated using standard category ratios (Design 10%, Labor 30%, Materials 35%, Furniture 25%).',
+      estimatedTotal: total,
+      withinBudget: payload.budgetMax > 0 ? (total >= payload.budgetMin && total <= payload.budgetMax) : true,
+      source: 'fallback',
+    );
   }
 
-  // Export quote PDF/CSV
-  Future<String> exportQuote(String id, String format) async {
+  Future<Quote> draftQuoteFromAgent(AiDraftPayload payload) async {
+    final projectReqId = ensureValidGuid(payload.projectRequestId);
+    final designerId = ensureValidGuid(payload.designerId);
+
+    final reqBody = {
+      'projectRequestId': projectReqId,
+      'designerId': designerId,
+      'roomType': payload.roomType,
+      'roomSizeSqft': payload.roomSizeSqft,
+      'budgetMin': payload.budgetMin,
+      'budgetMax': payload.budgetMax,
+      'styleProfile': payload.styleProfile,
+      'styleConfidence': payload.styleConfidence,
+      'preferences': payload.preferences,
+    };
+
     try {
-      final uri = Uri.parse('$_baseUrl/quotes/$id/export?format=$format');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      final uri = Uri.parse('$_baseUrl/quotes/draft-from-agent');
+      final headers = await _getHeaders();
+      final res = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(reqBody),
+      ).timeout(const Duration(seconds: 15));
+
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        return res.body;
+        final decoded = jsonDecode(res.body);
+        final created = Quote.fromJson(Map<String, dynamic>.from(decoded as Map));
+        _localQuotes.insert(0, created);
+        return created;
       }
     } catch (e) {
-      debugPrint('[QuotesContractsService] exportQuote API failed: $e.');
+      debugPrint('[QuotesContractsService] draftQuoteFromAgent server endpoint failed: $e. Persisting fallback draft to database.');
     }
-    final quote = await getQuote(id);
-    return 'StyleSync Quotation Export\nQuote ID: ${quote?.id}\nScope: ${quote?.scopeSummary}\nTotal: LKR ${quote?.totalCost}';
+
+    // If live AI service is unreachable, compute deterministic preview and SAVE DIRECTLY TO DATABASE
+    final preview = await previewQuoteFromAgent(payload);
+    return await createQuote(QuoteFormPayload(
+      scopeSummary: preview.scopeSummary,
+      notes: preview.notes,
+      items: preview.items,
+      projectRequestId: projectReqId,
+      designerId: designerId,
+      isAiGenerated: true,
+    ));
   }
 
   // ================= CONTRACTS ENDPOINTS =================
@@ -241,21 +489,41 @@ class QuotesContractsService {
       }
 
       final uri = Uri.parse('$_baseUrl/contracts').replace(queryParameters: queryParams.isEmpty ? null : queryParams);
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      debugPrint('[QuotesContractsService] Fetching contracts from $uri');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
         List<dynamic> items = [];
-        if (decoded is Map<String, dynamic> && decoded.containsKey('items')) {
-          items = decoded['items'] as List<dynamic>;
+        if (decoded is Map && decoded.containsKey('items')) {
+          items = (decoded['items'] as List<dynamic>?) ?? [];
         } else if (decoded is List) {
           items = decoded;
         }
-        final list = items.map((e) => Contract.fromJson(e as Map<String, dynamic>)).toList();
-        if (list.isNotEmpty) return list;
+
+        final contracts = <Contract>[];
+        for (final item in items) {
+          if (item is Map) {
+            try {
+              contracts.add(Contract.fromJson(Map<String, dynamic>.from(item)));
+            } catch (e) {
+              debugPrint('[QuotesContractsService] Contract parsing error: $e');
+            }
+          }
+        }
+
+        if (status == null || status == 'All statuses') {
+          _localContracts.clear();
+          _localContracts.addAll(contracts);
+        }
+
+        return contracts;
+      } else {
+        debugPrint('[QuotesContractsService] listContracts server error status: ${res.statusCode}');
       }
     } catch (e) {
-      debugPrint('[QuotesContractsService] live contracts list failed: $e. Using local store.');
+      debugPrint('[QuotesContractsService] listContracts API error: $e. Returning cached store.');
     }
 
     var filtered = List<Contract>.from(_localContracts);
@@ -266,78 +534,70 @@ class QuotesContractsService {
   }
 
   Future<Contract> signContract(String id) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/contracts/$id/sign');
-      final res = await http.post(
-        uri,
-        headers: _headers,
-        body: jsonEncode({'signedAt': DateTime.now().toIso8601String()}),
-      ).timeout(const Duration(seconds: 4));
+    final uri = Uri.parse('$_baseUrl/contracts/$id/sign');
+    final headers = await _getHeaders();
+    final res = await http.post(
+      uri,
+      headers: headers,
+      body: jsonEncode({'signedAt': DateTime.now().toUtc().toIso8601String()}),
+    ).timeout(const Duration(seconds: 8));
 
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        final updated = Contract.fromJson(decoded as Map<String, dynamic>);
-        final idx = _localContracts.indexWhere((c) => c.id == id);
-        if (idx != -1) _localContracts[idx] = updated;
-        return updated;
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] signContract API failed: $e.');
-    }
-
-    final idx = _localContracts.indexWhere((c) => c.id == id);
-    if (idx != -1) {
-      final updated = _localContracts[idx].copyWith(
-        status: 'Active',
-        signedAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      );
-      _localContracts[idx] = updated;
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final decoded = jsonDecode(res.body);
+      final updated = Contract.fromJson(Map<String, dynamic>.from(decoded as Map));
+      final idx = _localContracts.indexWhere((c) => c.id == id);
+      if (idx != -1) _localContracts[idx] = updated;
       return updated;
+    } else {
+      throw Exception('Failed to sign contract (${res.statusCode}): ${res.body}');
     }
-    throw Exception('Contract not found');
   }
 
   Future<Contract> cancelContract(String id) async {
-    try {
-      final uri = Uri.parse('$_baseUrl/contracts/$id/cancel');
-      final res = await http.post(uri, headers: _headers).timeout(const Duration(seconds: 4));
+    final uri = Uri.parse('$_baseUrl/contracts/$id/cancel');
+    final headers = await _getHeaders();
+    final res = await http.post(uri, headers: headers).timeout(const Duration(seconds: 8));
 
-      if (res.statusCode >= 200 && res.statusCode < 300) {
-        final decoded = jsonDecode(res.body);
-        final updated = Contract.fromJson(decoded as Map<String, dynamic>);
-        final idx = _localContracts.indexWhere((c) => c.id == id);
-        if (idx != -1) _localContracts[idx] = updated;
-        return updated;
-      }
-    } catch (e) {
-      debugPrint('[QuotesContractsService] cancelContract API failed: $e.');
-    }
-
-    final idx = _localContracts.indexWhere((c) => c.id == id);
-    if (idx != -1) {
-      final updated = _localContracts[idx].copyWith(
-        status: 'Cancelled',
-        updatedAt: DateTime.now(),
-      );
-      _localContracts[idx] = updated;
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      final decoded = jsonDecode(res.body);
+      final updated = Contract.fromJson(Map<String, dynamic>.from(decoded as Map));
+      final idx = _localContracts.indexWhere((c) => c.id == id);
+      if (idx != -1) _localContracts[idx] = updated;
       return updated;
+    } else {
+      throw Exception('Failed to cancel contract (${res.statusCode}): ${res.body}');
     }
-    throw Exception('Contract not found');
   }
 
   Future<Contract?> getContract(String id) async {
     try {
       final uri = Uri.parse('$_baseUrl/contracts/$id');
-      final res = await http.get(uri, headers: _headers).timeout(const Duration(seconds: 4));
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
-        return Contract.fromJson(decoded as Map<String, dynamic>);
+        return Contract.fromJson(Map<String, dynamic>.from(decoded as Map));
       }
     } catch (e) {
-      debugPrint('[QuotesContractsService] getContract API failed: $e.');
+      debugPrint('[QuotesContractsService] getContract error: $e');
     }
     final idx = _localContracts.indexWhere((c) => c.id == id);
     return idx != -1 ? _localContracts[idx] : null;
+  }
+
+  Future<Quote?> getQuote(String id) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/quotes/$id');
+      final headers = await _getHeaders();
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        final decoded = jsonDecode(res.body);
+        return Quote.fromJson(Map<String, dynamic>.from(decoded as Map));
+      }
+    } catch (e) {
+      debugPrint('[QuotesContractsService] getQuote error: $e');
+    }
+    final idx = _localQuotes.indexWhere((q) => q.id == id);
+    return idx != -1 ? _localQuotes[idx] : null;
   }
 }

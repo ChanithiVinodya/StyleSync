@@ -94,6 +94,7 @@ class Quote {
   final List<QuoteVersion> versions;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? contractId;
 
   Quote({
     required this.id,
@@ -109,6 +110,7 @@ class Quote {
     this.versions = const [],
     this.createdAt,
     this.updatedAt,
+    this.contractId,
   });
 
   factory Quote.fromJson(Map<String, dynamic> json) {
@@ -124,7 +126,16 @@ class Quote {
     }
 
     final rawItems = json['items'] as List<dynamic>? ?? [];
-    final itemsList = rawItems.map((e) => QuoteItem.fromJson(e as Map<String, dynamic>)).toList();
+    final itemsList = <QuoteItem>[];
+    for (final item in rawItems) {
+      if (item is Map) {
+        try {
+          itemsList.add(QuoteItem.fromJson(Map<String, dynamic>.from(item)));
+        } catch (e) {
+          // ignore item parse error
+        }
+      }
+    }
 
     QuoteVersion? currentVer;
     if (json['currentVersion'] != null && json['currentVersion'] is Map<String, dynamic>) {
@@ -165,6 +176,7 @@ class Quote {
       versions: versionsList,
       createdAt: created,
       updatedAt: updated,
+      contractId: json['contractId']?.toString(),
     );
   }
 
@@ -181,6 +193,7 @@ class Quote {
       'items': items.map((e) => e.toJson()).toList(),
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
+      if (contractId != null) 'contractId': contractId,
     };
   }
 
@@ -198,6 +211,7 @@ class Quote {
     List<QuoteVersion>? versions,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? contractId,
   }) {
     return Quote(
       id: id ?? this.id,
@@ -213,6 +227,7 @@ class Quote {
       versions: versions ?? this.versions,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      contractId: contractId ?? this.contractId,
     );
   }
 }

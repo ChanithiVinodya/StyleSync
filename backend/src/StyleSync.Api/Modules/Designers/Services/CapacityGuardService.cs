@@ -16,9 +16,16 @@ public class CapacityGuardService : ICapacityGuardService
     /// <inheritdoc />
     public async Task<int> GetActiveProjectCountAsync(int designerId, CancellationToken cancellationToken = default)
     {
+        var userId = await _context.DesignerProfiles
+            .Where(d => d.Id == designerId)
+            .Select(d => d.UserId)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (userId == Guid.Empty) return 0;
+
         return await _context.Contracts
             .AsNoTracking()
-            .CountAsync(c => c.DesignerId == designerId && c.Status == ContractStatus.Active, cancellationToken);
+            .CountAsync(c => c.DesignerId == userId && c.Status == StyleSync.Api.Models.ContractStatus.Active, cancellationToken);
     }
 
     /// <inheritdoc />
@@ -30,19 +37,31 @@ public class CapacityGuardService : ICapacityGuardService
             return new Dictionary<int, int>();
         }
 
-        var counts = await _context.Contracts
-            .AsNoTracking()
-            .Where(c => idsList.Contains(c.DesignerId) && c.Status == ContractStatus.Active)
-            .GroupBy(c => c.DesignerId)
-            .Select(g => new { DesignerId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.DesignerId, x => x.Count, cancellationToken);
+        var profileMappings = await _context.DesignerProfiles
+            .Where(d => idsList.Contains(d.Id))
+            .Select(d => new { d.Id, d.UserId })
+            .ToDictionaryAsync(d => d.UserId, d => d.Id, cancellationToken);
 
-        // Ensure all queried designer IDs exist in the dictionary with 0 if no active contracts
+        var userIds = profileMappings.Keys.ToList();
+
+        var activeCounts = await _context.Contracts
+            .AsNoTracking()
+            .Where(c => userIds.Contains(c.DesignerId) && c.Status == StyleSync.Api.Models.ContractStatus.Active)
+            .GroupBy(c => c.DesignerId)
+            .Select(g => new { UserId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.UserId, x => x.Count, cancellationToken);
+
+        var counts = new Dictionary<int, int>();
         foreach (var id in idsList)
         {
-            if (!counts.ContainsKey(id))
+            counts[id] = 0;
+        }
+
+        foreach (var kvp in activeCounts)
+        {
+            if (profileMappings.TryGetValue(kvp.Key, out var designerId))
             {
-                counts[id] = 0;
+                counts[designerId] = kvp.Value;
             }
         }
 

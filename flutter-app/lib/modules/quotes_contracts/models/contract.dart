@@ -73,8 +73,12 @@ class Contract {
     }
 
     Quote? linkedQuote;
-    if (json['quote'] != null && json['quote'] is Map<String, dynamic>) {
-      linkedQuote = Quote.fromJson(json['quote'] as Map<String, dynamic>);
+    if (json['quote'] != null && json['quote'] is Map) {
+      try {
+        linkedQuote = Quote.fromJson(Map<String, dynamic>.from(json['quote'] as Map));
+      } catch (e) {
+        // ignore quote parse error
+      }
     }
 
     return Contract(

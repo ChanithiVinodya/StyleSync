@@ -9,31 +9,16 @@ using StyleSync.Api.Common.Identity;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Configuration;
 using StyleSync.Api.Middleware;
-using StyleSync.Api.Modules.Designers.Services;
 using StyleSync.Api.Services;
+
+// Enable Npgsql legacy timestamp behavior to avoid UTC/Kind=Unspecified mismatches from mobile clients
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ---- Configuration ----
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection(JwtSettings.SectionName));
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>() ?? new JwtSettings();
-
-// ---- Project Requests Module ----
-var requestRules = builder.Configuration.GetSection("RequestRules").Get<StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules>() ?? new StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules();
-builder.Services.AddSingleton(requestRules);
-builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
-builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestStatusService>();
-builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
-builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
-var azureBlobConn = builder.Configuration.GetConnectionString("AzureBlobStorage");
-if (!string.IsNullOrEmpty(azureBlobConn) && !azureBlobConn.Contains("UseDevelopmentStorage=true", StringComparison.OrdinalIgnoreCase))
-{
-    builder.Services.AddScoped<StyleSync.Api.Common.Storage.IFileStorage, StyleSync.Api.Common.Storage.AzureBlobStorageService>();
-}
-else
-{
-    builder.Services.AddScoped<StyleSync.Api.Common.Storage.IFileStorage, StyleSync.Api.Common.Storage.LocalFileStorageService>();
-}
 
 // ---- Services ----
 builder.Services.AddControllers()
@@ -70,41 +55,36 @@ builder.Services.AddSwaggerGen(options =>
             Array.Empty<string>()
         }
     });
-
-    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    var xmlPath = System.IO.Path.Combine(AppContext.BaseDirectory, xmlFile);
-    if (File.Exists(xmlPath))
-    {
-        options.IncludeXmlComments(xmlPath);
-    }
 });
 
 // DbContexts
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-builder.Services.AddDbContext<StyleSync.Api.Data.AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Designer Services
-builder.Services.AddScoped<ICapacityGuardService, CapacityGuardService>();
-builder.Services.AddScoped<IMatchScoreEngine, MatchScoreEngine>();
-builder.Services.AddScoped<IDesignerService, DesignerService>();
+builder.Services.AddHttpContextAccessor();
 
 // Identity & Auth Services
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddScoped<ICurrentUser, CurrentUser>();
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-
-// Quotes & Contracts Services & Integration Adapters (Student 3)
-builder.Services.AddScoped<StyleSync.Api.Services.IQuotationEngine, StyleSync.Api.Services.QuotationEngine>();
-builder.Services.AddScoped<StyleSync.Api.Services.IBudgetGuard, StyleSync.Api.Services.BudgetGuard>();
-builder.Services.AddScoped<StyleSync.Api.Services.IQuoteExportService, StyleSync.Api.Services.QuoteExportService>();
-builder.Services.AddScoped<StyleSync.Api.Integrations.IScopeSource, StyleSync.Api.Integrations.AiScopeSourceAdapter>();
-builder.Services.AddSingleton<StyleSync.Api.Integrations.IProjectRequestProvider, StyleSync.Api.Integrations.StubProjectRequestProvider>();
+builder.Services.AddScoped<StyleSync.Api.Common.Identity.ICurrentUser, StyleSync.Api.Common.Identity.CurrentUser>();
 builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, StyleSync.Api.Integrations.HttpContextUserContext>();
-builder.Services.AddScoped<StyleSync.Api.Integrations.IApprovalGateResumer, StyleSync.Api.Integrations.LangGraphApprovalGateResumer>();
+
+// Domain Services
+builder.Services.AddSingleton(new StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules());
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.PaletteService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestStatusService>();
+
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.ICapacityGuardService, StyleSync.Api.Modules.Designers.Services.CapacityGuardService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.IMatchScoreEngine, StyleSync.Api.Modules.Designers.Services.MatchScoreEngine>();
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.IDesignerService, StyleSync.Api.Modules.Designers.Services.DesignerService>();
+
+builder.Services.AddScoped<StyleSync.Api.Services.IBudgetGuard, StyleSync.Api.Services.BudgetGuard>();
+builder.Services.AddScoped<StyleSync.Api.Services.IQuotationEngine, StyleSync.Api.Services.QuotationEngine>();
+builder.Services.AddScoped<StyleSync.Api.Services.IQuoteExportService, StyleSync.Api.Services.QuoteExportService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -142,21 +122,11 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.SetIsOriginAllowed(_ => true)
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        }
-        else
-        {
-            policy.WithOrigins(
-                    builder.Configuration["Cors:ReactAppUrl"] ?? "http://localhost:5173")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        }
+        policy.WithOrigins(
+                builder.Configuration["Cors:ReactAppUrl"] ?? "http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -170,24 +140,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-else
+
+if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-
 app.UseCors("AllowFrontend");
-
-var uploadsDir = Path.Combine(app.Environment.ContentRootPath, "uploads");
-if (!Directory.Exists(uploadsDir))
-{
-    Directory.CreateDirectory(uploadsDir);
-}
-
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadsDir),
-    RequestPath = "/uploads"
-});
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -197,9 +155,6 @@ app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestampUtc = 
 
 // Seed initial Admin user idempotently
 await DbSeeder.SeedAdminUserAsync(app.Services, app.Configuration);
-
-// Seed component 2
-await StyleSync.Api.Modules.ProjectRequests.Configuration.ProjectRequestsSeeder.SeedAsync(app.Services);
 
 app.Run();
 

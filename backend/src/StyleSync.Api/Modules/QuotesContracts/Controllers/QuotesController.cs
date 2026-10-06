@@ -1,14 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using StyleSync.Api.Data;
+using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.DTOs;
-using StyleSync.Api.Integrations;
 using StyleSync.Api.Models;
-using StyleSync.Api.Services;
 
 namespace StyleSync.Api.Controllers
 {
@@ -17,32 +15,10 @@ namespace StyleSync.Api.Controllers
     public class QuotesController : ControllerBase
     {
         private readonly AppDbContext _db;
-        private readonly IQuotationEngine _quotationEngine;
-        private readonly IBudgetGuard _budgetGuard;
-        private readonly IScopeSource _scopeSource;
-        private readonly IProjectRequestProvider _requestProvider;
-        private readonly ICurrentUserContext _userContext;
-        private readonly IApprovalGateResumer _gateResumer;
-        private readonly IQuoteExportService _exportService;
 
-        public QuotesController(
-            AppDbContext db,
-            IQuotationEngine quotationEngine,
-            IBudgetGuard budgetGuard,
-            IScopeSource scopeSource,
-            IProjectRequestProvider requestProvider,
-            ICurrentUserContext userContext,
-            IApprovalGateResumer gateResumer,
-            IQuoteExportService exportService)
+        public QuotesController(AppDbContext db)
         {
             _db = db;
-            _quotationEngine = quotationEngine;
-            _budgetGuard = budgetGuard;
-            _scopeSource = scopeSource;
-            _requestProvider = requestProvider;
-            _userContext = userContext;
-            _gateResumer = gateResumer;
-            _exportService = exportService;
         }
 
         // GET /api/quotes?status=Submitted&designerId=...&search=modern&page=1&pageSize=20&sort=-createdAt
@@ -59,29 +35,7 @@ namespace StyleSync.Api.Controllers
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            var query = _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
-                .Include(q => q.Items)
-                .Include(q => q.Contract)
-                .AsQueryable();
-
-            // Role Scoping: Clients should only see Released / Accepted / Rejected quotes unless they are admin/designer
-            if (_userContext.IsInRole("Client"))
-            {
-                query = query.Where(q => q.Status == QuoteStatus.Stage1Released 
-                                      || q.Status == QuoteStatus.Stage2Approved 
-                                      || q.Status == QuoteStatus.Stage2ChangesRequested 
-                                      || q.Status == QuoteStatus.Stage2Rejected
-                                      || q.Status == QuoteStatus.ClientReview
-                                      || q.Status == QuoteStatus.Accepted
-                                      || q.Status == QuoteStatus.Rejected);
-            }
-            else if (_userContext.IsInRole("Designer") && _userContext.UserId.HasValue)
-            {
-                var designerUserGuid = _userContext.UserId.Value;
-                query = query.Where(q => q.DesignerId == designerUserGuid || designerId == null || q.DesignerId == designerId);
-            }
+            var query = _db.Quotes.Include(q => q.Items).Include(q => q.Contract).AsQueryable();
 
             if (status.HasValue) query = query.Where(q => q.Status == status.Value);
             if (designerId.HasValue) query = query.Where(q => q.DesignerId == designerId.Value);
@@ -115,191 +69,50 @@ namespace StyleSync.Api.Controllers
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<QuoteResponseDto>> GetById(Guid id)
         {
-            var quote = await _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
-                .Include(q => q.Items)
-                .Include(q => q.Contract)
+            var quote = await _db.Quotes.Include(q => q.Items).Include(q => q.Contract)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
-
-            // Client Visibility Guard: Clients cannot inspect draft / unreleased quotes
-            if (_userContext.IsInRole("Client") && !IsQuoteReleased(quote.Status))
-            {
-                return Forbid();
-            }
-
             return Ok(ToResponseDto(quote));
         }
 
-        // GET /api/quotes/{id}/versions
-        [HttpGet("{id:guid}/versions")]
-        public async Task<ActionResult<List<QuoteVersionResponseDto>>> GetVersions(Guid id)
-        {
-            var quote = await _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
-                .FirstOrDefaultAsync(q => q.Id == id);
-
-            if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
-
-            var versions = quote.Versions.OrderByDescending(v => v.VersionNumber)
-                .Select(ToVersionResponseDto)
-                .ToList();
-
-            return Ok(versions);
-        }
-
-        // POST /api/quotes/{requestId}
-        // SPEC: Create draft quote from AI scope output (runs Quotation Engine & Budget-Guard)
-        [HttpPost("{requestId:guid}")]
-        public async Task<ActionResult<QuoteResponseDto>> CreateDraftFromAiScope(Guid requestId, CreateDraftFromAiScopeDto dto)
-        {
-            var requestDetails = await _requestProvider.GetRequestDetailsAsync(requestId);
-            var designerId = dto.DesignerId ?? requestDetails.AssignedDesignerId;
-
-            // 1. Quotation Engine computes line items & cost breakdown
-            var calcResult = _quotationEngine.Calculate(dto.Items);
-
-            // 2. Budget Guard verification
-            var budgetCheck = _budgetGuard.Validate(calcResult, requestDetails.MaxBudget);
-            if (!budgetCheck.IsValid)
-            {
-                return BadRequest(new { message = "Quote failed budget guard validation.", errors = budgetCheck.Errors });
-            }
-
-            var quoteId = Guid.NewGuid();
-            var quote = new Quote
-            {
-                Id = quoteId,
-                ProjectRequestId = requestId,
-                DesignerId = designerId,
-                ScopeSummary = dto.ScopeSummary ?? $"{requestDetails.StyleProfile} {requestDetails.RoomType} Scope",
-                Notes = dto.Notes,
-                IsAiGenerated = true,
-                Status = QuoteStatus.Stage1Pending,
-                TotalCost = calcResult.TotalCost,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            var version = new QuoteVersion
-            {
-                Id = Guid.NewGuid(),
-                QuoteId = quoteId,
-                VersionNumber = 1,
-                AuthorId = _userContext.UserId ?? designerId,
-                AuthorRole = "System",
-                MaterialsSubtotal = calcResult.MaterialsSubtotal,
-                LaborSubtotal = calcResult.LaborSubtotal,
-                DesignFee = calcResult.DesignFee,
-                ContingencyAmount = calcResult.ContingencyAmount,
-                TaxAmount = calcResult.TaxAmount,
-                TotalCost = calcResult.TotalCost,
-                Notes = "Initial AI draft generated from project scope.",
-                CreatedAt = DateTime.UtcNow,
-                Items = calcResult.Items.Select(i => new QuoteVersionItem
-                {
-                    Id = Guid.NewGuid(),
-                    Description = i.Description,
-                    Category = i.Category,
-                    Quantity = i.Quantity,
-                    UnitCost = i.UnitCost,
-                    LineTotal = i.LineTotal
-                }).ToList()
-            };
-
-            quote.Versions.Add(version);
-
-            // Populate legacy items for backward compatibility
-            quote.Items = version.Items.Select(i => new QuoteItem
-            {
-                Id = Guid.NewGuid(),
-                QuoteId = quoteId,
-                Description = i.Description,
-                Category = i.Category,
-                Quantity = i.Quantity,
-                UnitCost = i.UnitCost,
-                LineTotal = i.LineTotal
-            }).ToList();
-
-            _db.Quotes.Add(quote);
-            await _db.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetById), new { id = quote.Id }, ToResponseDto(quote));
-        }
-
         // POST /api/quotes
-        // Designer creating a quote directly
+        // Used by (a) the backend's AI-workflow endpoint, saving the Budget/Scope
+        // Agent's draft as IsAiGenerated = true, or (b) a Designer creating one manually.
         [HttpPost]
         public async Task<ActionResult<QuoteResponseDto>> Create(CreateQuoteDto dto)
         {
             if (dto.Items.Count == 0)
                 return BadRequest(new { message = "A quote needs at least one line item." });
 
-            var requestDetails = await _requestProvider.GetRequestDetailsAsync(dto.ProjectRequestId);
-            var designerId = dto.DesignerId ?? requestDetails.AssignedDesignerId;
+            var projectRequestId = dto.ProjectRequestId.HasValue && dto.ProjectRequestId.Value != Guid.Empty
+                ? dto.ProjectRequestId.Value
+                : Guid.NewGuid();
 
-            var calcResult = _quotationEngine.Calculate(dto.Items);
-            var budgetCheck = _budgetGuard.Validate(calcResult, requestDetails.MaxBudget);
-            if (!budgetCheck.IsValid)
-            {
-                return BadRequest(new { message = "Quote exceeds client budget or contains invalid lines.", errors = budgetCheck.Errors });
-            }
+            var designerId = dto.DesignerId.HasValue && dto.DesignerId.Value != Guid.Empty
+                ? dto.DesignerId.Value
+                : Guid.NewGuid();
 
-            var quoteId = Guid.NewGuid();
             var quote = new Quote
             {
-                Id = quoteId,
-                ProjectRequestId = dto.ProjectRequestId,
+                Id = Guid.NewGuid(),
+                ProjectRequestId = projectRequestId,
                 DesignerId = designerId,
-                ScopeSummary = dto.ScopeSummary ?? $"{requestDetails.StyleProfile} {requestDetails.RoomType} Scope",
+                ScopeSummary = dto.ScopeSummary,
                 Notes = dto.Notes,
                 IsAiGenerated = dto.IsAiGenerated,
                 Status = QuoteStatus.Draft,
-                TotalCost = calcResult.TotalCost,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-
-            var version = new QuoteVersion
-            {
-                Id = Guid.NewGuid(),
-                QuoteId = quoteId,
-                VersionNumber = 1,
-                AuthorId = _userContext.UserId ?? designerId,
-                AuthorRole = _userContext.Role ?? "Designer",
-                MaterialsSubtotal = calcResult.MaterialsSubtotal,
-                LaborSubtotal = calcResult.LaborSubtotal,
-                DesignFee = calcResult.DesignFee,
-                ContingencyAmount = calcResult.ContingencyAmount,
-                TaxAmount = calcResult.TaxAmount,
-                TotalCost = calcResult.TotalCost,
-                Notes = dto.Notes,
-                CreatedAt = DateTime.UtcNow,
-                Items = calcResult.Items.Select(i => new QuoteVersionItem
+                Items = dto.Items.Select(i => new QuoteItem
                 {
                     Id = Guid.NewGuid(),
                     Description = i.Description,
                     Category = i.Category,
                     Quantity = i.Quantity,
                     UnitCost = i.UnitCost,
-                    LineTotal = i.LineTotal
+                    LineTotal = i.Quantity * i.UnitCost
                 }).ToList()
             };
-
-            quote.Versions.Add(version);
-            quote.Items = version.Items.Select(i => new QuoteItem
-            {
-                Id = Guid.NewGuid(),
-                QuoteId = quoteId,
-                Description = i.Description,
-                Category = i.Category,
-                Quantity = i.Quantity,
-                UnitCost = i.UnitCost,
-                LineTotal = i.LineTotal
-            }).ToList();
+            quote.TotalCost = quote.Items.Sum(i => i.LineTotal);
 
             _db.Quotes.Add(quote);
             await _db.SaveChangesAsync();
@@ -308,9 +121,25 @@ namespace StyleSync.Api.Controllers
         }
 
         // POST /api/quotes/draft-from-agent
+        // Step 7's bridge: calls the Python Budget/Scope Agent, then saves its
+        // output as a normal Draft quote with IsAiGenerated = true — exactly what
+        // a real LangGraph node would hand off to this component once the full
+        // pipeline exists.
         [HttpPost("draft-from-agent")]
-        public async Task<ActionResult<QuoteResponseDto>> DraftFromAgent(DraftQuoteFromAgentDto dto)
+        public async Task<ActionResult<QuoteResponseDto>> DraftFromAgent(
+            DraftQuoteFromAgentDto dto,
+            [FromServices] IHttpClientFactory httpClientFactory)
         {
+            var projectRequestId = dto.ProjectRequestId.HasValue && dto.ProjectRequestId.Value != Guid.Empty
+                ? dto.ProjectRequestId.Value
+                : Guid.NewGuid();
+
+            var designerId = dto.DesignerId.HasValue && dto.DesignerId.Value != Guid.Empty
+                ? dto.DesignerId.Value
+                : Guid.NewGuid();
+
+            var client = httpClientFactory.CreateClient("AiService");
+
             var agentRequest = new AgentBudgetScopeRequest
             {
                 RoomType = dto.RoomType,
@@ -322,38 +151,65 @@ namespace StyleSync.Api.Controllers
                 Preferences = dto.Preferences
             };
 
-            AgentBudgetScopeResponse agentResult;
+            HttpResponseMessage agentHttpResponse;
             try
             {
-                agentResult = await _scopeSource.FetchDraftScopeAsync(agentRequest);
+                agentHttpResponse = await client.PostAsJsonAsync("/agents/budget-scope", agentRequest);
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
-                return StatusCode(502, new { message = $"Could not retrieve draft from AI service: {ex.Message}" });
+                return StatusCode(502, new { message = $"Couldn't reach the AI service at {client.BaseAddress}. Is it running? ({ex.Message})" });
             }
 
-            var requestId = dto.ProjectRequestId != Guid.Empty ? dto.ProjectRequestId : Guid.NewGuid();
-            var items = agentResult.Items.Select(i => new QuoteItemDto
+            if (!agentHttpResponse.IsSuccessStatusCode)
             {
-                Description = i.Description,
-                Category = Enum.TryParse<QuoteItemCategory>(i.Category, true, out var cat) ? cat : QuoteItemCategory.Other,
-                Quantity = i.Quantity,
-                UnitCost = i.UnitCost
-            }).ToList();
+                var errBody = await agentHttpResponse.Content.ReadAsStringAsync();
+                return StatusCode(502, new { message = $"AI service returned {(int)agentHttpResponse.StatusCode}: {errBody}" });
+            }
 
-            return await CreateDraftFromAiScope(requestId, new CreateDraftFromAiScopeDto
+            var agentResult = await agentHttpResponse.Content.ReadFromJsonAsync<AgentBudgetScopeResponse>();
+            if (agentResult is null || agentResult.Items.Count == 0)
+                return StatusCode(502, new { message = "AI service returned an empty draft." });
+
+            var quoteId = Guid.NewGuid();
+            var quote = new Quote
             {
-                DesignerId = dto.DesignerId != Guid.Empty ? dto.DesignerId : null,
+                Id = quoteId,
+                ProjectRequestId = projectRequestId,
+                DesignerId = designerId,
+                Status = QuoteStatus.Draft,
+                IsAiGenerated = true,
                 ScopeSummary = agentResult.ScopeSummary,
                 Notes = $"{agentResult.Notes} (agent source: {agentResult.Source})",
-                Items = items
-            });
+                Items = agentResult.Items.Select(i => new QuoteItem
+                {
+                    Id = Guid.NewGuid(),
+                    QuoteId = quoteId,
+                    Description = i.Description,
+                    Category = Enum.TryParse<QuoteItemCategory>(i.Category, true, out var cat) ? cat : QuoteItemCategory.Other,
+                    Quantity = i.Quantity,
+                    UnitCost = i.UnitCost,
+                    LineTotal = i.Quantity * i.UnitCost
+                }).ToList()
+            };
+            quote.TotalCost = quote.Items.Sum(i => i.LineTotal);
+
+            _db.Quotes.Add(quote);
+            await _db.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetById), new { id = quote.Id }, ToResponseDto(quote));
         }
 
         // POST /api/quotes/draft-preview
+        // Calls the Python Budget/Scope Agent to preview the draft scope and cost breakdown
+        // without saving to the database.
         [HttpPost("draft-preview")]
-        public async Task<ActionResult<AgentBudgetScopeResponse>> DraftPreview(DraftQuoteFromAgentDto dto)
+        public async Task<ActionResult<AgentBudgetScopeResponse>> DraftPreview(
+            DraftQuoteFromAgentDto dto,
+            [FromServices] IHttpClientFactory httpClientFactory)
         {
+            var client = httpClientFactory.CreateClient("AiService");
+
             var agentRequest = new AgentBudgetScopeRequest
             {
                 RoomType = dto.RoomType,
@@ -365,239 +221,100 @@ namespace StyleSync.Api.Controllers
                 Preferences = dto.Preferences
             };
 
+            HttpResponseMessage agentHttpResponse;
             try
             {
-                var result = await _scopeSource.FetchDraftScopeAsync(agentRequest);
-                return Ok(result);
+                agentHttpResponse = await client.PostAsJsonAsync("/agents/budget-scope", agentRequest);
             }
-            catch (Exception ex)
+            catch (HttpRequestException ex)
             {
-                return StatusCode(502, new { message = $"Could not preview draft scope: {ex.Message}" });
+                return StatusCode(502, new { message = $"Couldn't reach the AI service at {client.BaseAddress}. Is it running? ({ex.Message})" });
             }
+
+            if (!agentHttpResponse.IsSuccessStatusCode)
+            {
+                var errBody = await agentHttpResponse.Content.ReadAsStringAsync();
+                return StatusCode(502, new { message = $"AI service returned {(int)agentHttpResponse.StatusCode}: {errBody}" });
+            }
+
+            var agentResult = await agentHttpResponse.Content.ReadFromJsonAsync<AgentBudgetScopeResponse>();
+            if (agentResult is null || agentResult.Items.Count == 0)
+                return StatusCode(502, new { message = "AI service returned an empty draft." });
+
+            return Ok(agentResult);
         }
 
-        // PUT /api/quotes/{id}/revise (and PUT /api/quotes/{id})
-        // SPEC: Edit line items, creates NEW immutable QuoteVersion, re-runs budget-guard
-        [HttpPut("{id:guid}/revise")]
+        // PUT /api/quotes/{id}
+        // A Designer revising line items before client approval (PRD section 9, Update row).
+        // Revising a quote always clears IsAiGenerated — once a human touches the
+        // numbers it's no longer purely the agent's draft.
         [HttpPut("{id:guid}")]
-        public async Task<ActionResult<QuoteResponseDto>> Revise(Guid id, ReviseQuoteDto dto)
+        public async Task<ActionResult<QuoteResponseDto>> Update(Guid id, UpdateQuoteDto dto)
         {
-            if (_userContext.IsInRole("Client"))
-            {
-                return Forbid("Clients are not permitted to author or revise quotes.");
-            }
-
-            var quote = await _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
-                .Include(q => q.Items)
-                .FirstOrDefaultAsync(q => q.Id == id);
-
+            var quote = await _db.Quotes.Include(q => q.Items).FirstOrDefaultAsync(q => q.Id == id);
             if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
 
-            if (quote.Status is QuoteStatus.Stage2Approved or QuoteStatus.Stage2Rejected or QuoteStatus.Accepted or QuoteStatus.Rejected)
+            if (quote.Status is QuoteStatus.Accepted or QuoteStatus.Rejected)
                 return BadRequest(new { message = $"A {quote.Status} quote can no longer be edited." });
 
-            var requestDetails = await _requestProvider.GetRequestDetailsAsync(quote.ProjectRequestId);
-
-            // 1. Re-calculate with Quotation Engine
-            var calcResult = _quotationEngine.Calculate(dto.Items);
-
-            // 2. Budget Guard: Validate quote total <= client max budget BEFORE edit is accepted
-            var budgetCheck = _budgetGuard.Validate(calcResult, requestDetails.MaxBudget);
-            if (!budgetCheck.IsValid)
-            {
-                return BadRequest(new { message = "Revised quote rejected by Budget-Guard.", errors = budgetCheck.Errors });
-            }
-
-            if (!string.IsNullOrWhiteSpace(dto.ScopeSummary)) quote.ScopeSummary = dto.ScopeSummary;
+            if (dto.ScopeSummary is not null) quote.ScopeSummary = dto.ScopeSummary;
             if (dto.Notes is not null) quote.Notes = dto.Notes;
 
-            // 3. Create NEW immutable QuoteVersion (Never overwrite prior versions)
-            int nextVersionNum = quote.Versions.Count > 0 ? quote.Versions.Max(v => v.VersionNumber) + 1 : 1;
-            var newVersion = new QuoteVersion
+            if (dto.Items is not null)
             {
-                Id = Guid.NewGuid(),
-                QuoteId = quote.Id,
-                VersionNumber = nextVersionNum,
-                AuthorId = _userContext.UserId ?? quote.DesignerId,
-                AuthorRole = _userContext.Role ?? "Designer",
-                MaterialsSubtotal = calcResult.MaterialsSubtotal,
-                LaborSubtotal = calcResult.LaborSubtotal,
-                DesignFee = calcResult.DesignFee,
-                ContingencyAmount = calcResult.ContingencyAmount,
-                TaxAmount = calcResult.TaxAmount,
-                TotalCost = calcResult.TotalCost,
-                Notes = dto.Notes ?? $"Revision v{nextVersionNum}",
-                CreatedAt = DateTime.UtcNow,
-                Items = calcResult.Items.Select(i => new QuoteVersionItem
+                if (dto.Items.Count == 0)
+                    return BadRequest(new { message = "A quote needs at least one line item." });
+
+                _db.QuoteItems.RemoveRange(quote.Items);
+
+                var newItems = dto.Items.Select(i => new QuoteItem
                 {
                     Id = Guid.NewGuid(),
+                    QuoteId = quote.Id,
                     Description = i.Description,
                     Category = i.Category,
                     Quantity = i.Quantity,
                     UnitCost = i.UnitCost,
-                    LineTotal = i.LineTotal
-                }).ToList()
-            };
+                    LineTotal = i.Quantity * i.UnitCost
+                }).ToList();
 
-            _db.QuoteVersions.Add(newVersion);
-            quote.TotalCost = calcResult.TotalCost;
-            quote.IsAiGenerated = false; // Human revision clears AI flag
+                _db.QuoteItems.AddRange(newItems);
+
+                quote.TotalCost = newItems.Sum(i => i.LineTotal);
+                quote.Items = newItems;
+                quote.IsAiGenerated = false;
+            }
+
             quote.UpdatedAt = DateTime.UtcNow;
 
+            // Two overlapping saves for the same quote (e.g. a double-click, or a
+            // retry after a dropped connection) can race here: the second save's
+            // snapshot goes stale mid-flight once the first one commits. Catch it
+            // and return a clean 409 instead of an unhandled 500.
             try
             {
                 await _db.SaveChangesAsync();
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                return Conflict(new { message = $"Concurrency conflict on Quote {id}: {ex.Message}" });
+                var entityName = ex.Entries.FirstOrDefault()?.Entity.GetType().Name ?? "Unknown";
+                return Conflict(new { message = $"Concurrency on {entityName}: {ex.Message}" });
             }
 
             return Ok(ToResponseDto(quote));
-        }
-
-        // POST /api/quotes/{id}/stage1-decision
-        // SPEC: Admin release / send-for-revision / reject (resumes paused AI workflow)
-        [HttpPost("{id:guid}/stage1-decision")]
-        public async Task<ActionResult<QuoteResponseDto>> Stage1Decision(Guid id, Stage1DecisionDto dto)
-        {
-            if (_userContext.IsInRole("Client") || _userContext.IsInRole("Designer"))
-            {
-                return Forbid("Only Administrators may issue Stage 1 governance decisions.");
-            }
-
-            var quote = await _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
-                .Include(q => q.Items)
-                .FirstOrDefaultAsync(q => q.Id == id);
-
-            if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
-
-            quote.Status = dto.Action switch
-            {
-                Stage1Action.Release => QuoteStatus.Stage1Released,
-                Stage1Action.SendForRevision => QuoteStatus.Stage1RevisionRequested,
-                Stage1Action.Reject => QuoteStatus.Stage1Rejected,
-                _ => quote.Status
-            };
-
-            quote.UpdatedAt = DateTime.UtcNow;
-            if (!string.IsNullOrWhiteSpace(dto.Notes))
-            {
-                quote.Notes = $"{quote.Notes}\n[Stage 1 {dto.Action}]: {dto.Notes}".Trim();
-            }
-
-            await _gateResumer.ResumeStage1GateAsync(quote.Id, dto.Action, dto.Notes);
-            await _db.SaveChangesAsync();
-
-            return Ok(ToResponseDto(quote));
-        }
-
-        // POST /api/quotes/{id}/stage2-decision
-        // SPEC: Client approve / request-changes / reject; approval creates the Contract exactly once (idempotent)
-        [HttpPost("{id:guid}/stage2-decision")]
-        [HttpPost("{id:guid}/accept")] // Backward compatibility alias
-        public async Task<ActionResult<ContractResponseDto>> Stage2Decision(Guid id, [FromBody] Stage2DecisionDto? dto = null)
-        {
-            var action = dto?.Action ?? Stage2Action.Approve;
-
-            if (_userContext.IsInRole("Admin") || _userContext.IsInRole("Designer"))
-            {
-                return Forbid("Only Clients may issue Stage 2 decisions.");
-            }
-
-            var quote = await _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
-                .Include(q => q.Items)
-                .Include(q => q.Contract)
-                .FirstOrDefaultAsync(q => q.Id == id);
-
-            if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
-
-            // Business Rule: Stage 2 is rejected (403/409) if not Released in Stage 1
-            if (!IsQuoteReleased(quote.Status) && quote.Status != QuoteStatus.Stage2Approved && quote.Status != QuoteStatus.Accepted)
-            {
-                return StatusCode(409, new { message = "Quote must be Released by Admin (Stage 1) before Client can decide." });
-            }
-
-            if (action == Stage2Action.Approve)
-            {
-                // Idempotency: If contract already exists, return existing contract cleanly
-                if (quote.Contract != null)
-                {
-                    return Ok(ToContractResponseDto(quote.Contract));
-                }
-
-                quote.Status = QuoteStatus.Stage2Approved;
-                quote.UpdatedAt = DateTime.UtcNow;
-
-                var requestDetails = await _requestProvider.GetRequestDetailsAsync(quote.ProjectRequestId);
-                Guid resolvedClientId = dto?.ClientId ?? _userContext.UserId ?? requestDetails.ClientId;
-
-                var contract = new Contract
-                {
-                    Id = Guid.NewGuid(),
-                    QuoteId = quote.Id,
-                    ProjectRequestId = quote.ProjectRequestId,
-                    DesignerId = quote.DesignerId,
-                    ClientId = resolvedClientId,
-                    TotalAmount = quote.TotalCost,
-                    TermsSummary = string.IsNullOrWhiteSpace(quote.ScopeSummary) ? "Official Interior Design Contract" : quote.ScopeSummary,
-                    Status = ContractStatus.PendingSignature,
-                    Quote = quote,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                };
-
-                _db.Contracts.Add(contract);
-                await _gateResumer.ResumeStage2GateAsync(quote.Id, Stage2Action.Approve, dto?.Feedback);
-                await _db.SaveChangesAsync();
-
-                return CreatedAtAction(
-                    nameof(ContractsController.GetById),
-                    "Contracts",
-                    new { id = contract.Id },
-                    ToContractResponseDto(contract));
-            }
-            else if (action == Stage2Action.RequestChanges)
-            {
-                quote.Status = QuoteStatus.Stage2ChangesRequested;
-                quote.UpdatedAt = DateTime.UtcNow;
-                if (!string.IsNullOrWhiteSpace(dto?.Feedback))
-                {
-                    quote.Notes = $"{quote.Notes}\n[Client Feedback]: {dto.Feedback}".Trim();
-                }
-
-                await _gateResumer.ResumeStage2GateAsync(quote.Id, Stage2Action.RequestChanges, dto?.Feedback);
-                await _db.SaveChangesAsync();
-
-                return Ok(new { message = "Revision requested from designer.", quote = ToResponseDto(quote) });
-            }
-            else // Reject
-            {
-                quote.Status = QuoteStatus.Stage2Rejected;
-                quote.UpdatedAt = DateTime.UtcNow;
-                await _gateResumer.ResumeStage2GateAsync(quote.Id, Stage2Action.Reject, dto?.Feedback);
-                await _db.SaveChangesAsync();
-
-                return Ok(new { message = "Quote rejected.", quote = ToResponseDto(quote) });
-            }
         }
 
         // PATCH /api/quotes/{id}/status
+        // Drives Draft → Submitted → Client Review → Revision Requested → Accepted/Rejected.
+        // Acceptance is handled by the dedicated /accept endpoint below, not this one,
+        // because acceptance has a side effect (creating a Contract).
         [HttpPatch("{id:guid}/status")]
         public async Task<ActionResult<QuoteResponseDto>> UpdateStatus(Guid id, UpdateQuoteStatusDto dto)
         {
-            var quote = await _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
-                .Include(q => q.Items)
-                .FirstOrDefaultAsync(q => q.Id == id);
+            if (dto.Status == QuoteStatus.Accepted)
+                return BadRequest(new { message = "Use POST /api/quotes/{id}/accept to accept a quote — it also creates the contract." });
 
+            var quote = await _db.Quotes.Include(q => q.Items).FirstOrDefaultAsync(q => q.Id == id);
             if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
 
             quote.Status = dto.Status;
@@ -607,99 +324,81 @@ namespace StyleSync.Api.Controllers
             return Ok(ToResponseDto(quote));
         }
 
-        // GET /api/quotes/{id}/export?format=pdf|csv
-        // SPEC: PDF or CSV by line item (Designer, Admin, Client)
-        [HttpGet("{id:guid}/export")]
-        public async Task<IActionResult> Export(Guid id, [FromQuery] string format = "pdf")
+        // POST /api/quotes/{id}/accept
+        // The one place a Contract gets created. Creates a corresponding Contract
+        // and transitions the quote to Accepted.
+        [HttpPost("{id:guid}/accept")]
+        public async Task<ActionResult<ContractResponseDto>> Accept(Guid id, [FromQuery] string? clientId = null)
         {
-            var quote = await _db.Quotes
-                .Include(q => q.Versions)
-                    .ThenInclude(v => v.Items)
+            var quote = await _db.Quotes.Include(q => q.Items).Include(q => q.Contract)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
+            if (quote.Contract is not null) return BadRequest(new { message = "This quote already has a contract." });
+            if (quote.Status is QuoteStatus.Accepted or QuoteStatus.Rejected)
+                return BadRequest(new { message = $"Quote is already {quote.Status}." });
 
-            var version = quote.CurrentVersion;
-            if (version is null)
-            {
-                return BadRequest(new { message = "Quote does not contain any versions to export." });
-            }
+            quote.Status = QuoteStatus.Accepted;
+            quote.UpdatedAt = DateTime.UtcNow;
 
-            if (format.Equals("csv", StringComparison.OrdinalIgnoreCase))
-            {
-                var bytes = _exportService.GenerateCsv(quote, version);
-                return File(bytes, "text/csv", $"Quote_{quote.Id:N}_v{version.VersionNumber}.csv");
-            }
-            else
-            {
-                var bytes = _exportService.GeneratePdf(quote, version);
-                return File(bytes, "text/html", $"Quote_{quote.Id:N}_v{version.VersionNumber}.html");
-            }
-        }
+            Guid resolvedClientId = (Guid.TryParse(clientId, out var parsedGuid) && parsedGuid != Guid.Empty)
+                ? parsedGuid
+                : (quote.ProjectRequestId != Guid.Empty ? quote.ProjectRequestId : Guid.NewGuid());
 
-        private static bool IsQuoteReleased(QuoteStatus status)
-        {
-            return status is QuoteStatus.Stage1Released 
-                or QuoteStatus.Stage2Approved 
-                or QuoteStatus.Stage2ChangesRequested 
-                or QuoteStatus.Stage2Rejected 
-                or QuoteStatus.ClientReview 
-                or QuoteStatus.Accepted;
-        }
-
-        private static QuoteResponseDto ToResponseDto(Quote q)
-        {
-            var currentVer = q.CurrentVersion;
-            return new QuoteResponseDto
+            var contract = new Contract
             {
-                Id = q.Id,
-                ProjectRequestId = q.ProjectRequestId,
-                DesignerId = q.DesignerId,
-                Status = q.Status,
-                IsAiGenerated = q.IsAiGenerated,
-                ScopeSummary = q.ScopeSummary,
-                Notes = q.Notes,
-                TotalCost = q.TotalCost,
-                CreatedAt = q.CreatedAt,
-                UpdatedAt = q.UpdatedAt,
-                ContractId = q.Contract?.Id,
-                CurrentVersion = currentVer == null ? null : ToVersionResponseDto(currentVer),
-                Versions = q.Versions.OrderByDescending(v => v.VersionNumber).Select(ToVersionResponseDto).ToList(),
-                Items = (currentVer?.Items.Select(i => new QuoteItemResponseDto
-                {
-                    Id = i.Id,
-                    Description = i.Description,
-                    Category = i.Category,
-                    Quantity = i.Quantity,
-                    UnitCost = i.UnitCost,
-                    LineTotal = i.LineTotal
-                }) ?? q.Items.Select(i => new QuoteItemResponseDto
-                {
-                    Id = i.Id,
-                    Description = i.Description,
-                    Category = i.Category,
-                    Quantity = i.Quantity,
-                    UnitCost = i.UnitCost,
-                    LineTotal = i.LineTotal
-                })).ToList()
+                Id = Guid.NewGuid(),
+                QuoteId = quote.Id,
+                ProjectRequestId = quote.ProjectRequestId,
+                DesignerId = quote.DesignerId,
+                ClientId = resolvedClientId,
+                TotalAmount = quote.TotalCost,
+                TermsSummary = string.IsNullOrWhiteSpace(quote.ScopeSummary) ? "Interior Design Contract" : quote.ScopeSummary,
+                Status = ContractStatus.Draft,
+                Quote = quote
             };
+
+            _db.Contracts.Add(contract);
+            await _db.SaveChangesAsync();
+
+            return CreatedAtAction(
+                nameof(ContractsController.GetById),
+                "Contracts",
+                new { id = contract.Id },
+                ToContractResponseDto(contract));
         }
 
-        private static QuoteVersionResponseDto ToVersionResponseDto(QuoteVersion v) => new()
+        // DELETE /api/quotes/{id}
+        // Allows deleting a Draft or Submitted quote that has not been converted to an accepted contract.
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> Delete(Guid id)
         {
-            Id = v.Id,
-            VersionNumber = v.VersionNumber,
-            AuthorId = v.AuthorId,
-            AuthorRole = v.AuthorRole,
-            MaterialsSubtotal = v.MaterialsSubtotal,
-            LaborSubtotal = v.LaborSubtotal,
-            DesignFee = v.DesignFee,
-            ContingencyAmount = v.ContingencyAmount,
-            TaxAmount = v.TaxAmount,
-            TotalCost = v.TotalCost,
-            Notes = v.Notes,
-            CreatedAt = v.CreatedAt,
-            Items = v.Items.Select(i => new QuoteVersionItemResponseDto
+            var quote = await _db.Quotes.Include(q => q.Items).Include(q => q.Contract).FirstOrDefaultAsync(q => q.Id == id);
+            if (quote is null) return NotFound(new { message = $"Quote {id} was not found." });
+
+            if (quote.Contract is not null || quote.Status == QuoteStatus.Accepted)
+                return BadRequest(new { message = "An accepted quote with an existing contract cannot be deleted." });
+
+            _db.QuoteItems.RemoveRange(quote.Items);
+            _db.Quotes.Remove(quote);
+            await _db.SaveChangesAsync();
+            return NoContent();
+        }
+
+        private static QuoteResponseDto ToResponseDto(Quote q) => new()
+        {
+            Id = q.Id,
+            ProjectRequestId = q.ProjectRequestId,
+            DesignerId = q.DesignerId,
+            Status = q.Status,
+            IsAiGenerated = q.IsAiGenerated,
+            ScopeSummary = q.ScopeSummary,
+            Notes = q.Notes,
+            TotalCost = q.TotalCost,
+            CreatedAt = q.CreatedAt,
+            UpdatedAt = q.UpdatedAt,
+            ContractId = q.Contract?.Id,
+            Items = q.Items.Select(i => new QuoteItemResponseDto
             {
                 Id = i.Id,
                 Description = i.Description,

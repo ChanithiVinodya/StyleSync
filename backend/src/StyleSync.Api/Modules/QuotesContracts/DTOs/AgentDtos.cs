@@ -7,8 +7,8 @@ namespace StyleSync.Api.DTOs
     // What the React form (or Postman) sends to trigger a draft.
     public class DraftQuoteFromAgentDto
     {
-        public Guid ProjectRequestId { get; set; }
-        public Guid DesignerId { get; set; }
+        public Guid? ProjectRequestId { get; set; }
+        public Guid? DesignerId { get; set; }
         public string RoomType { get; set; } = string.Empty;
         public double RoomSizeSqft { get; set; }
         public decimal BudgetMin { get; set; }

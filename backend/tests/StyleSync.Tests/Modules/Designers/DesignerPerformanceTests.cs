@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.Designers.DTOs;
 using StyleSync.Api.Modules.Designers.Models;
+using StyleSync.Api.Models;
 using StyleSync.Api.Modules.Designers.Services;
 using Xunit;
 using Xunit.Abstractions;
@@ -36,7 +37,7 @@ public class DesignerPerformanceTests
         };
 
         var designers = new List<DesignerProfile>(count);
-        var contracts = new List<ContractStub>();
+        var contracts = new List<Contract>();
 
         var random = new Random(42); // deterministic seed
 
@@ -79,10 +80,10 @@ public class DesignerPerformanceTests
             var activeContractsCount = random.Next(0, maxConcurrent + 2);
             for (int c = 1; c <= activeContractsCount; c++)
             {
-                contracts.Add(new ContractStub
+                contracts.Add(new Contract
                 {
-                    Id = (i * 10) + c,
-                    DesignerId = i,
+                    
+                    DesignerId = designers[i - 1].UserId,
                     Status = (c <= activeContractsCount - 1) ? ContractStatus.Active : ContractStatus.Completed
                 });
             }
@@ -168,3 +169,7 @@ public class DesignerPerformanceTests
         Assert.All(pagedResult.Items, item => Assert.Equal(ListingStatus.Published, item.ListingStatus));
     }
 }
+
+
+
+
