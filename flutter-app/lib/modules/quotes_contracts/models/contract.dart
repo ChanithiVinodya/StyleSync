@@ -16,6 +16,13 @@ class Contract {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final Quote? quote;
+  final String? designerDisplayName;
+  final String? designerEmail;
+  final String? clientDisplayName;
+  final String? clientEmail;
+  final String? projectReferenceCode;
+  final String? description;
+  final List<DesignerRecommendation> recommendedDesigners;
 
   Contract({
     required this.id,
@@ -33,6 +40,13 @@ class Contract {
     this.createdAt,
     this.updatedAt,
     this.quote,
+    this.designerDisplayName,
+    this.designerEmail,
+    this.clientDisplayName,
+    this.clientEmail,
+    this.projectReferenceCode,
+    this.description,
+    this.recommendedDesigners = const [],
   });
 
   factory Contract.fromJson(Map<String, dynamic> json) {
@@ -81,6 +95,16 @@ class Contract {
       }
     }
 
+    final rawRecs = json['recommendedDesigners'] as List<dynamic>? ?? [];
+    final recsList = <DesignerRecommendation>[];
+    for (final r in rawRecs) {
+      if (r is Map) {
+        try {
+          recsList.add(DesignerRecommendation.fromJson(Map<String, dynamic>.from(r)));
+        } catch (_) {}
+      }
+    }
+
     return Contract(
       id: json['id']?.toString() ?? '',
       quoteId: json['quoteId']?.toString(),
@@ -97,6 +121,13 @@ class Contract {
       createdAt: created,
       updatedAt: updated,
       quote: linkedQuote,
+      designerDisplayName: json['designerDisplayName']?.toString() ?? linkedQuote?.designerDisplayName,
+      designerEmail: json['designerEmail']?.toString() ?? linkedQuote?.designerEmail,
+      clientDisplayName: json['clientDisplayName']?.toString() ?? linkedQuote?.clientDisplayName,
+      clientEmail: json['clientEmail']?.toString() ?? linkedQuote?.clientEmail,
+      projectReferenceCode: json['projectReferenceCode']?.toString() ?? linkedQuote?.projectReferenceCode,
+      description: json['description']?.toString() ?? linkedQuote?.description,
+      recommendedDesigners: recsList.isNotEmpty ? recsList : (linkedQuote?.recommendedDesigners ?? const []),
     );
   }
 
@@ -117,6 +148,14 @@ class Contract {
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       if (quote != null) 'quote': quote!.toJson(),
+      if (designerDisplayName != null) 'designerDisplayName': designerDisplayName,
+      if (designerEmail != null) 'designerEmail': designerEmail,
+      if (clientDisplayName != null) 'clientDisplayName': clientDisplayName,
+      if (clientEmail != null) 'clientEmail': clientEmail,
+      if (projectReferenceCode != null) 'projectReferenceCode': projectReferenceCode,
+      if (description != null) 'description': description,
+      if (recommendedDesigners.isNotEmpty)
+        'recommendedDesigners': recommendedDesigners.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -136,6 +175,13 @@ class Contract {
     DateTime? createdAt,
     DateTime? updatedAt,
     Quote? quote,
+    String? designerDisplayName,
+    String? designerEmail,
+    String? clientDisplayName,
+    String? clientEmail,
+    String? projectReferenceCode,
+    String? description,
+    List<DesignerRecommendation>? recommendedDesigners,
   }) {
     return Contract(
       id: id ?? this.id,
@@ -153,6 +199,13 @@ class Contract {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       quote: quote ?? this.quote,
+      designerDisplayName: designerDisplayName ?? this.designerDisplayName,
+      designerEmail: designerEmail ?? this.designerEmail,
+      clientDisplayName: clientDisplayName ?? this.clientDisplayName,
+      clientEmail: clientEmail ?? this.clientEmail,
+      projectReferenceCode: projectReferenceCode ?? this.projectReferenceCode,
+      description: description ?? this.description,
+      recommendedDesigners: recommendedDesigners ?? this.recommendedDesigners,
     );
   }
 }

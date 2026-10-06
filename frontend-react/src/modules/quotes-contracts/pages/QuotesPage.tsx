@@ -56,6 +56,8 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
   const [versionHistoryQuote, setVersionHistoryQuote] = useState<Quote | null>(null);
+  const [approvingQuote, setApprovingQuote] = useState<Quote | null>(null);
+  const [selectedDesignerId, setSelectedDesignerId] = useState<string>("");
 
   async function refresh() {
     setLoading(true);
@@ -118,12 +120,24 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
     }
   }
 
+  function handleOpenApproveModal(quote: Quote) {
+    setApprovingQuote(quote);
+    const topRec = quote.recommendedDesigners?.[0];
+    const initialDesigner = topRec ? (topRec.userId || String(topRec.profileId)) : quote.designerId;
+    setSelectedDesignerId(initialDesigner);
+  }
+
   // Stage 2 Decisions (Client)
-  async function handleStage2(quote: Quote, action: "Approve" | "RequestChanges" | "Reject") {
+  async function handleStage2(
+    quote: Quote, 
+    action: "Approve" | "RequestChanges" | "Reject",
+    chosenDesignerId?: string
+  ) {
     if (!quote?.id) return;
     const feedback = action !== "Approve" ? (prompt("Provide feedback to designer:") ?? undefined) : undefined;
     try {
-      await stage2Decision(quote.id, action, feedback);
+      await stage2Decision(quote.id, action, feedback, undefined, chosenDesignerId);
+      setApprovingQuote(null);
       await refresh();
       if (action === "Approve" && onGoToContracts) {
         onGoToContracts();
@@ -315,7 +329,7 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
                         {/* Stage 2 Client Approval Gate */}
                         {isReleased && (
                           <>
-                            <button className="qc-btn qc-btn--primary qc-btn--sm" onClick={() => handleStage2(q, "Approve")}>
+                            <button className="qc-btn qc-btn--primary qc-btn--sm" onClick={() => handleOpenApproveModal(q)}>
                               Approve
                             </button>
                             <button className="qc-btn qc-btn--ghost qc-btn--sm" onClick={() => handleStage2(q, "RequestChanges")}>
@@ -345,6 +359,167 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
         </div>
       </div>
 
+      {/* Recommended Designer Selection & Quote Approval Modal */}
+      {approvingQuote && (
+        <div className="qc-modal-backdrop" onMouseDown={() => setApprovingQuote(null)}>
+          <div 
+            className="qc-modal qc-modal--lg" 
+            style={{ maxWidth: 720, maxHeight: "90vh", overflowY: "auto" }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14, borderBottom: "1px solid var(--qc-border)", paddingBottom: 12 }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <h2 className="qc-modal__title" style={{ margin: 0, fontSize: 18 }}>Select Designer & Approve Quote</h2>
+                  <span style={{ fontSize: 11, background: "rgba(196, 138, 54, 0.15)", color: "#C48A36", padding: "2px 8px", borderRadius: 999, fontWeight: 600 }}>
+                    AI Recommendations
+                  </span>
+                </div>
+                <div style={{ fontSize: 12.5, color: "var(--qc-muted)", marginTop: 4 }}>
+                  Choose your preferred interior designer from the AI compatibility shortlist to finalize and generate your official contract.
+                </div>
+              </div>
+              <button type="button" className="qc-icon-btn" onClick={() => setApprovingQuote(null)}>✕</button>
+            </div>
+
+            {/* Quote Summary Banner */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "var(--qc-surface-sunken)", border: "1px solid var(--qc-border)", borderRadius: 8, padding: "12px 16px", marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 11, textTransform: "uppercase", fontWeight: 700, color: "var(--qc-muted)" }}>Project Scope</div>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: "var(--qc-ink)", marginTop: 2 }}>{approvingQuote.scopeSummary}</div>
+                {approvingQuote.projectReferenceCode && (
+                  <div style={{ fontSize: 11.5, color: "var(--qc-muted)", fontFamily: "monospace", marginTop: 2 }}>
+                    Ref: {approvingQuote.projectReferenceCode}
+                  </div>
+                )}
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 11, textTransform: "uppercase", fontWeight: 700, color: "var(--qc-muted)" }}>Total Quote Amount</div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: "var(--qc-primary)", marginTop: 2 }}>
+                  {formatMoney(approvingQuote.totalCost)}
+                </div>
+              </div>
+            </div>
+
+            {/* Recommended Designers List */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                <span>✨</span>
+                <span>Top Recommended Designers for this Project:</span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {approvingQuote.recommendedDesigners && approvingQuote.recommendedDesigners.length > 0 ? (
+                  approvingQuote.recommendedDesigners.map((rec) => {
+                    const isSelected = selectedDesignerId === (rec.userId || String(rec.profileId));
+                    return (
+                      <div
+                        key={rec.profileId || rec.userId}
+                        onClick={() => setSelectedDesignerId(rec.userId || String(rec.profileId))}
+                        style={{
+                          border: isSelected ? "2px solid #C48A36" : "1px solid var(--qc-border)",
+                          background: isSelected ? "rgba(196, 138, 54, 0.05)" : "var(--qc-surface)",
+                          borderRadius: 10,
+                          padding: "12px 14px",
+                          cursor: "pointer",
+                          transition: "all 0.15s ease",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                            <input
+                              type="radio"
+                              name="recommendedDesigner"
+                              checked={isSelected}
+                              onChange={() => setSelectedDesignerId(rec.userId || String(rec.profileId))}
+                              style={{ cursor: "pointer", accentColor: "#C48A36", width: 16, height: 16 }}
+                            />
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 14, color: "var(--qc-ink)" }}>
+                                {rec.displayName}
+                              </div>
+                              {rec.email && (
+                                <div style={{ fontSize: 11.5, color: "var(--qc-muted)" }}>{rec.email}</div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span
+                              style={{
+                                background: "#059669",
+                                color: "#ffffff",
+                                padding: "2px 8px",
+                                borderRadius: 6,
+                                fontSize: 11.5,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {Math.round(rec.matchScore * 100)}% Match
+                            </span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#D97706" }}>
+                              {rec.averageRating ? `${rec.averageRating.toFixed(1)}★` : "4.9★"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Plain language 4 factors explanation */}
+                        <div
+                          style={{
+                            fontSize: 12,
+                            color: "var(--qc-neutral)",
+                            background: "var(--qc-surface-sunken)",
+                            padding: "6px 10px",
+                            borderRadius: 6,
+                            marginTop: 6,
+                            borderLeft: "3px solid #C48A36",
+                          }}
+                        >
+                          {rec.matchReason || `Compatibility: ${Math.round((rec.styleTagOverlapPct || 0.9) * 100)}% style overlap, verified budget fit, and full active capacity.`}
+                        </div>
+
+                        {/* Style tags & price */}
+                        {rec.styleTags && rec.styleTags.length > 0 && (
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                            {rec.styleTags.map((tag) => (
+                              <span key={tag} style={{ fontSize: 10.5, background: "rgba(0,0,0,0.06)", padding: "1px 6px", borderRadius: 4 }}>
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{ padding: 14, background: "var(--qc-surface-sunken)", borderRadius: 8, fontSize: 13, color: "var(--qc-muted)" }}>
+                    No specific shortlist candidates found. Proceed with standard assigned designer.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Action Buttons */}
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 12, borderTop: "1px solid var(--qc-border)" }}>
+              <button
+                type="button"
+                className="qc-btn qc-btn--ghost"
+                onClick={() => setApprovingQuote(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="qc-btn qc-btn--primary"
+                onClick={() => handleStage2(approvingQuote, "Approve", selectedDesignerId)}
+              >
+                ✓ Confirm & Approve Quote
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quote Inspection Modal */}
       {viewingQuote && (
         <div className="qc-modal-backdrop" onMouseDown={() => setViewingQuote(null)}>
@@ -353,6 +528,11 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
               <div>
                 <div className="qc-modal__title" style={{ margin: 0 }}>Quote Inspection</div>
                 <div style={{ fontSize: 13, color: "var(--qc-muted)", marginTop: 4 }}>{viewingQuote.scopeSummary}</div>
+                {viewingQuote.projectReferenceCode && (
+                  <div style={{ fontSize: 11.5, color: "var(--qc-muted)", fontFamily: "monospace", marginTop: 2 }}>
+                    Request Code: {viewingQuote.projectReferenceCode}
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                 <StatusBadge status={viewingQuote.status} />
@@ -360,6 +540,16 @@ export default function QuotesPage({ onGoToContracts }: QuotesPageProps = {}) {
                 <button className="qc-btn qc-btn--ghost qc-btn--sm" onClick={() => setViewingQuote(null)}>Close</button>
               </div>
             </div>
+
+            {/* Project Request Description */}
+            {viewingQuote.description && (
+              <div style={{ background: "#FAF8F5", border: "1px solid #E7E1D7", borderRadius: 10, padding: 12, marginBottom: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--qc-muted)", textTransform: "uppercase", marginBottom: 4 }}>
+                  Client Project Description
+                </div>
+                <div style={{ fontSize: 13, color: "var(--qc-ink)" }}>{viewingQuote.description}</div>
+              </div>
+            )}
 
             {/* Quotation Engine Breakdown Card */}
             {viewingQuote.currentVersion && (

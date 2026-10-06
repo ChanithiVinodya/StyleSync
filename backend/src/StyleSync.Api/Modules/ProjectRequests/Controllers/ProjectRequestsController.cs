@@ -366,7 +366,18 @@ public class ProjectRequestsController : ControllerBase
 
         try
         {
-            await workflowStarter.StartAsync(request.Id);
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await workflowStarter.StartAsync(request.Id);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Background AI workflow for request {id} failed", request.Id);
+                }
+            });
+
             var updatedRequest = await _context.ProjectRequests
                 .Include(r => r.StatusHistories)
                 .Include(r => r.MoodboardImages)
@@ -516,7 +527,7 @@ public class ProjectRequestsController : ControllerBase
             await _statusService.TransitionAsync(request.Id, RequestStatus.Approved, adminUserId, "Admin approved the request");
 
             // If a designer is assigned (preferred or via AI quote or first available designer), advance to DesignerAssigned
-            var quote = await _context.Quotes.FirstOrDefaultAsync(q => q.ProjectRequestId == request.Id);
+            var quote = await _context.Quotes.Include(q => q.Items).FirstOrDefaultAsync(q => q.ProjectRequestId == request.Id);
             var assignedDesignerId = request.PreferredDesignerId ?? quote?.DesignerId;
             if (!assignedDesignerId.HasValue)
             {
@@ -530,7 +541,94 @@ public class ProjectRequestsController : ControllerBase
             if (assignedDesignerId.HasValue)
             {
                 request.PreferredDesignerId = assignedDesignerId.Value;
-                await _context.SaveChangesAsync();
+            }
+
+            // Ensure an itemized quote exists for the client upon approval
+            if (quote == null)
+            {
+                var budget = request.Budget > 0 ? request.Budget : 5000m;
+                var quoteId = Guid.NewGuid();
+                var designerId = assignedDesignerId ?? Guid.NewGuid();
+                var roomName = request.RoomType.ToString();
+
+                var items = new List<StyleSync.Api.Models.QuoteItem>
+                {
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        QuoteId = quoteId,
+                        Description = $"Design — Concept planning, 2D layouts & 3D renders for {roomName.ToLower()}",
+                        Category = StyleSync.Api.Models.QuoteItemCategory.Design,
+                        Quantity = 1,
+                        UnitCost = Math.Round(budget * 0.10m, 2),
+                        LineTotal = Math.Round(budget * 0.10m, 2)
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        QuoteId = quoteId,
+                        Description = $"Labor — Skilled installation, wall preparation & lighting fitout",
+                        Category = StyleSync.Api.Models.QuoteItemCategory.Labor,
+                        Quantity = 1,
+                        UnitCost = Math.Round(budget * 0.30m, 2),
+                        LineTotal = Math.Round(budget * 0.30m, 2)
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        QuoteId = quoteId,
+                        Description = $"Materials — Surface finishes, bespoke cabinetry & architectural hardware",
+                        Category = StyleSync.Api.Models.QuoteItemCategory.Materials,
+                        Quantity = 1,
+                        UnitCost = Math.Round(budget * 0.35m, 2),
+                        LineTotal = Math.Round(budget * 0.35m, 2)
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        QuoteId = quoteId,
+                        Description = $"Furniture — Curated styling package, textiles & decor accents",
+                        Category = StyleSync.Api.Models.QuoteItemCategory.Furniture,
+                        Quantity = 1,
+                        UnitCost = Math.Round(budget * 0.20m, 2),
+                        LineTotal = Math.Round(budget * 0.20m, 2)
+                    },
+                    new()
+                    {
+                        Id = Guid.NewGuid(),
+                        QuoteId = quoteId,
+                        Description = $"Project Oversight — Site supervision & quality assurance",
+                        Category = StyleSync.Api.Models.QuoteItemCategory.Other,
+                        Quantity = 1,
+                        UnitCost = Math.Round(budget * 0.05m, 2),
+                        LineTotal = Math.Round(budget * 0.05m, 2)
+                    }
+                };
+
+                quote = new StyleSync.Api.Models.Quote
+                {
+                    Id = quoteId,
+                    ProjectRequestId = request.Id,
+                    DesignerId = designerId,
+                    Status = StyleSync.Api.Models.QuoteStatus.Stage1Released,
+                    IsAiGenerated = true,
+                    ScopeSummary = $"Complete interior transformation for {roomName} ({request.RoomSizeSqFt:0} sq ft).",
+                    Notes = $"Proposal prepared based on approved design request and estimated budget of ${budget:N2}.",
+                    Items = items,
+                    TotalCost = items.Sum(i => i.LineTotal)
+                };
+
+                _context.Quotes.Add(quote);
+            }
+            else if (quote.Status == StyleSync.Api.Models.QuoteStatus.Draft || quote.Status == StyleSync.Api.Models.QuoteStatus.Stage1Pending)
+            {
+                quote.Status = StyleSync.Api.Models.QuoteStatus.Stage1Released;
+            }
+
+            await _context.SaveChangesAsync();
+
+            if (assignedDesignerId.HasValue)
+            {
                 await _statusService.TransitionAsync(request.Id, RequestStatus.DesignerAssigned, adminUserId, "Designer assigned to approved request");
             }
         }

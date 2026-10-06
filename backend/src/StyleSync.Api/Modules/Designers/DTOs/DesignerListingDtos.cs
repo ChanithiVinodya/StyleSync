@@ -28,6 +28,11 @@ public class DesignerQueryParameters
     public bool? Available { get; set; }
 
     /// <summary>
+    /// Free-text search term matching designer name, bio, style tags, or service categories.
+    /// </summary>
+    public string? Search { get; set; }
+
+    /// <summary>
     /// Sort options: "rating", "rating_desc", "price_asc", "price_desc", "newest" (default).
     /// </summary>
     public string? Sort { get; set; }

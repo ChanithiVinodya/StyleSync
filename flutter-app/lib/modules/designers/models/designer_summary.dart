@@ -116,6 +116,7 @@ class DesignerSummary {
 
 class DesignerQueryParameters {
   final String? style;
+  final String? search;
   final double? budgetMin;
   final double? budgetMax;
   final bool? available;
@@ -125,6 +126,7 @@ class DesignerQueryParameters {
 
   const DesignerQueryParameters({
     this.style,
+    this.search,
     this.budgetMin,
     this.budgetMax,
     this.available,
@@ -135,6 +137,7 @@ class DesignerQueryParameters {
 
   DesignerQueryParameters copyWith({
     String? style,
+    String? search,
     double? budgetMin,
     double? budgetMax,
     bool? available,
@@ -142,13 +145,17 @@ class DesignerQueryParameters {
     int? page,
     int? pageSize,
     bool clearStyle = false,
+    bool clearSearch = false,
     bool clearBudget = false,
+    bool clearBudgetMin = false,
+    bool clearBudgetMax = false,
     bool clearAvailable = false,
   }) {
     return DesignerQueryParameters(
       style: clearStyle ? null : (style ?? this.style),
-      budgetMin: clearBudget ? null : (budgetMin ?? this.budgetMin),
-      budgetMax: clearBudget ? null : (budgetMax ?? this.budgetMax),
+      search: clearSearch ? null : (search ?? this.search),
+      budgetMin: (clearBudget || clearBudgetMin) ? null : (budgetMin ?? this.budgetMin),
+      budgetMax: (clearBudget || clearBudgetMax) ? null : (budgetMax ?? this.budgetMax),
       available: clearAvailable ? null : (available ?? this.available),
       sort: sort ?? this.sort,
       page: page ?? this.page,
@@ -161,11 +168,21 @@ class DesignerQueryParameters {
     if (style != null && style!.isNotEmpty && style != 'All') {
       params['style'] = style!;
     }
-    if (budgetMin != null && budgetMin! > 0) {
-      params['budgetMin'] = budgetMin!.toInt().toString();
+    if (search != null && search!.trim().isNotEmpty) {
+      params['search'] = search!.trim();
     }
-    if (budgetMax != null && budgetMax! > 0) {
-      params['budgetMax'] = budgetMax!.toInt().toString();
+    var minVal = budgetMin != null && budgetMin! > 0 ? budgetMin : null;
+    var maxVal = budgetMax != null && budgetMax! > 0 ? budgetMax : null;
+    if (minVal != null && maxVal != null && minVal > maxVal) {
+      final temp = minVal;
+      minVal = maxVal;
+      maxVal = temp;
+    }
+    if (minVal != null) {
+      params['budgetMin'] = minVal.toInt().toString();
+    }
+    if (maxVal != null) {
+      params['budgetMax'] = maxVal.toInt().toString();
     }
     if (available != null) {
       params['available'] = available!.toString();

@@ -63,14 +63,22 @@ public class DesignerService : IDesignerService
         var designers = allPublished.AsEnumerable();
 
         // Budget min/max overlap filter
-        if (query.BudgetMin.HasValue && query.BudgetMin.Value > 0)
+        var reqMin = query.BudgetMin.HasValue && query.BudgetMin.Value > 0 ? query.BudgetMin.Value : (decimal?)null;
+        var reqMax = query.BudgetMax.HasValue && query.BudgetMax.Value > 0 ? query.BudgetMax.Value : (decimal?)null;
+
+        if (reqMin.HasValue && reqMax.HasValue && reqMin.Value > reqMax.Value)
         {
-            designers = designers.Where(d => d.PriceRangeMax >= query.BudgetMin.Value);
+            (reqMin, reqMax) = (reqMax, reqMin);
         }
 
-        if (query.BudgetMax.HasValue && query.BudgetMax.Value > 0)
+        if (reqMin.HasValue)
         {
-            designers = designers.Where(d => d.PriceRangeMin <= query.BudgetMax.Value);
+            designers = designers.Where(d => d.PriceRangeMax >= reqMin.Value);
+        }
+
+        if (reqMax.HasValue)
+        {
+            designers = designers.Where(d => d.PriceRangeMin <= reqMax.Value);
         }
 
         // Style tag filter
@@ -84,6 +92,28 @@ public class DesignerService : IDesignerService
                 designers = designers.Where(d =>
                     d.StyleTags != null &&
                     requestedStyles.Any(req => d.StyleTags.Any(dt => dt.Contains(req, StringComparison.OrdinalIgnoreCase)))
+                );
+            }
+        }
+
+        // Free-text keyword search filter (DisplayName, StyleTags, ServiceCategories, Bio, Portfolio Title)
+        if (!string.IsNullOrWhiteSpace(query.Search))
+        {
+            var searchTerms = query.Search
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+            if (searchTerms.Length > 0)
+            {
+                designers = designers.Where(d =>
+                    searchTerms.All(term =>
+                        (d.DisplayName != null && d.DisplayName.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                        (d.StyleTags != null && d.StyleTags.Any(st => st.Contains(term, StringComparison.OrdinalIgnoreCase))) ||
+                        (d.ServiceCategories != null && d.ServiceCategories.Any(sc => sc.Contains(term, StringComparison.OrdinalIgnoreCase))) ||
+                        (d.Bio != null && d.Bio.Contains(term, StringComparison.OrdinalIgnoreCase)) ||
+                        (d.PortfolioItems != null && d.PortfolioItems.Any(pi =>
+                            pi.Title != null && pi.Title.Contains(term, StringComparison.OrdinalIgnoreCase)
+                        ))
+                    )
                 );
             }
         }
@@ -129,11 +159,32 @@ public class DesignerService : IDesignerService
         var sortOption = query.Sort?.Trim().ToLowerInvariant();
         IEnumerable<DesignerProfile> sorted = sortOption switch
         {
-            "rating" or "rating_desc" => designerList.OrderByDescending(d => d.AverageRating ?? 0).ThenByDescending(d => d.CreatedAtUtc),
-            "rating_asc" => designerList.OrderBy(d => d.AverageRating ?? 0).ThenBy(d => d.CreatedAtUtc),
-            "price" or "price_asc" => designerList.OrderBy(d => d.PriceRangeMin).ThenBy(d => d.RatePerSqFt),
-            "price_desc" => designerList.OrderByDescending(d => d.PriceRangeMax).ThenByDescending(d => d.RatePerSqFt),
-            "newest" or "created_desc" => designerList.OrderByDescending(d => d.CreatedAtUtc),
+            "rating" or "rating_desc" or "rating_high_low" or "rating_high_to_low" => 
+                designerList.OrderBy(d => d.AverageRating.HasValue ? 0 : 1)
+                            .ThenByDescending(d => d.AverageRating ?? 0)
+                            .ThenByDescending(d => d.CreatedAtUtc),
+            "rating_asc" or "rating_low_high" or "rating_low_to_high" => 
+                designerList.OrderBy(d => d.AverageRating.HasValue ? 0 : 1)
+                            .ThenBy(d => d.AverageRating ?? 0)
+                            .ThenBy(d => d.CreatedAtUtc),
+            "rate_asc" or "rate_low_high" or "rate_low_to_high" or "price" or "price_asc" or "price_low_high" or "price_low_to_high" => 
+                designerList.OrderBy(d => d.RatePerSqFt > 0 ? d.RatePerSqFt : d.PriceRangeMin)
+                            .ThenBy(d => d.PriceRangeMin)
+                            .ThenBy(d => d.PriceRangeMax),
+            "rate_desc" or "rate_high_low" or "rate_high_to_low" or "price_desc" or "price_high_low" or "price_high_to_low" => 
+                designerList.OrderByDescending(d => d.RatePerSqFt > 0 ? d.RatePerSqFt : d.PriceRangeMax)
+                            .ThenByDescending(d => d.PriceRangeMax)
+                            .ThenByDescending(d => d.PriceRangeMin),
+            "budget_asc" or "budget_low_high" or "budget_low_to_high" => 
+                designerList.OrderBy(d => d.PriceRangeMin)
+                            .ThenBy(d => d.PriceRangeMax),
+            "budget_desc" or "budget_high_low" or "budget_high_to_low" => 
+                designerList.OrderByDescending(d => d.PriceRangeMax)
+                            .ThenByDescending(d => d.PriceRangeMin),
+            "newest" or "created_desc" or "latest" => 
+                designerList.OrderByDescending(d => d.CreatedAtUtc),
+            "oldest" or "created_asc" => 
+                designerList.OrderBy(d => d.CreatedAtUtc),
             _ => designerList.OrderByDescending(d => d.CreatedAtUtc)
         };
 

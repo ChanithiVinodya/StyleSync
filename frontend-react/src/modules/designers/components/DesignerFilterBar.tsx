@@ -43,6 +43,11 @@ export const DesignerFilterBar: React.FC<DesignerFilterBarProps> = ({
   const [minBudgetInput, setMinBudgetInput] = useState(query.budgetMin?.toString() || '');
   const [maxBudgetInput, setMaxBudgetInput] = useState(query.budgetMax?.toString() || '');
 
+  React.useEffect(() => {
+    setMinBudgetInput(query.budgetMin ? query.budgetMin.toString() : '');
+    setMaxBudgetInput(query.budgetMax ? query.budgetMax.toString() : '');
+  }, [query.budgetMin, query.budgetMax]);
+
   const activeStyle = query.style || 'All';
   const hasActiveFilters = Boolean(
     (query.style && query.style !== 'All') ||
@@ -52,8 +57,15 @@ export const DesignerFilterBar: React.FC<DesignerFilterBarProps> = ({
   );
 
   const applyBudget = () => {
-    const minVal = minBudgetInput ? parseFloat(minBudgetInput) : undefined;
-    const maxVal = maxBudgetInput ? parseFloat(maxBudgetInput) : undefined;
+    let minVal = minBudgetInput && !isNaN(parseFloat(minBudgetInput)) && parseFloat(minBudgetInput) > 0 ? parseFloat(minBudgetInput) : undefined;
+    let maxVal = maxBudgetInput && !isNaN(parseFloat(maxBudgetInput)) && parseFloat(maxBudgetInput) > 0 ? parseFloat(maxBudgetInput) : undefined;
+
+    if (minVal !== undefined && maxVal !== undefined && minVal > maxVal) {
+      const temp = minVal;
+      minVal = maxVal;
+      maxVal = temp;
+    }
+
     onQueryChange({
       budgetMin: minVal,
       budgetMax: maxVal,

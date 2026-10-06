@@ -131,7 +131,7 @@ builder.Services.AddAuthorization();
 // AI Service Client (Quotes & Contracts)
 builder.Services.AddHttpClient("AiService", client =>
 {
-    var baseUrl = builder.Configuration["AiService:BaseUrl"] ?? "http://localhost:8000";
+    var baseUrl = builder.Configuration["AiService:BaseUrl"] ?? "https://stylesync-ai-service.onrender.com";
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(30);
 });

@@ -286,7 +286,7 @@ public static class DesignerDbSeeder
             {
                 DesignerProfileId = p2.Id,
                 Title = "Nordic Sunlit Bedroom Suite",
-                Description = "Light oak bedframe, linen drapery, and minimalist pendant lamps creating an airy oasis.",
+                Description = "Light oak bedframe, linen drapery, and Scandinavian fluted pendant lamps creating an airy oasis.",
                 ImageUrl = "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 120k-200k",
                 ClientInitials = "N.H.",

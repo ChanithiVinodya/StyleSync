@@ -269,63 +269,120 @@ export default function ContractsPage() {
               </div>
 
               <div style={{ background: "var(--qc-surface-sunken)", padding: "12px 16px", borderRadius: 8, border: "1px solid var(--qc-border)" }}>
-                <div style={{ fontSize: 11, color: "var(--qc-muted)", textTransform: "uppercase", fontWeight: 600 }}>Project / Request</div>
-                <div style={{ fontSize: 12, fontFamily: "monospace", marginTop: 4, color: "var(--qc-ink)" }}>
-                  {viewingContract.projectRequestId || activeQuote?.projectRequestId || "req-default"}
+                <div style={{ fontSize: 11, color: "var(--qc-muted)", textTransform: "uppercase", fontWeight: 600 }}>Assigned Designer</div>
+                <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4, color: "var(--qc-ink)" }}>
+                  {viewingContract.designerDisplayName || activeQuote?.designerDisplayName || "Verified Designer"}
                 </div>
+                {(viewingContract.designerEmail || activeQuote?.designerEmail) && (
+                  <div style={{ fontSize: 11, color: "var(--qc-muted)" }}>
+                    {viewingContract.designerEmail || activeQuote?.designerEmail}
+                  </div>
+                )}
               </div>
 
               <div style={{ background: "var(--qc-surface-sunken)", padding: "12px 16px", borderRadius: 8, border: "1px solid var(--qc-border)" }}>
-                <div style={{ fontSize: 11, color: "var(--qc-muted)", textTransform: "uppercase", fontWeight: 600 }}>Created Date</div>
-                <div style={{ fontSize: 13, fontWeight: 500, marginTop: 4, color: "var(--qc-ink)" }}>
-                  {viewingContract.createdAt ? new Date(viewingContract.createdAt).toLocaleDateString() : "—"}
+                <div style={{ fontSize: 11, color: "var(--qc-muted)", textTransform: "uppercase", fontWeight: 600 }}>Client & Project</div>
+                <div style={{ fontSize: 13, fontWeight: 600, marginTop: 4, color: "var(--qc-ink)" }}>
+                  {viewingContract.clientDisplayName || activeQuote?.clientDisplayName || "Valued Client"}
+                </div>
+                <div style={{ fontSize: 11, color: "var(--qc-muted)", fontFamily: "monospace" }}>
+                  Ref: {viewingContract.projectReferenceCode || activeQuote?.projectReferenceCode || viewingContract.projectRequestId?.slice(0, 8) || "SS-REQ"}
                 </div>
               </div>
             </div>
+
+            {/* Scope & Project Description Box */}
+            <div
+              style={{
+                background: "var(--qc-surface)",
+                border: "1px solid var(--qc-border)",
+                borderRadius: 8,
+                padding: "14px 16px",
+                marginBottom: 16,
+              }}
+            >
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--qc-muted)", textTransform: "uppercase", marginBottom: 4 }}>
+                Project Scope & Design Description
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--qc-ink)" }}>
+                {activeQuote?.scopeSummary || viewingContract.termsSummary || "Interior Design & Room Makeover"}
+              </div>
+
+              {(viewingContract.description || activeQuote?.description) && (
+                <div style={{ marginTop: 8, fontSize: 12.5, color: "var(--qc-ink)", lineHeight: 1.5, background: "var(--qc-surface-sunken)", padding: "8px 12px", borderRadius: 6 }}>
+                  <strong>Client Request Details:</strong> {viewingContract.description || activeQuote?.description}
+                </div>
+              )}
+
+              {activeQuote?.notes && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    padding: "8px 12px",
+                    background: "rgba(196, 138, 54, 0.08)",
+                    borderLeft: "3px solid var(--qc-primary)",
+                    borderRadius: 4,
+                    fontSize: 12.5,
+                    color: "var(--qc-neutral)",
+                  }}
+                >
+                  <strong>Designer Specifications:</strong> {activeQuote.notes}
+                </div>
+              )}
+            </div>
+
+            {/* Recommended Designers Shortlist Section */}
+            {((viewingContract.recommendedDesigners && viewingContract.recommendedDesigners.length > 0) ||
+              (activeQuote?.recommendedDesigners && activeQuote.recommendedDesigners.length > 0)) && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span>✨</span>
+                  <span>AI Matched Designers & Compatibility Explanations</span>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 10 }}>
+                  {(viewingContract.recommendedDesigners || activeQuote?.recommendedDesigners || []).map((rec) => (
+                    <div
+                      key={rec.profileId || rec.userId}
+                      style={{
+                        background: "var(--qc-surface-sunken)",
+                        border: "1px solid var(--qc-border)",
+                        borderRadius: 8,
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 13, color: "var(--qc-ink)" }}>{rec.displayName}</span>
+                        <span
+                          style={{
+                            background: "#059669",
+                            color: "#ffffff",
+                            padding: "1px 6px",
+                            borderRadius: 4,
+                            fontSize: 11,
+                            fontWeight: 700,
+                          }}
+                        >
+                          {Math.round(rec.matchScore * 100)}% Match
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 11.5, color: "var(--qc-neutral)", lineHeight: 1.4, marginTop: 4 }}>
+                        {rec.matchReason || `Style tag compatibility: ${Math.round((rec.styleTagOverlapPct || 0.9) * 100)}%, budget aligned, verified rating.`}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Fully Submitted Quote Details Section */}
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
                   <span>📄</span>
-                  <span>Fully Submitted Quote Details</span>
+                  <span>Itemized Scope of Work</span>
                 </div>
                 {loadingQuote && (
                   <span style={{ fontSize: 12, color: "var(--qc-muted)" }}>Loading itemized quote…</span>
-                )}
-              </div>
-
-              {/* Scope Summary Box */}
-              <div
-                style={{
-                  background: "var(--qc-surface)",
-                  border: "1px solid var(--qc-border)",
-                  borderRadius: 8,
-                  padding: "14px 16px",
-                  marginBottom: 14,
-                }}
-              >
-                <div style={{ fontSize: 12, fontWeight: 600, color: "var(--qc-muted)", marginBottom: 4 }}>
-                  Scope of Work & Design Description
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--qc-ink)" }}>
-                  {activeQuote?.scopeSummary || viewingContract.termsSummary || "Interior Design & Room Makeover"}
-                </div>
-
-                {activeQuote?.notes && (
-                  <div
-                    style={{
-                      marginTop: 10,
-                      padding: "8px 12px",
-                      background: "rgba(196, 138, 54, 0.08)",
-                      borderLeft: "3px solid var(--qc-primary)",
-                      borderRadius: 4,
-                      fontSize: 12.5,
-                      color: "var(--qc-neutral)",
-                    }}
-                  >
-                    <strong>Designer Notes & Specifications:</strong> {activeQuote.notes}
-                  </div>
                 )}
               </div>
 
@@ -373,7 +430,7 @@ export default function ContractsPage() {
                     )}
                     <tr style={{ background: "var(--qc-surface-sunken)" }}>
                       <td colSpan={4} style={{ fontWeight: 700, textAlign: "right", fontSize: 13 }}>
-                        Total Submitted Quote Amount:
+                        Total Agreed Amount:
                       </td>
                       <td style={{ fontWeight: 700, textAlign: "right", color: "var(--qc-primary)", fontSize: 15 }}>
                         {formatMoney(activeQuote?.totalCost ?? viewingContract.totalAmount)}

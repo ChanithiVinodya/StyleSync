@@ -28,6 +28,8 @@ class DesignerListingScreen extends ConsumerStatefulWidget {
 
 class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
   late final DesignersApiService _apiService;
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearchOpen = false;
 
   DesignerQueryParameters _params = const DesignerQueryParameters(
     page: 1,
@@ -58,7 +60,18 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
       _params = ref.read(designerFilterProvider);
     }
 
+    if (_params.search != null && _params.search!.isNotEmpty) {
+      _searchController.text = _params.search!;
+      _isSearchOpen = true;
+    }
+
     _fetchListings();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _applyParams(DesignerQueryParameters newParams) {
@@ -102,6 +115,8 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
           _applyParams(newParams);
         },
         onReset: () {
+          _searchController.clear();
+          setState(() => _isSearchOpen = false);
           _applyParams(const DesignerQueryParameters(
             page: 1,
             pageSize: 10,
@@ -128,6 +143,24 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
     return 'Budget';
   }
 
+  String _sortFilterLabel() {
+    final s = (_params.sort ?? 'newest').toLowerCase();
+    if (s == 'rating' || s == 'rating_desc' || s == 'rating_high_low' || s == 'rating_high_to_low') {
+      return 'Sort: Rating (5.0 ★ High)';
+    } else if (s == 'rating_asc' || s == 'rating_low_high' || s == 'rating_low_to_high') {
+      return 'Sort: Rating (Low to High)';
+    } else if (s == 'rate_low_high' || s == 'rate_asc' || s == 'price_low_high' || s == 'price_asc' || s == 'price') {
+      return 'Sort: Rate (Low to High)';
+    } else if (s == 'rate_high_low' || s == 'rate_desc' || s == 'price_high_low' || s == 'price_desc') {
+      return 'Sort: Rate (High to Low)';
+    } else if (s == 'budget_low_high' || s == 'budget_asc') {
+      return 'Sort: Budget (Low to High)';
+    } else if (s == 'budget_high_low' || s == 'budget_desc') {
+      return 'Sort: Budget (High to Low)';
+    }
+    return 'Sort: Newest';
+  }
+
   @override
   Widget build(BuildContext context) {
     // Listen to global designerFilterProvider updates (e.g. from Home screen style/category taps)
@@ -143,10 +176,14 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
+    final hasActiveSort = _params.sort != null && _params.sort != 'newest';
+    final hasActiveSearch = _params.search != null && _params.search!.isNotEmpty;
     final hasActiveFilters = (_params.style != null && _params.style != 'All') ||
         _params.budgetMin != null ||
         _params.budgetMax != null ||
-        _params.available != null;
+        _params.available != null ||
+        hasActiveSort ||
+        hasActiveSearch;
 
     final bgMain = isDark ? const Color(0xFF14110E) : const Color(0xFFFAF7F2);
     final cardBorder = isDark ? const Color(0xFF332B25) : const Color(0xFFEDE5DC);
@@ -185,6 +222,38 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
           ],
         ),
         actions: [
+          // Search Action Button
+          IconButton.filledTonal(
+            style: IconButton.styleFrom(
+              backgroundColor: _isSearchOpen
+                  ? accentTerracotta.withValues(alpha: isDark ? 0.25 : 0.15)
+                  : (isDark ? const Color(0xFF241E19) : const Color(0xFFEFE7DE)),
+              foregroundColor: _isSearchOpen ? accentTerracotta : textPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(
+                  color: _isSearchOpen ? accentTerracotta : cardBorder,
+                ),
+              ),
+            ),
+            icon: Icon(
+              _isSearchOpen ? Icons.search_off_rounded : Icons.search_rounded,
+              size: 20,
+            ),
+            tooltip: _isSearchOpen ? 'Close Search' : 'Search Designers',
+            onPressed: () {
+              setState(() {
+                _isSearchOpen = !_isSearchOpen;
+                if (!_isSearchOpen && _searchController.text.isNotEmpty) {
+                  _searchController.clear();
+                  _applyParams(_params.copyWith(clearSearch: true, page: 1));
+                }
+              });
+            },
+          ),
+          const SizedBox(width: 8),
+
+          // Filter & Refine Modal Button
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: IconButton.filledTonal(
@@ -215,6 +284,76 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
         onRefresh: _fetchListings,
         child: Column(
           children: [
+            // Expandable Search Bar Header
+            if (_isSearchOpen)
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1915) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: accentTerracotta.withValues(alpha: 0.6),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  autofocus: true,
+                  textInputAction: TextInputAction.search,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: textPrimary,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Search by studio name, style, service, or bio...',
+                    hintStyle: GoogleFonts.plusJakartaSans(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
+                      color: textSecondary,
+                    ),
+                    filled: false,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      size: 20,
+                      color: Color(0xFF8C4A3E),
+                    ),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close_rounded, size: 18),
+                            color: textSecondary,
+                            onPressed: () {
+                              _searchController.clear();
+                              _applyParams(_params.copyWith(
+                                clearSearch: true,
+                                page: 1,
+                              ));
+                            },
+                          )
+                        : null,
+                  ),
+                  onChanged: (val) {
+                    _applyParams(_params.copyWith(
+                      search: val.trim().isNotEmpty ? val.trim() : null,
+                      clearSearch: val.trim().isEmpty,
+                      page: 1,
+                    ));
+                  },
+                ),
+              ),
+
             const SizedBox(height: 6),
 
             // Style Quick-Pills Filter Carousel
@@ -384,8 +523,77 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
                         ),
                         const SizedBox(width: 8),
                       ],
+                      if (hasActiveSort) ...[
+                        InputChip(
+                          avatar: const Icon(
+                            Icons.swap_vert_rounded,
+                            size: 15,
+                            color: accentTerracotta,
+                          ),
+                          label: Text(_sortFilterLabel()),
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFFAF8F5)
+                                : const Color(0xFF241611),
+                          ),
+                          backgroundColor: isDark
+                              ? const Color(0xFF2A221C)
+                              : const Color(0xFFEDE3D8),
+                          deleteIcon: const Icon(Icons.close_rounded, size: 15),
+                          deleteIconColor: accentTerracotta,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: accentTerracotta.withValues(alpha: 0.5),
+                              width: 1.1,
+                            ),
+                          ),
+                          onDeleted: () {
+                            _applyParams(_params.copyWith(sort: 'newest', page: 1));
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
+                      if (hasActiveSearch) ...[
+                        InputChip(
+                          avatar: const Icon(
+                            Icons.search_rounded,
+                            size: 15,
+                            color: accentTerracotta,
+                          ),
+                          label: Text('Search: "${_params.search}"'),
+                          labelStyle: GoogleFonts.plusJakartaSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isDark
+                                ? const Color(0xFFFAF8F5)
+                                : const Color(0xFF241611),
+                          ),
+                          backgroundColor: isDark
+                              ? const Color(0xFF2A221C)
+                              : const Color(0xFFEDE3D8),
+                          deleteIcon: const Icon(Icons.close_rounded, size: 15),
+                          deleteIconColor: accentTerracotta,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            side: BorderSide(
+                              color: accentTerracotta.withValues(alpha: 0.5),
+                              width: 1.1,
+                            ),
+                          ),
+                          onDeleted: () {
+                            _searchController.clear();
+                            _applyParams(_params.copyWith(clearSearch: true, page: 1));
+                          },
+                        ),
+                        const SizedBox(width: 8),
+                      ],
                       TextButton(
                         onPressed: () {
+                          _searchController.clear();
+                          setState(() => _isSearchOpen = false);
                           _applyParams(const DesignerQueryParameters(
                             page: 1,
                             pageSize: 10,
@@ -531,7 +739,9 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Try broadening your style selection or adjusting your budget range.',
+                (_params.search != null && _params.search!.isNotEmpty)
+                    ? 'No interior studios found matching "${_params.search}".\nTry searching for styles (e.g. Minimalist, Japandi), studio names, or services.'
+                    : 'Try broadening your style selection or adjusting your budget range.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.plusJakartaSans(
                   color: textSecondary,
@@ -547,7 +757,9 @@ class _DesignerListingScreenState extends ConsumerState<DesignerListingScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () {
+                  _searchController.clear();
                   setState(() {
+                    _isSearchOpen = false;
                     _params = const DesignerQueryParameters(
                       page: 1,
                       pageSize: 10,

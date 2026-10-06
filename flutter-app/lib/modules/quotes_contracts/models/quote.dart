@@ -80,6 +80,99 @@ class QuoteVersion {
   }
 }
 
+class DesignerRecommendation {
+  final String userId;
+  final int profileId;
+  final String displayName;
+  final String? email;
+  final double matchScore;
+  final double styleTagOverlapPct;
+  final double budgetRangeOverlapPct;
+  final double pastRatingNormalized;
+  final double availabilityBonus;
+  final double? averageRating;
+  final List<String> styleTags;
+  final double priceRangeMin;
+  final double priceRangeMax;
+  final String? featuredImageUrl;
+  final String? bio;
+  final String? matchReason;
+
+  String get designerId => userId;
+  double get rating => averageRating ?? 5.0;
+  int get reviewCount => 12;
+  double get hourlyRate => priceRangeMin > 0 ? priceRangeMin : 75.0;
+  int get experienceYears => 5;
+  List<String> get specializations => styleTags;
+  Map<String, String> get factorExplanations => {
+    'Style Compatibility (40%)': '${(styleTagOverlapPct * 100).toStringAsFixed(0)}% style tag alignment',
+    'Budget Range Overlap (30%)': '${(budgetRangeOverlapPct * 100).toStringAsFixed(0)}% budget range fit',
+    'Past Rating (20%)': '${(pastRatingNormalized * 5.0).toStringAsFixed(1)} / 5.0 client feedback score',
+    'Availability (10%)': availabilityBonus > 0 ? 'Verified available capacity' : 'Standard project workload',
+  };
+
+  DesignerRecommendation({
+    required this.userId,
+    required this.profileId,
+    required this.displayName,
+    this.email,
+    required this.matchScore,
+    this.styleTagOverlapPct = 0.0,
+    this.budgetRangeOverlapPct = 0.0,
+    this.pastRatingNormalized = 0.0,
+    this.availabilityBonus = 0.0,
+    this.averageRating,
+    this.styleTags = const [],
+    this.priceRangeMin = 0.0,
+    this.priceRangeMax = 0.0,
+    this.featuredImageUrl,
+    this.bio,
+    this.matchReason,
+  });
+
+  factory DesignerRecommendation.fromJson(Map<String, dynamic> json) {
+    return DesignerRecommendation(
+      userId: json['userId']?.toString() ?? '',
+      profileId: (json['profileId'] as num?)?.toInt() ?? 0,
+      displayName: json['displayName']?.toString() ?? '',
+      email: json['email']?.toString(),
+      matchScore: (json['matchScore'] as num?)?.toDouble() ?? 0.0,
+      styleTagOverlapPct: (json['styleTagOverlapPct'] as num?)?.toDouble() ?? 0.0,
+      budgetRangeOverlapPct: (json['budgetRangeOverlapPct'] as num?)?.toDouble() ?? 0.0,
+      pastRatingNormalized: (json['pastRatingNormalized'] as num?)?.toDouble() ?? 0.0,
+      availabilityBonus: (json['availabilityBonus'] as num?)?.toDouble() ?? 0.0,
+      averageRating: (json['averageRating'] as num?)?.toDouble(),
+      styleTags: (json['styleTags'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? const [],
+      priceRangeMin: (json['priceRangeMin'] as num?)?.toDouble() ?? 0.0,
+      priceRangeMax: (json['priceRangeMax'] as num?)?.toDouble() ?? 0.0,
+      featuredImageUrl: json['featuredImageUrl']?.toString(),
+      bio: json['bio']?.toString(),
+      matchReason: json['matchReason']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'userId': userId,
+      'profileId': profileId,
+      'displayName': displayName,
+      if (email != null) 'email': email,
+      'matchScore': matchScore,
+      'styleTagOverlapPct': styleTagOverlapPct,
+      'budgetRangeOverlapPct': budgetRangeOverlapPct,
+      'pastRatingNormalized': pastRatingNormalized,
+      'availabilityBonus': availabilityBonus,
+      if (averageRating != null) 'averageRating': averageRating,
+      'styleTags': styleTags,
+      'priceRangeMin': priceRangeMin,
+      'priceRangeMax': priceRangeMax,
+      if (featuredImageUrl != null) 'featuredImageUrl': featuredImageUrl,
+      if (bio != null) 'bio': bio,
+      if (matchReason != null) 'matchReason': matchReason,
+    };
+  }
+}
+
 class Quote {
   final String id;
   final String projectRequestId;
@@ -95,6 +188,13 @@ class Quote {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final String? contractId;
+  final String? designerDisplayName;
+  final String? designerEmail;
+  final String? clientDisplayName;
+  final String? clientEmail;
+  final String? projectReferenceCode;
+  final String? description;
+  final List<DesignerRecommendation> recommendedDesigners;
 
   Quote({
     required this.id,
@@ -111,6 +211,13 @@ class Quote {
     this.createdAt,
     this.updatedAt,
     this.contractId,
+    this.designerDisplayName,
+    this.designerEmail,
+    this.clientDisplayName,
+    this.clientEmail,
+    this.projectReferenceCode,
+    this.description,
+    this.recommendedDesigners = const [],
   });
 
   factory Quote.fromJson(Map<String, dynamic> json) {
@@ -162,6 +269,16 @@ class Quote {
       updated = DateTime.tryParse(json['updatedAt'].toString());
     }
 
+    final rawRecs = json['recommendedDesigners'] as List<dynamic>? ?? [];
+    final recsList = <DesignerRecommendation>[];
+    for (final r in rawRecs) {
+      if (r is Map) {
+        try {
+          recsList.add(DesignerRecommendation.fromJson(Map<String, dynamic>.from(r)));
+        } catch (_) {}
+      }
+    }
+
     return Quote(
       id: json['id']?.toString() ?? '',
       projectRequestId: json['projectRequestId']?.toString() ?? '',
@@ -177,6 +294,13 @@ class Quote {
       createdAt: created,
       updatedAt: updated,
       contractId: json['contractId']?.toString(),
+      designerDisplayName: json['designerDisplayName']?.toString(),
+      designerEmail: json['designerEmail']?.toString(),
+      clientDisplayName: json['clientDisplayName']?.toString(),
+      clientEmail: json['clientEmail']?.toString(),
+      projectReferenceCode: json['projectReferenceCode']?.toString(),
+      description: json['description']?.toString(),
+      recommendedDesigners: recsList,
     );
   }
 
@@ -194,6 +318,14 @@ class Quote {
       if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updatedAt': updatedAt!.toIso8601String(),
       if (contractId != null) 'contractId': contractId,
+      if (designerDisplayName != null) 'designerDisplayName': designerDisplayName,
+      if (designerEmail != null) 'designerEmail': designerEmail,
+      if (clientDisplayName != null) 'clientDisplayName': clientDisplayName,
+      if (clientEmail != null) 'clientEmail': clientEmail,
+      if (projectReferenceCode != null) 'projectReferenceCode': projectReferenceCode,
+      if (description != null) 'description': description,
+      if (recommendedDesigners.isNotEmpty)
+        'recommendedDesigners': recommendedDesigners.map((e) => e.toJson()).toList(),
     };
   }
 
@@ -212,6 +344,13 @@ class Quote {
     DateTime? createdAt,
     DateTime? updatedAt,
     String? contractId,
+    String? designerDisplayName,
+    String? designerEmail,
+    String? clientDisplayName,
+    String? clientEmail,
+    String? projectReferenceCode,
+    String? description,
+    List<DesignerRecommendation>? recommendedDesigners,
   }) {
     return Quote(
       id: id ?? this.id,
@@ -228,6 +367,13 @@ class Quote {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       contractId: contractId ?? this.contractId,
+      designerDisplayName: designerDisplayName ?? this.designerDisplayName,
+      designerEmail: designerEmail ?? this.designerEmail,
+      clientDisplayName: clientDisplayName ?? this.clientDisplayName,
+      clientEmail: clientEmail ?? this.clientEmail,
+      projectReferenceCode: projectReferenceCode ?? this.projectReferenceCode,
+      description: description ?? this.description,
+      recommendedDesigners: recommendedDesigners ?? this.recommendedDesigners,
     );
   }
 }

@@ -340,7 +340,166 @@ class _ContractDetailBottomSheetState extends State<ContractDetailBottomSheet> {
                       ),
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 18),
+
+                  // Parties Involved & Project Description Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: QcTheme.surfaceSunken,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: QcTheme.border, width: 1),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.people_alt_outlined, color: QcTheme.gold, size: 16),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'CONTRACT PARTIES & PROJECT CONTEXT',
+                              style: TextStyle(
+                                color: QcTheme.textSubtle,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('ASSIGNED DESIGNER', style: TextStyle(color: QcTheme.textSubtle, fontSize: 9.5, fontWeight: FontWeight.w700)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _contract.designerDisplayName ?? quote?.designerDisplayName ?? 'Lead Interior Designer',
+                                    style: const TextStyle(color: QcTheme.textMain, fontSize: 12.5, fontWeight: FontWeight.w700),
+                                  ),
+                                  if (_contract.designerEmail != null) ...[
+                                    Text(_contract.designerEmail!, style: const TextStyle(color: QcTheme.textMuted, fontSize: 10.5)),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('CLIENT', style: TextStyle(color: QcTheme.textSubtle, fontSize: 9.5, fontWeight: FontWeight.w700)),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _contract.clientDisplayName ?? quote?.clientDisplayName ?? 'Client Account',
+                                    style: const TextStyle(color: QcTheme.textMain, fontSize: 12.5, fontWeight: FontWeight.w700),
+                                  ),
+                                  if (_contract.clientEmail != null) ...[
+                                    Text(_contract.clientEmail!, style: const TextStyle(color: QcTheme.textMuted, fontSize: 10.5)),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_contract.description != null && _contract.description!.isNotEmpty || quote?.description != null && quote!.description!.isNotEmpty) ...[
+                          const Divider(color: QcTheme.borderSubtle, height: 16),
+                          const Text('PROJECT DESCRIPTION', style: TextStyle(color: QcTheme.textSubtle, fontSize: 9.5, fontWeight: FontWeight.w700)),
+                          const SizedBox(height: 3),
+                          Text(
+                            _contract.description ?? quote?.description ?? '',
+                            style: const TextStyle(color: QcTheme.textMuted, fontSize: 11.5, height: 1.35),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Matched Designers Shortlist
+                  if (_contract.recommendedDesigners.isNotEmpty || (quote != null && quote.recommendedDesigners.isNotEmpty)) ...[
+                    Row(
+                      children: [
+                        const Icon(Icons.auto_awesome, color: QcTheme.gold, size: 16),
+                        const SizedBox(width: 8),
+                        Text('AI Matched Designer Candidates', style: QcTheme.serifTitle(fontSize: 16)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: QcTheme.surfaceSunken,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: QcTheme.border, width: 1),
+                      ),
+                      child: Column(
+                        children: (_contract.recommendedDesigners.isNotEmpty ? _contract.recommendedDesigners : quote!.recommendedDesigners).map((d) {
+                          final matchPct = (d.matchScore * 100).round();
+                          final isAssigned = d.designerId == _contract.designerId;
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 8),
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: isAssigned ? const Color(0x1FC48A36) : const Color(0xFF191614),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isAssigned ? QcTheme.primary : QcTheme.borderSubtle,
+                                width: isAssigned ? 1.5 : 0.8,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(d.displayName, style: const TextStyle(color: QcTheme.textMain, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                                          if (isAssigned) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                                                borderRadius: BorderRadius.circular(4),
+                                                border: Border.all(color: const Color(0xFF10B981), width: 0.7),
+                                              ),
+                                              child: const Text('SELECTED', style: TextStyle(color: Color(0xFF34D399), fontSize: 8.5, fontWeight: FontWeight.w800)),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        '${d.rating.toStringAsFixed(1)} ★ (${d.reviewCount} reviews) • \$${d.hourlyRate.toStringAsFixed(0)}/hr • ${d.experienceYears} yrs',
+                                        style: const TextStyle(color: QcTheme.textSubtle, fontSize: 10.5),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: matchPct >= 80 ? const Color(0x2E10B981) : const Color(0x2EF59E0B),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text('$matchPct% Match', style: TextStyle(color: matchPct >= 80 ? const Color(0xFF34D399) : const Color(0xFFFBBF24), fontSize: 10.5, fontWeight: FontWeight.w800)),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                  ],
 
                   // Fully submitted quote details Section Header
                   Row(

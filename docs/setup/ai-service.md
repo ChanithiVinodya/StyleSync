@@ -1,5 +1,13 @@
 # AI Service Setup — Python (FastAPI)
 
+## Live Deployment (Production)
+
+- **Live URL**: [`https://stylesync-ai-service.onrender.com`](https://stylesync-ai-service.onrender.com)
+- **Health Check**: [`https://stylesync-ai-service.onrender.com/health`](https://stylesync-ai-service.onrender.com/health)
+- **Interactive OpenAPI / Swagger Docs**: [`https://stylesync-ai-service.onrender.com/docs`](https://stylesync-ai-service.onrender.com/docs)
+- **Workflow Endpoint**: `POST https://stylesync-ai-service.onrender.com/workflow/run`
+- **Budget / Scope Agent Endpoint**: `POST https://stylesync-ai-service.onrender.com/api/agent/budget-scope`
+
 ## Prerequisites
 
 - Python 3.11 or 3.12

@@ -272,6 +272,7 @@ export const designerApi = {
   async getListings(query: DesignerQueryParameters): Promise<PagedResult<DesignerListingItem>> {
     const params = new URLSearchParams();
     if (query.style) params.append('style', query.style);
+    if (query.search) params.append('search', query.search);
     if (query.budgetMin !== undefined && query.budgetMin > 0) params.append('budgetMin', query.budgetMin.toString());
     if (query.budgetMax !== undefined && query.budgetMax > 0) params.append('budgetMax', query.budgetMax.toString());
     if (query.available !== undefined) params.append('available', query.available.toString());
@@ -292,6 +293,19 @@ export const designerApi = {
       // Offline / fallback: filter in-memory published designers
       let filtered = inMemoryDesigners.filter(d => d.listingStatus === ListingStatus.Published);
 
+      // Search keyword filter
+      if (query.search && query.search.trim() !== '') {
+        const terms = query.search.trim().toLowerCase().split(' ').filter(Boolean);
+        filtered = filtered.filter(d =>
+          terms.every(term =>
+            d.displayName.toLowerCase().includes(term) ||
+            d.bio.toLowerCase().includes(term) ||
+            d.styleTags.some(t => t.toLowerCase().includes(term)) ||
+            d.serviceCategories.some(c => c.toLowerCase().includes(term))
+          )
+        );
+      }
+
       // Style tag filter
       if (query.style && query.style.trim() !== '') {
         const reqStyle = query.style.trim().toLowerCase();
@@ -299,11 +313,19 @@ export const designerApi = {
       }
 
       // Budget filter
-      if (query.budgetMin && query.budgetMin > 0) {
-        filtered = filtered.filter(d => d.priceRangeMax >= query.budgetMin!);
+      let reqMin = query.budgetMin && query.budgetMin > 0 ? query.budgetMin : undefined;
+      let reqMax = query.budgetMax && query.budgetMax > 0 ? query.budgetMax : undefined;
+      if (reqMin !== undefined && reqMax !== undefined && reqMin > reqMax) {
+        const temp = reqMin;
+        reqMin = reqMax;
+        reqMax = temp;
       }
-      if (query.budgetMax && query.budgetMax > 0) {
-        filtered = filtered.filter(d => d.priceRangeMin <= query.budgetMax!);
+
+      if (reqMin !== undefined) {
+        filtered = filtered.filter(d => d.priceRangeMax >= reqMin!);
+      }
+      if (reqMax !== undefined) {
+        filtered = filtered.filter(d => d.priceRangeMin <= reqMax!);
       }
 
       // Availability filter
@@ -317,14 +339,26 @@ export const designerApi = {
 
       // Sorting
       const sort = (query.sort || 'newest').toLowerCase();
-      if (sort === 'rating' || sort === 'rating_desc') {
+      if (sort === 'rating' || sort === 'rating_desc' || sort === 'rating_high_low' || sort === 'rating_high_to_low') {
         filtered.sort((a, b) => (b.averageRating ?? 0) - (a.averageRating ?? 0));
-      } else if (sort === 'rating_asc') {
+      } else if (sort === 'rating_asc' || sort === 'rating_low_high' || sort === 'rating_low_to_high') {
         filtered.sort((a, b) => (a.averageRating ?? 0) - (b.averageRating ?? 0));
-      } else if (sort === 'price' || sort === 'price_asc') {
-        filtered.sort((a, b) => a.priceRangeMin - b.priceRangeMin);
-      } else if (sort === 'price_desc') {
-        filtered.sort((a, b) => b.priceRangeMax - a.priceRangeMax);
+      } else if (sort === 'price' || sort === 'price_asc' || sort === 'price_low_high' || sort === 'price_low_to_high' || sort === 'rate_asc' || sort == 'rate_low_high' || sort === 'rate_low_to_high') {
+        filtered.sort((a, b) => {
+          const aRate = a.ratePerSqFt > 0 ? a.ratePerSqFt : a.priceRangeMin;
+          const bRate = b.ratePerSqFt > 0 ? b.ratePerSqFt : b.priceRangeMin;
+          const cmp = aRate - bRate;
+          return cmp !== 0 ? cmp : a.priceRangeMin - b.priceRangeMin;
+        });
+      } else if (sort === 'price_desc' || sort === 'price_high_low' || sort === 'price_high_to_low' || sort === 'rate_desc' || sort === 'rate_high_low' || sort === 'rate_high_to_low') {
+        filtered.sort((a, b) => {
+          const aRate = a.ratePerSqFt > 0 ? a.ratePerSqFt : a.priceRangeMax;
+          const bRate = b.ratePerSqFt > 0 ? b.ratePerSqFt : b.priceRangeMax;
+          const cmp = bRate - aRate;
+          return cmp !== 0 ? cmp : b.priceRangeMax - a.priceRangeMax;
+        });
+      } else if (sort === 'oldest' || sort === 'created_asc') {
+        filtered.sort((a, b) => new Date(a.createdAtUtc).getTime() - new Date(b.createdAtUtc).getTime());
       } else {
         filtered.sort((a, b) => new Date(b.createdAtUtc).getTime() - new Date(a.createdAtUtc).getTime());
       }

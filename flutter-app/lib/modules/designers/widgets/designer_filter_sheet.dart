@@ -54,7 +54,22 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
           : '',
     );
     _availableOnly = widget.currentParams.available == true;
-    _selectedSort = widget.currentParams.sort ?? 'newest';
+    final s = (widget.currentParams.sort ?? 'newest').toLowerCase();
+    if (s == 'rating' || s == 'rating_desc' || s == 'rating_high_low' || s == 'rating_high_to_low') {
+      _selectedSort = 'rating_high_low';
+    } else if (s == 'rating_asc' || s == 'rating_low_high' || s == 'rating_low_to_high') {
+      _selectedSort = 'rating_low_high';
+    } else if (s == 'rate_low_high' || s == 'rate_asc' || s == 'price_low_high' || s == 'price_asc' || s == 'price') {
+      _selectedSort = 'rate_low_high';
+    } else if (s == 'rate_high_low' || s == 'rate_desc' || s == 'price_high_low' || s == 'price_desc') {
+      _selectedSort = 'rate_high_low';
+    } else if (s == 'budget_low_high' || s == 'budget_asc') {
+      _selectedSort = 'budget_low_high';
+    } else if (s == 'budget_high_low' || s == 'budget_desc') {
+      _selectedSort = 'budget_high_low';
+    } else {
+      _selectedSort = 'newest';
+    }
   }
 
   @override
@@ -65,15 +80,22 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
   }
 
   void _applyFilters() {
-    final minVal = double.tryParse(_minBudgetController.text.trim());
-    final maxVal = double.tryParse(_maxBudgetController.text.trim());
+    var minVal = double.tryParse(_minBudgetController.text.trim());
+    var maxVal = double.tryParse(_maxBudgetController.text.trim());
+
+    if (minVal != null && maxVal != null && minVal > maxVal) {
+      final temp = minVal;
+      minVal = maxVal;
+      maxVal = temp;
+    }
 
     final updated = widget.currentParams.copyWith(
       style: _selectedStyle == 'All' ? null : _selectedStyle,
       clearStyle: _selectedStyle == 'All',
       budgetMin: minVal,
-      clearBudget: minVal == null && maxVal == null,
+      clearBudgetMin: minVal == null,
       budgetMax: maxVal,
+      clearBudgetMax: maxVal == null,
       available: _availableOnly ? true : null,
       clearAvailable: !_availableOnly,
       sort: _selectedSort,
@@ -195,9 +217,12 @@ class _DesignerFilterSheetState extends State<DesignerFilterSheet> {
                       ),
                       items: const [
                         DropdownMenuItem(value: 'newest', child: Text('Newest Listings')),
-                        DropdownMenuItem(value: 'rating', child: Text('Highest Client Rating')),
-                        DropdownMenuItem(value: 'price_low_high', child: Text('Rate: Low to High')),
-                        DropdownMenuItem(value: 'price_high_low', child: Text('Rate: High to Low')),
+                        DropdownMenuItem(value: 'rating_high_low', child: Text('Client Rating: High to Low (5.0 ★)')),
+                        DropdownMenuItem(value: 'rating_low_high', child: Text('Client Rating: Low to High')),
+                        DropdownMenuItem(value: 'rate_low_high', child: Text('Rate / Sq.Ft: Low to High')),
+                        DropdownMenuItem(value: 'rate_high_low', child: Text('Rate / Sq.Ft: High to Low')),
+                        DropdownMenuItem(value: 'budget_low_high', child: Text('Project Budget: Low to High')),
+                        DropdownMenuItem(value: 'budget_high_low', child: Text('Project Budget: High to Low')),
                       ],
                       onChanged: (val) {
                         if (val != null) setState(() => _selectedSort = val);

@@ -65,6 +65,7 @@ export interface DesignerListingItem {
 
 export interface DesignerQueryParameters {
   style?: string;
+  search?: string;
   budgetMin?: number;
   budgetMax?: number;
   available?: boolean;

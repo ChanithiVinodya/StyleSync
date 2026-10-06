@@ -58,6 +58,25 @@ export interface QuoteVersion {
   items: QuoteVersionItem[];
 }
 
+export interface DesignerRecommendation {
+  userId: string;
+  profileId: number;
+  displayName: string;
+  email?: string;
+  matchScore: number;
+  styleTagOverlapPct: number;
+  budgetRangeOverlapPct: number;
+  pastRatingNormalized: number;
+  availabilityBonus: number;
+  averageRating?: number;
+  styleTags: string[];
+  priceRangeMin: number;
+  priceRangeMax: number;
+  featuredImageUrl?: string;
+  bio?: string;
+  matchReason?: string;
+}
+
 export interface Quote {
   id: string;
   projectRequestId: string;
@@ -73,6 +92,13 @@ export interface Quote {
   contractId?: string;
   createdAt?: string;
   updatedAt?: string;
+  designerDisplayName?: string;
+  designerEmail?: string;
+  clientDisplayName?: string;
+  clientEmail?: string;
+  projectReferenceCode?: string;
+  description?: string;
+  recommendedDesigners?: DesignerRecommendation[];
 }
 
 export interface Contract {
@@ -91,6 +117,13 @@ export interface Contract {
   createdAt?: string;
   updatedAt?: string;
   quote?: Quote;
+  designerDisplayName?: string;
+  designerEmail?: string;
+  clientDisplayName?: string;
+  clientEmail?: string;
+  projectReferenceCode?: string;
+  description?: string;
+  recommendedDesigners?: DesignerRecommendation[];
 }
 
 export interface AgentQuoteItemDraft {

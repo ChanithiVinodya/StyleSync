@@ -73,6 +73,14 @@ namespace StyleSync.Api.DTOs
         public DateTime UpdatedAt { get; set; }
         public List<QuoteItemResponseDto> Items { get; set; } = new();
         public Guid? ContractId { get; set; }
+
+        public string? DesignerDisplayName { get; set; }
+        public string? DesignerEmail { get; set; }
+        public string? ClientDisplayName { get; set; }
+        public string? ClientEmail { get; set; }
+        public string? ProjectReferenceCode { get; set; }
+        public string? Description { get; set; }
+        public List<DesignerRecommendationDto> RecommendedDesigners { get; set; } = new();
     }
 
     // Simple wrapper so list endpoints carry paging info alongside the page of data —

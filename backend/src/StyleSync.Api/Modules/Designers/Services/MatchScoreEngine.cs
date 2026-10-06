@@ -40,31 +40,68 @@ public class MatchScoreEngine : IMatchScoreEngine
         if (designerTags == null)
             return 0.0;
 
-        var designerSet = designerTags
+        var designerList = designerTags
             .Where(t => !string.IsNullOrWhiteSpace(t))
             .Select(t => t.Trim())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            .ToList();
 
-        if (designerSet.Count == 0)
+        if (designerList.Count == 0)
             return 0.0;
 
-        int matchCount = requestedList.Count(req => designerSet.Contains(req));
+        int matchCount = 0;
+        foreach (var req in requestedList)
+        {
+            bool matched = designerList.Any(d =>
+                string.Equals(d, req, StringComparison.OrdinalIgnoreCase) ||
+                d.IndexOf(req, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                req.IndexOf(d, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                req.Split(new[] { ' ', '-', '/', '&' }, StringSplitOptions.RemoveEmptyEntries)
+                   .Any(w => string.Equals(w, d, StringComparison.OrdinalIgnoreCase) || 
+                             (w.Length >= 4 && d.IndexOf(w, StringComparison.OrdinalIgnoreCase) >= 0)));
+
+            if (matched)
+            {
+                matchCount++;
+            }
+        }
+
         return Math.Clamp((double)matchCount / requestedList.Count, 0.0, 1.0);
     }
 
     /// <inheritdoc />
     public double CalculateBudgetRangeOverlap(decimal designerMin, decimal designerMax, decimal requestedMin, decimal requestedMax)
     {
-        // Normalize ranges
+        // Normalize designer ranges
         if (designerMin > designerMax)
             (designerMin, designerMax) = (designerMax, designerMin);
-
-        if (requestedMin > requestedMax)
-            (requestedMin, requestedMax) = (requestedMax, requestedMin);
 
         // If no budget requested, default to full overlap
         if (requestedMin <= 0 && requestedMax <= 0)
             return 1.0;
+
+        // If only minimum budget specified
+        if (requestedMin > 0 && requestedMax <= 0)
+        {
+            if (designerMax < requestedMin)
+                return 0.0;
+            return 1.0;
+        }
+
+        // If only maximum budget specified
+        if (requestedMin <= 0 && requestedMax > 0)
+        {
+            if (designerMin > requestedMax)
+                return 0.0;
+            if (designerMax <= requestedMax)
+                return 1.0;
+            decimal dSpan = Math.Max(1, designerMax - designerMin);
+            decimal insideSpan = requestedMax - designerMin;
+            return Math.Clamp((double)(insideSpan / dSpan), 0.0, 1.0);
+        }
+
+        // Both min and max specified -> normalize if inverted
+        if (requestedMin > requestedMax)
+            (requestedMin, requestedMax) = (requestedMax, requestedMin);
 
         decimal requestedSpan = requestedMax - requestedMin;
         if (requestedSpan <= 0)
@@ -76,6 +113,9 @@ public class MatchScoreEngine : IMatchScoreEngine
         decimal overlapStart = Math.Max(designerMin, requestedMin);
         decimal overlapEnd = Math.Min(designerMax, requestedMax);
         decimal overlapSpan = Math.Max(0, overlapEnd - overlapStart);
+
+        if (overlapSpan <= 0)
+            return 0.0;
 
         double proportion = (double)(overlapSpan / requestedSpan);
         return Math.Clamp(proportion, 0.0, 1.0);

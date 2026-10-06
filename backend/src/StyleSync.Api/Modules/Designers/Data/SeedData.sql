@@ -39,7 +39,7 @@ VALUES
   
   -- Designer 2 (At Capacity)
   (4, 2, 'Warm Bohemian Haven', 'Earthy terracotta tones, macramé accents, cane furniture, and layered woven rugs in Havelock City.', 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80', 'LKR 150k-250k', 'A.R.', 1, NOW(), NULL),
-  (5, 2, 'Nordic Sunlit Bedroom Suite', 'Light oak bedframe, linen drapery, and minimalist pendant lamps creating an airy oasis.', 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80', 'LKR 120k-200k', 'N.H.', 1, NOW(), NULL),
+  (5, 2, 'Nordic Sunlit Bedroom Suite', 'Light oak bedframe, linen drapery, and Scandinavian fluted pendant lamps creating an airy oasis.', 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80', 'LKR 120k-200k', 'N.H.', 1, NOW(), NULL),
   (6, 2, 'Eclectic Studio Apartment Makeover', 'Space-saving multi-functional partition walls with curated brass lighting and vibrant gallery wall.', 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80', 'LKR 180k-280k', 'C.P.', 1, NOW(), NULL),
 
   -- Designer 3

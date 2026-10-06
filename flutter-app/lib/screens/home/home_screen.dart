@@ -24,15 +24,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProviderStateMixin {
   late int _currentIndex;
   bool _isLoading = false;
-  int _searchPlaceholderIndex = 0;
   late AnimationController _shimmerController;
-
-  final List<String> _searchPlaceholders = [
-    "Try 'Curved bouclé sofa nook'...",
-    "Try 'Japandi travertine table'...",
-    "Try 'Warm minimalist lighting'...",
-    "Try 'Walnut dining credenza'...",
-  ];
 
   final Map<String, dynamic> _mockDashboardSummary = {
     'clientName': 'Elena',
@@ -355,11 +347,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       color: terracotta,
       onRefresh: () async {
         setState(() => _isLoading = true);
-        await Future.delayed(const Duration(milliseconds: 700));
-        setState(() {
-          _isLoading = false;
-          _searchPlaceholderIndex = (_searchPlaceholderIndex + 1) % _searchPlaceholders.length;
-        });
+        await Future.delayed(const Duration(milliseconds: 500));
+        setState(() => _isLoading = false);
       },
       child: AnimatedCrossFade(
         duration: const Duration(milliseconds: 350),
@@ -376,13 +365,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
 
               // 2. Greeting Row
               _buildGreetingRow(isDark, textEspresso),
-              const SizedBox(height: 16),
-
-              // 3. Search & Style Discovery Bar
-              _buildSearchBar(isDark, textEspresso),
               const SizedBox(height: 22),
 
-              // 4. Unboxed Architectural Hero Section (Full-bleed seamless gradient)
+              // 3. Unboxed Architectural Hero Section (Full-bleed seamless gradient)
               _buildUnboxedHero(context, isDark, textEspresso, terracotta),
               const SizedBox(height: 32),
 
@@ -647,68 +632,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ==========================================
-  // SECTION 3: SEARCH & DISCOVERY BAR
-  // ==========================================
-  Widget _buildSearchBar(bool isDark, Color textEspresso) {
-    return GestureDetector(
-      onTap: _showFilterModal,
-      child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1715) : Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: isDark ? const Color(0xFF2E2824) : const Color(0xFFEDE3D8),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
-              blurRadius: 14,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.search_rounded,
-              size: 22,
-              color: isDark ? const Color(0xFF9B8B82) : const Color(0xFF8A7973),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 300),
-                child: Text(
-                  _searchPlaceholders[_searchPlaceholderIndex],
-                  key: ValueKey<int>(_searchPlaceholderIndex),
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    color: isDark ? const Color(0xFF85756E) : const Color(0xFF8A7973),
-                    fontWeight: FontWeight.w400,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            IconButton(
-              icon: Icon(
-                Icons.tune_rounded,
-                size: 19,
-                color: isDark ? const Color(0xFFD48270) : const Color(0xFF8C4A3E),
-              ),
-              onPressed: _showFilterModal,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
 
   // ==========================================
   // SECTION 4: UNBOXED ARCHITECTURAL HERO (SEAMLESS FULL-BLEED)

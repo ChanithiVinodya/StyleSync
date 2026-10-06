@@ -328,10 +328,20 @@ export async function stage1Decision(id: string, action: "Release" | "SendForRev
   }
 }
 
-export async function stage2Decision(id: string, action: "Approve" | "RequestChanges" | "Reject", feedback?: string, clientId?: string): Promise<any> {
+export async function stage2Decision(
+  id: string, 
+  action: "Approve" | "RequestChanges" | "Reject", 
+  feedback?: string, 
+  clientId?: string,
+  designerId?: string
+): Promise<any> {
   try {
     if (action === "Approve") {
-      const url = clientId ? `${API_BASE}/api/quotes/${id}/accept?clientId=${clientId}` : `${API_BASE}/api/quotes/${id}/accept`;
+      const params = new URLSearchParams();
+      if (clientId) params.append("clientId", clientId);
+      if (designerId) params.append("designerId", designerId);
+      const queryString = params.toString() ? `?${params.toString()}` : "";
+      const url = `${API_BASE}/api/quotes/${id}/accept${queryString}`;
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" }
@@ -352,7 +362,12 @@ export async function stage2Decision(id: string, action: "Approve" | "RequestCha
     if (index === -1) throw err;
 
     if (action === "Approve") {
-      const updated = { ...quotes[index], status: "Stage2Approved", updatedAt: new Date().toISOString() };
+      const updated = { 
+        ...quotes[index], 
+        status: "Stage2Approved", 
+        designerId: designerId || quotes[index].designerId,
+        updatedAt: new Date().toISOString() 
+      };
       quotes[index] = updated;
       saveLocalQuotes(quotes);
 
@@ -386,8 +401,8 @@ export async function stage2Decision(id: string, action: "Approve" | "RequestCha
   }
 }
 
-export async function acceptQuote(id: string, clientId?: string): Promise<any> {
-  return stage2Decision(id, "Approve", undefined, clientId);
+export async function acceptQuote(id: string, clientId?: string, designerId?: string): Promise<any> {
+  return stage2Decision(id, "Approve", undefined, clientId, designerId);
 }
 
 export async function exportQuote(id: string, format: "pdf" | "csv" = "pdf"): Promise<void> {

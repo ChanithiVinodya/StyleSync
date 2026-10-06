@@ -11,6 +11,7 @@ import 'widgets/ai_draft_bottom_sheet.dart';
 import 'widgets/quote_form_bottom_sheet.dart';
 import 'widgets/quote_detail_bottom_sheet.dart';
 import 'widgets/contract_detail_bottom_sheet.dart';
+import 'widgets/designer_selection_dialog.dart';
 
 class QuotesContractsPage extends ConsumerStatefulWidget {
   const QuotesContractsPage({super.key});
@@ -167,7 +168,17 @@ class _QuotesContractsPageState extends ConsumerState<QuotesContractsPage> with 
     }
 
     if (nextStatus == 'Accepted') {
-      await _handleAcceptQuote(q);
+      if (q.recommendedDesigners.isNotEmpty) {
+        DesignerSelectionDialog.show(
+          context,
+          quote: q,
+          onConfirm: (selectedDesignerId) async {
+            await _handleAcceptQuote(q, designerId: selectedDesignerId);
+          },
+        );
+      } else {
+        await _handleAcceptQuote(q);
+      }
       return;
     }
 
@@ -188,9 +199,9 @@ class _QuotesContractsPageState extends ConsumerState<QuotesContractsPage> with 
     }
   }
 
-  Future<void> _handleAcceptQuote(Quote q) async {
+  Future<void> _handleAcceptQuote(Quote q, {String? designerId}) async {
     try {
-      final contract = await _service.acceptQuote(q.id);
+      final contract = await _service.acceptQuote(q.id, designerId: designerId);
       _loadQuotes();
       _loadContracts();
       if (mounted) {
@@ -810,9 +821,9 @@ class _QuotesContractsPageState extends ConsumerState<QuotesContractsPage> with 
               onTap: () => QuoteDetailBottomSheet.show(
                 context,
                 quote: quote,
-                onStage2Decision: (action, feedback) {
+                onStage2Decision: (action, feedback, designerId) {
                   if (action == 'Approve') {
-                    _handleAcceptQuote(quote);
+                    _handleAcceptQuote(quote, designerId: designerId);
                   }
                 },
               ),
@@ -942,9 +953,14 @@ class _QuotesContractsPageState extends ConsumerState<QuotesContractsPage> with 
                 onTap: () => QuoteDetailBottomSheet.show(
                   context,
                   quote: quote,
+                  onStage2Decision: (action, feedback, designerId) {
+                    if (action == 'Approve') {
+                      _handleAcceptQuote(quote, designerId: designerId);
+                    }
+                  },
                 ),
                 onEdit: null,
-                onSubmit: () => _handleAcceptQuote(quote),
+                onSubmit: () => _handleAdvanceQuote(quote),
                 onDelete: null,
               )),
               const Padding(

@@ -180,6 +180,24 @@ class DesignersApiService {
           .toList();
     }
 
+    // Keyword Search filter (name, style, bio, services, portfolio titles)
+    if (query.search != null && query.search!.trim().isNotEmpty) {
+      final terms = query.search!
+          .toLowerCase()
+          .split(' ')
+          .where((t) => t.isNotEmpty)
+          .toList();
+      filtered = filtered.where((p) {
+        return terms.every((term) =>
+            p.displayName.toLowerCase().contains(term) ||
+            p.styleTags.any((t) => t.toLowerCase().contains(term)) ||
+            p.serviceCategories.any((c) => c.toLowerCase().contains(term)) ||
+            p.bio.toLowerCase().contains(term) ||
+            p.portfolioItems.any((pi) =>
+                pi.title.toLowerCase().contains(term)));
+      }).toList();
+    }
+
     // Budget range filter
     if (query.budgetMin != null && query.budgetMin! > 0) {
       filtered =
@@ -204,14 +222,53 @@ class DesignersApiService {
     }
 
     // Sort
-    final sort = query.sort ?? 'newest';
-    if (sort == 'rating' || sort == 'rating_desc') {
-      filtered.sort((a, b) =>
-          (b.averageRating ?? 0.0).compareTo(a.averageRating ?? 0.0));
-    } else if (sort == 'price_asc') {
-      filtered.sort((a, b) => a.priceRangeMin.compareTo(b.priceRangeMin));
-    } else if (sort == 'price_desc') {
-      filtered.sort((a, b) => b.priceRangeMax.compareTo(a.priceRangeMax));
+    final sort = (query.sort ?? 'newest').toLowerCase();
+    if (sort == 'rating' || sort == 'rating_desc' || sort == 'rating_high_low' || sort == 'rating_high_to_low') {
+      filtered.sort((a, b) {
+        if (a.averageRating == null && b.averageRating == null) return 0;
+        if (a.averageRating == null) return 1; // null ratings at end
+        if (b.averageRating == null) return -1;
+        final cmp = b.averageRating!.compareTo(a.averageRating!);
+        return cmp != 0 ? cmp : b.createdAtUtc.compareTo(a.createdAtUtc);
+      });
+    } else if (sort == 'rating_asc' || sort == 'rating_low_high' || sort == 'rating_low_to_high') {
+      filtered.sort((a, b) {
+        if (a.averageRating == null && b.averageRating == null) return 0;
+        if (a.averageRating == null) return 1; // null ratings at end
+        if (b.averageRating == null) return -1;
+        final cmp = a.averageRating!.compareTo(b.averageRating!);
+        return cmp != 0 ? cmp : a.createdAtUtc.compareTo(b.createdAtUtc);
+      });
+    } else if (sort == 'price' || sort == 'price_asc' || sort == 'price_low_high' || sort == 'price_low_to_high' || sort == 'rate_asc' || sort == 'rate_low_high' || sort == 'rate_low_to_high') {
+      filtered.sort((a, b) {
+        final aRate = a.ratePerSqFt > 0 ? a.ratePerSqFt : a.priceRangeMin;
+        final bRate = b.ratePerSqFt > 0 ? b.ratePerSqFt : b.priceRangeMin;
+        final cmp = aRate.compareTo(bRate);
+        if (cmp != 0) return cmp;
+        final minCmp = a.priceRangeMin.compareTo(b.priceRangeMin);
+        return minCmp != 0 ? minCmp : a.priceRangeMax.compareTo(b.priceRangeMax);
+      });
+    } else if (sort == 'price_desc' || sort == 'price_high_low' || sort == 'price_high_to_low' || sort == 'rate_desc' || sort == 'rate_high_low' || sort == 'rate_high_to_low') {
+      filtered.sort((a, b) {
+        final aRate = a.ratePerSqFt > 0 ? a.ratePerSqFt : a.priceRangeMax;
+        final bRate = b.ratePerSqFt > 0 ? b.ratePerSqFt : b.priceRangeMax;
+        final cmp = bRate.compareTo(aRate);
+        if (cmp != 0) return cmp;
+        final maxCmp = b.priceRangeMax.compareTo(a.priceRangeMax);
+        return maxCmp != 0 ? maxCmp : b.priceRangeMin.compareTo(a.priceRangeMin);
+      });
+    } else if (sort == 'budget_asc' || sort == 'budget_low_high' || sort == 'budget_low_to_high') {
+      filtered.sort((a, b) {
+        final cmp = a.priceRangeMin.compareTo(b.priceRangeMin);
+        return cmp != 0 ? cmp : a.priceRangeMax.compareTo(b.priceRangeMax);
+      });
+    } else if (sort == 'budget_desc' || sort == 'budget_high_low' || sort == 'budget_high_to_low') {
+      filtered.sort((a, b) {
+        final cmp = b.priceRangeMax.compareTo(a.priceRangeMax);
+        return cmp != 0 ? cmp : b.priceRangeMin.compareTo(a.priceRangeMin);
+      });
+    } else if (sort == 'oldest' || sort == 'created_asc') {
+      filtered.sort((a, b) => a.createdAtUtc.compareTo(b.createdAtUtc));
     } else {
       filtered.sort((a, b) => b.createdAtUtc.compareTo(a.createdAtUtc));
     }

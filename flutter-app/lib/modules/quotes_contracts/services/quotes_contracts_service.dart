@@ -184,7 +184,7 @@ class QuotesContractsService {
     try {
       final uri = Uri.parse('$_baseUrl/quotes?pageSize=1');
       final headers = await _getHeaders();
-      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 4));
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 15));
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (_) {
       return false;
@@ -206,7 +206,7 @@ class QuotesContractsService {
       final uri = Uri.parse('$_baseUrl/quotes').replace(queryParameters: queryParams.isEmpty ? null : queryParams);
       debugPrint('[QuotesContractsService] Fetching quotes from $uri');
       final headers = await _getHeaders();
-      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 25));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
@@ -280,7 +280,7 @@ class QuotesContractsService {
       uri,
       headers: headers,
       body: jsonEncode(reqBody),
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 25));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -311,7 +311,7 @@ class QuotesContractsService {
       uri,
       headers: headers,
       body: jsonEncode(reqBody),
-    ).timeout(const Duration(seconds: 10));
+    ).timeout(const Duration(seconds: 25));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -331,7 +331,7 @@ class QuotesContractsService {
       uri,
       headers: headers,
       body: jsonEncode({'status': status}),
-    ).timeout(const Duration(seconds: 8));
+    ).timeout(const Duration(seconds: 25));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -344,12 +344,16 @@ class QuotesContractsService {
     }
   }
 
-  Future<Contract?> acceptQuote(String id, {String? clientId}) async {
-    final url = clientId != null
-        ? '$_baseUrl/quotes/$id/accept?clientId=$clientId'
-        : '$_baseUrl/quotes/$id/accept';
+  Future<Contract?> acceptQuote(String id, {String? clientId, String? designerId}) async {
+    final queryParams = <String, String>{};
+    if (clientId != null && clientId.isNotEmpty) queryParams['clientId'] = clientId;
+    if (designerId != null && designerId.isNotEmpty) queryParams['designerId'] = designerId;
+
+    final uri = Uri.parse('$_baseUrl/quotes/$id/accept').replace(
+      queryParameters: queryParams.isNotEmpty ? queryParams : null,
+    );
     final headers = await _getHeaders();
-    final res = await http.post(Uri.parse(url), headers: headers).timeout(const Duration(seconds: 10));
+    final res = await http.post(uri, headers: headers).timeout(const Duration(seconds: 25));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -368,7 +372,7 @@ class QuotesContractsService {
   Future<void> deleteQuote(String id) async {
     final uri = Uri.parse('$_baseUrl/quotes/$id');
     final headers = await _getHeaders();
-    final res = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 8));
+    final res = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 25));
     if (res.statusCode >= 200 && res.statusCode < 300) {
       _localQuotes.removeWhere((q) => q.id == id);
     } else {
@@ -386,7 +390,7 @@ class QuotesContractsService {
         uri,
         headers: headers,
         body: jsonEncode(payload.toJson()),
-      ).timeout(const Duration(seconds: 8));
+      ).timeout(const Duration(seconds: 25));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
@@ -455,7 +459,7 @@ class QuotesContractsService {
         uri,
         headers: headers,
         body: jsonEncode(reqBody),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 25));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
@@ -491,7 +495,7 @@ class QuotesContractsService {
       final uri = Uri.parse('$_baseUrl/contracts').replace(queryParameters: queryParams.isEmpty ? null : queryParams);
       debugPrint('[QuotesContractsService] Fetching contracts from $uri');
       final headers = await _getHeaders();
-      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 25));
 
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
@@ -540,7 +544,7 @@ class QuotesContractsService {
       uri,
       headers: headers,
       body: jsonEncode({'signedAt': DateTime.now().toUtc().toIso8601String()}),
-    ).timeout(const Duration(seconds: 8));
+    ).timeout(const Duration(seconds: 25));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -556,7 +560,7 @@ class QuotesContractsService {
   Future<Contract> cancelContract(String id) async {
     final uri = Uri.parse('$_baseUrl/contracts/$id/cancel');
     final headers = await _getHeaders();
-    final res = await http.post(uri, headers: headers).timeout(const Duration(seconds: 8));
+    final res = await http.post(uri, headers: headers).timeout(const Duration(seconds: 25));
 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       final decoded = jsonDecode(res.body);
@@ -573,7 +577,7 @@ class QuotesContractsService {
     try {
       final uri = Uri.parse('$_baseUrl/contracts/$id');
       final headers = await _getHeaders();
-      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 25));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
         return Contract.fromJson(Map<String, dynamic>.from(decoded as Map));
@@ -589,7 +593,7 @@ class QuotesContractsService {
     try {
       final uri = Uri.parse('$_baseUrl/quotes/$id');
       final headers = await _getHeaders();
-      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 6));
+      final res = await http.get(uri, headers: headers).timeout(const Duration(seconds: 25));
       if (res.statusCode >= 200 && res.statusCode < 300) {
         final decoded = jsonDecode(res.body);
         return Quote.fromJson(Map<String, dynamic>.from(decoded as Map));
