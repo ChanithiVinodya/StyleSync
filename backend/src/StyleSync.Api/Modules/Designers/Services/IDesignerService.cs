@@ -6,6 +6,7 @@ public interface IDesignerService
 {
     Task<PagedResult<DesignerListingItemResponse>> GetPublicListingsAsync(DesignerQueryParameters query, CancellationToken cancellationToken = default);
     Task<DesignerProfileResponse?> GetProfileByIdAsync(int id, bool includeUnpublished = false);
+    Task<DesignerProfileResponse?> GetProfileByUserIdAsync(Guid userId);
     Task<DesignerProfileResponse> CreateProfileAsync(Guid currentUserId, bool isAdmin, CreateDesignerProfileRequest request);
     Task<DesignerProfileResponse> UpdateProfileAsync(int id, Guid currentUserId, bool isAdmin, UpdateDesignerProfileRequest request);
     Task<bool> ArchiveProfileAsync(int id, bool isAdmin);

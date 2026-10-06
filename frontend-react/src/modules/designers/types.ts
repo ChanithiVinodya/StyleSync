@@ -20,7 +20,7 @@ export interface PortfolioItem {
 
 export interface DesignerProfile {
   id: number;
-  userId: number;
+  userId: number | string;
   displayName: string;
   bio: string;
   styleTags: string[];

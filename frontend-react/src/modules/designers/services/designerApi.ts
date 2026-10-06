@@ -370,6 +370,42 @@ export const designerApi = {
     }
   },
 
+  async getMyProfile(): Promise<DesignerProfile | null> {
+    try {
+      const response = await fetch(`${API_BASE}/me`, {
+        headers: getAuthHeaders()
+      });
+      if (response.status === 404) {
+        return null;
+      }
+      if (!response.ok) {
+        throw new Error(`Failed to fetch profile: ${response.statusText}`);
+      }
+      const data: DesignerProfile = await response.json();
+      const index = inMemoryDesigners.findIndex(d => d.id === data.id);
+      if (index >= 0) {
+        inMemoryDesigners[index] = data;
+      } else {
+        inMemoryDesigners.push(data);
+      }
+      saveStoredDesigners(inMemoryDesigners);
+      return data;
+    } catch {
+      // Offline fallback: check user in localStorage
+      const userStr = localStorage.getItem('stylesync_user_info');
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          const found = inMemoryDesigners.find(d => String(d.userId) === String(user.id));
+          return found || null;
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    }
+  },
+
   async getProfile(id: number): Promise<DesignerProfile> {
     try {
       const response = await fetch(`${API_BASE}/${id}`, {
@@ -395,21 +431,55 @@ export const designerApi = {
   },
 
   async createProfile(request: CreateDesignerProfileRequest): Promise<DesignerProfile> {
-    const response = await fetch(API_BASE, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(request)
-    });
+    try {
+      const response = await fetch(API_BASE, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(request)
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(errorData?.message || `Failed to create profile: ${response.statusText}`);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.message || `Failed to create profile: ${response.statusText}`);
+      }
+
+      const created: DesignerProfile = await response.json();
+      inMemoryDesigners.push(created);
+      saveStoredDesigners(inMemoryDesigners);
+      return created;
+    } catch (err: unknown) {
+      if (err instanceof Error && !err.message.includes('fetch') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
+      // Offline fallback
+      const userStr = localStorage.getItem('stylesync_user_info');
+      const userId = userStr ? JSON.parse(userStr).id : 'new-user';
+      const newId = inMemoryDesigners.length > 0 ? Math.max(...inMemoryDesigners.map(d => d.id)) + 1 : 1;
+      const created: DesignerProfile = {
+        id: newId,
+        userId: userId,
+        displayName: request.displayName,
+        bio: request.bio,
+        styleTags: request.styleTags,
+        serviceCategories: request.serviceCategories,
+        priceRangeMin: request.priceRangeMin,
+        priceRangeMax: request.priceRangeMax,
+        ratePerSqFt: request.ratePerSqFt,
+        isAvailable: request.isAvailable ?? true,
+        maxConcurrentProjects: request.maxConcurrentProjects ?? 3,
+        activeProjectCount: 0,
+        remainingCapacity: request.maxConcurrentProjects ?? 3,
+        isUnderCapacity: true,
+        isAtCapacity: false,
+        averageRating: null,
+        listingStatus: ListingStatus.Draft,
+        createdAtUtc: new Date().toISOString(),
+        portfolioItems: []
+      };
+      inMemoryDesigners.push(created);
+      saveStoredDesigners(inMemoryDesigners);
+      return created;
     }
-
-    const created: DesignerProfile = await response.json();
-    inMemoryDesigners.push(created);
-    saveStoredDesigners(inMemoryDesigners);
-    return created;
   },
 
   async updateProfile(id: number, request: UpdateDesignerProfileRequest): Promise<DesignerProfile> {

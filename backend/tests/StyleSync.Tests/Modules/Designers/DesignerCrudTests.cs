@@ -259,4 +259,36 @@ public class DesignerCrudTests
         var items = await service.GetPortfolioItemsAsync(profile.Id, publicOnly: false);
         Assert.Empty(items);
     }
+
+    [Fact]
+    public async Task GetProfileByUserId_ExistingProfile_ReturnsProfile()
+    {
+        using var context = CreateInMemoryDbContext();
+        var service = CreateDesignerService(context);
+
+        var ownerId = Guid.NewGuid();
+        var profile = new DesignerProfile
+        {
+            UserId = ownerId,
+            DisplayName = "Owner Studio",
+            Bio = "Interior Design Studio",
+            ListingStatus = ListingStatus.Published
+        };
+        context.DesignerProfiles.Add(profile);
+        await context.SaveChangesAsync();
+
+        var result = await service.GetProfileByUserIdAsync(ownerId);
+        Assert.NotNull(result);
+        Assert.Equal("Owner Studio", result.DisplayName);
+    }
+
+    [Fact]
+    public async Task GetProfileByUserId_NoProfileForUser_ReturnsNull()
+    {
+        using var context = CreateInMemoryDbContext();
+        var service = CreateDesignerService(context);
+
+        var result = await service.GetProfileByUserIdAsync(Guid.NewGuid());
+        Assert.Null(result);
+    }
 }

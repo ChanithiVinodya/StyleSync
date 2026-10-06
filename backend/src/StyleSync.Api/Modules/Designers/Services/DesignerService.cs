@@ -150,6 +150,20 @@ public class DesignerService : IDesignerService
         return MapToResponse(profile, activeProjects, _capacityGuard.IsUnderCapacity(profile, activeProjects), includeUnpublished);
     }
 
+    public async Task<DesignerProfileResponse?> GetProfileByUserIdAsync(Guid userId)
+    {
+        var profile = await _context.DesignerProfiles
+            .Include(d => d.PortfolioItems)
+            .FirstOrDefaultAsync(d => d.UserId == userId);
+
+        if (profile == null)
+            return null;
+
+        var activeProjects = await _capacityGuard.GetActiveProjectCountAsync(profile.Id);
+
+        return MapToResponse(profile, activeProjects, _capacityGuard.IsUnderCapacity(profile, activeProjects), includeUnpublished: true);
+    }
+
     public async Task<DesignerProfileResponse> CreateProfileAsync(Guid currentUserId, bool isAdmin, CreateDesignerProfileRequest request)
     {
         if (request.PriceRangeMin > request.PriceRangeMax)
