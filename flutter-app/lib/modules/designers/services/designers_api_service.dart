@@ -442,6 +442,32 @@ class DesignersApiService {
           completionStatusBadge: ListingStatus.published,
           createdAtUtc: DateTime.parse('2026-09-02T13:00:00Z'),
         ),
+        PortfolioItem(
+          id: 16,
+          designerProfileId: 6,
+          title: 'Art Deco Formal Dining Suite',
+          description:
+              'Smoked glass 12-seater dining table, fluted walnut panels, and crystal chandelier.',
+          imageUrl:
+              'https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1200&q=80',
+          budgetRangeLabel: 'LKR 1M-1.8M',
+          clientInitials: 'O.S.',
+          completionStatusBadge: ListingStatus.published,
+          createdAtUtc: DateTime.parse('2026-09-03T14:00:00Z'),
+        ),
+        PortfolioItem(
+          id: 17,
+          designerProfileId: 6,
+          title: 'Presidential Master Dressing Room',
+          description:
+              'Integrated backlit glass wardrobes, central island with velvet watch trays, and full-length vanity mirror.',
+          imageUrl:
+              'https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=1200&q=80',
+          budgetRangeLabel: 'LKR 800k-1.2M',
+          clientInitials: 'A.K.',
+          completionStatusBadge: ListingStatus.published,
+          createdAtUtc: DateTime.parse('2026-09-04T16:00:00Z'),
+        ),
       ],
     ),
     DesignerProfile(
@@ -451,7 +477,7 @@ class DesignersApiService {
       bio:
           'Pioneering biophilic design incorporating vertical green walls, natural cross-ventilation, and carbon-neutral recycled materials.',
       styleTags: const ['Biophilic', 'Eco-friendly', 'Modern Farmhouse'],
-      serviceCategories: const ['Eco-Home', 'Living Room'],
+      serviceCategories: const ['Eco-Home', 'Balcony & Terrace', 'Living Room'],
       priceRangeMin: 120000.0,
       priceRangeMax: 400000.0,
       ratePerSqFt: 360.0,
@@ -464,7 +490,21 @@ class DesignersApiService {
       averageRating: null, // Nullable averageRating
       listingStatus: ListingStatus.published,
       createdAtUtc: DateTime.parse('2026-09-05T09:00:00Z'),
-      portfolioItems: const [],
+      portfolioItems: [
+        PortfolioItem(
+          id: 18,
+          designerProfileId: 7,
+          title: 'Biophilic Eco Living Room & Indoor Garden',
+          description:
+              'Integrated self-watering green wall, reclaimed rubberwood coffee table, and VOC-free lime plaster.',
+          imageUrl:
+              'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80',
+          budgetRangeLabel: 'LKR 200k-350k',
+          clientInitials: 'L.T.',
+          completionStatusBadge: ListingStatus.published,
+          createdAtUtc: DateTime.parse('2026-09-06T10:00:00Z'),
+        ),
+      ],
     ),
   ];
 }

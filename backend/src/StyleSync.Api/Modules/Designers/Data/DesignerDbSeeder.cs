@@ -11,6 +11,24 @@ public static class DesignerDbSeeder
     {
         if (await context.DesignerProfiles.AnyAsync())
         {
+            if (!await context.PortfolioItems.AnyAsync())
+            {
+                var existingProfiles = await context.DesignerProfiles.ToListAsync();
+                var p1 = existingProfiles.FirstOrDefault(p => p.DisplayName.Contains("Jayawardena")) ?? existingProfiles.ElementAtOrDefault(0);
+                var p2 = existingProfiles.FirstOrDefault(p => p.DisplayName.Contains("Amara") || p.DisplayName.Contains("Studio Luxe")) ?? existingProfiles.ElementAtOrDefault(1);
+                var p3 = existingProfiles.FirstOrDefault(p => p.DisplayName.Contains("Rohan") || p.DisplayName.Contains("Minimalist")) ?? existingProfiles.ElementAtOrDefault(2);
+                var p4 = existingProfiles.FirstOrDefault(p => p.DisplayName.Contains("Dilani") || p.DisplayName.Contains("Urban")) ?? existingProfiles.ElementAtOrDefault(3);
+                var p5 = existingProfiles.FirstOrDefault(p => p.DisplayName.Contains("Tharindu") || p.DisplayName.Contains("Zen")) ?? existingProfiles.ElementAtOrDefault(4);
+                var p6 = existingProfiles.FirstOrDefault(p => p.DisplayName.Contains("Luxe Heritage") || p.DisplayName.Contains("Kavinda")) ?? existingProfiles.ElementAtOrDefault(5);
+                var p7 = existingProfiles.FirstOrDefault(p => p.DisplayName.Contains("Greenline")) ?? existingProfiles.ElementAtOrDefault(6);
+
+                var items = BuildPortfolioItems(p1, p2, p3, p4, p5, p6, p7);
+                if (items.Any())
+                {
+                    await context.PortfolioItems.AddRangeAsync(items);
+                    await context.SaveChangesAsync();
+                }
+            }
             return; // DB already seeded
         }
 
@@ -195,215 +213,243 @@ public static class DesignerDbSeeder
         await context.DesignerProfiles.AddRangeAsync(profiles);
         await context.SaveChangesAsync();
 
-        // 3. Create Portfolio Items (2-3 items per designer)
-        var portfolioItems = new List<PortfolioItem>
+        var portfolioItems = BuildPortfolioItems(profile1, profile2, profile3, profile4, profile5, profile6, profile7);
+        await context.PortfolioItems.AddRangeAsync(portfolioItems);
+        await context.SaveChangesAsync();
+    }
+
+    private static List<PortfolioItem> BuildPortfolioItems(
+        DesignerProfile? p1, DesignerProfile? p2, DesignerProfile? p3,
+        DesignerProfile? p4, DesignerProfile? p5, DesignerProfile? p6,
+        DesignerProfile? p7)
+    {
+        var list = new List<PortfolioItem>();
+
+        // Designer 1
+        if (p1 != null)
         {
-            // Designer 1
-            new()
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile1.Id,
+                DesignerProfileId = p1.Id,
                 Title = "Bawa-Inspired Courtyard Residence",
                 Description = "A 3,200 sq.ft villa in Pelawatte incorporating exposed brick, timber columns, and an open central reflection pool.",
                 ImageUrl = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 450k-550k",
                 ClientInitials = "K.M.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile1.Id,
+                DesignerProfileId = p1.Id,
                 Title = "Minimalist Open-Concept Living Room",
                 Description = "Natural teak cabinetry paired with polished cement floors and diffused daylighting fixtures.",
                 ImageUrl = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 200k-300k",
                 ClientInitials = "S.D.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile1.Id,
+                DesignerProfileId = p1.Id,
                 Title = "Modern Sustainable Kitchen Renovation",
                 Description = "Zero-VOC finishes, recycled quartz countertops, and smart energy-efficient ambient lighting.",
                 ImageUrl = "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 350k-450k",
                 ClientInitials = "T.W.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
+            });
+        }
 
-            // Designer 2 (At Capacity)
-            new()
+        // Designer 2 (At Capacity)
+        if (p2 != null)
+        {
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile2.Id,
+                DesignerProfileId = p2.Id,
                 Title = "Warm Bohemian Haven",
                 Description = "Earthy terracotta tones, macramé accents, cane furniture, and layered woven rugs in Havelock City.",
                 ImageUrl = "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 150k-250k",
                 ClientInitials = "A.R.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile2.Id,
+                DesignerProfileId = p2.Id,
                 Title = "Nordic Sunlit Bedroom Suite",
                 Description = "Light oak bedframe, linen drapery, and minimalist pendant lamps creating an airy oasis.",
                 ImageUrl = "https://images.unsplash.com/photo-1616594039964-ae9021a400a0?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 120k-200k",
                 ClientInitials = "N.H.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile2.Id,
+                DesignerProfileId = p2.Id,
                 Title = "Eclectic Studio Apartment Makeover",
                 Description = "Space-saving multi-functional partition walls with curated brass lighting and vibrant gallery wall.",
                 ImageUrl = "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 180k-280k",
                 ClientInitials = "C.P.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
+            });
+        }
 
-            // Designer 3
-            new()
+        // Designer 3
+        if (p3 != null)
+        {
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile3.Id,
+                DesignerProfileId = p3.Id,
                 Title = "Industrial Loft Living & Bar",
                 Description = "Double-height ceiling penthouse featuring black steel trusses, matte charcoal joinery, and reclaimed timber bar counter.",
                 ImageUrl = "https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 750k-1M",
                 ClientInitials = "R.J.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile3.Id,
+                DesignerProfileId = p3.Id,
                 Title = "Monochrome Tech Studio Headquarters",
                 Description = "Acoustic slat wall panels, ergonomic workstation pods, and industrial track lighting.",
                 ImageUrl = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 900k-1.2M",
                 ClientInitials = "D.K.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile3.Id,
+                DesignerProfileId = p3.Id,
                 Title = "Raw Concrete & Leather Dining Lounge",
                 Description = "Custom concrete dining table paired with distress leather chairs and Edison bulb chandelier.",
                 ImageUrl = "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 400k-600k",
                 ClientInitials = "V.S.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
+            });
+        }
 
-            // Designer 4 (At Capacity)
-            new()
+        // Designer 4 (At Capacity)
+        if (p4 != null)
+        {
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile4.Id,
+                DesignerProfileId = p4.Id,
                 Title = "Galle Fort Coastal Retreat",
                 Description = "Restoration of a Dutch colonial townhouse with whitewashed walls, antique satinwood doors, and rattan loungers.",
                 ImageUrl = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 600k-850k",
                 ClientInitials = "H.L.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile4.Id,
+                DesignerProfileId = p4.Id,
                 Title = "Tropical Veranda & Pool Pavilion",
                 Description = "Weather-resistant teak daybeds, terracotta planters, and outdoor mood lighting.",
                 ImageUrl = "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 350k-500k",
                 ClientInitials = "P.G.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile4.Id,
+                DesignerProfileId = p4.Id,
                 Title = "Southern Breeze Master Suite",
                 Description = "Four-poster king bed draped in handloom linen, brass ceiling fan, and louvered folding shutters.",
                 ImageUrl = "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 300k-450k",
                 ClientInitials = "M.F.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
+            });
+        }
 
-            // Designer 5
-            new()
+        // Designer 5
+        if (p5 != null)
+        {
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile5.Id,
+                DesignerProfileId = p5.Id,
                 Title = "Japandi Serenity Studio",
                 Description = "Low-profile ash wood platform furniture, shoji screens, and muted beige textured micro-cement.",
                 ImageUrl = "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 150k-250k",
                 ClientInitials = "J.N.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile5.Id,
+                DesignerProfileId = p5.Id,
                 Title = "Minimalist Zen Powder Room",
                 Description = "Floating stone basin, concealed perimeter LED strip, and matte gunmetal faucets.",
                 ImageUrl = "https://images.unsplash.com/photo-1552321554-5fefe8c9ef14?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 80k-140k",
                 ClientInitials = "B.W.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
+            });
+        }
 
-            // Designer 6
-            new()
+        // Designer 6
+        if (p6 != null)
+        {
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile6.Id,
+                DesignerProfileId = p6.Id,
                 Title = "Grand Marble & Velvet Penthouse Salon",
                 Description = "Calacatta gold marble wall cladding, emerald velvet bespoke sofa, and 24k gold leaf ceiling molding.",
                 ImageUrl = "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 1.5M-2.5M",
                 ClientInitials = "E.B.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile6.Id,
+                DesignerProfileId = p6.Id,
                 Title = "Art Deco Formal Dining Suite",
                 Description = "Smoked glass 12-seater dining table, fluted walnut panels, and crystal chandelier.",
                 ImageUrl = "https://images.unsplash.com/photo-1617806118233-18e1de247200?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 1M-1.8M",
                 ClientInitials = "O.S.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile6.Id,
+                DesignerProfileId = p6.Id,
                 Title = "Presidential Master Dressing Room",
                 Description = "Integrated backlit glass wardrobes, central island with velvet watch trays, and full-length vanity mirror.",
                 ImageUrl = "https://images.unsplash.com/photo-1558997519-83ea9252edf8?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 800k-1.2M",
                 ClientInitials = "A.K.",
                 CompletionStatusBadge = ListingStatus.Published
-            },
+            });
+        }
 
-            // Designer 7
-            new()
+        // Designer 7
+        if (p7 != null)
+        {
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile7.Id,
+                DesignerProfileId = p7.Id,
                 Title = "Biophilic Eco Living Room & Indoor Garden",
                 Description = "Integrated self-watering green wall, reclaimed rubberwood coffee table, and VOC-free lime plaster.",
                 ImageUrl = "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 200k-350k",
                 ClientInitials = "L.T.",
                 CompletionStatusBadge = ListingStatus.Draft
-            },
-            new()
+            });
+            list.Add(new PortfolioItem
             {
-                DesignerProfileId = profile7.Id,
+                DesignerProfileId = p7.Id,
                 Title = "Zero-Waste Urban Balcony Garden",
                 Description = "Modular bamboo planters, terracotta irrigation ollas, and solar string lighting.",
                 ImageUrl = "https://images.unsplash.com/photo-1534349762230-e0cadf78f5da?auto=format&fit=crop&w=1200&q=80",
                 BudgetRangeLabel = "LKR 120k-200k",
                 ClientInitials = "R.M.",
                 CompletionStatusBadge = ListingStatus.Draft
-            }
-        };
+            });
+        }
 
-        await context.PortfolioItems.AddRangeAsync(portfolioItems);
-
+        return list;
     }
 }
