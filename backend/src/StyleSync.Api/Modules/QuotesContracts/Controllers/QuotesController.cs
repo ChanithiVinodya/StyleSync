@@ -341,9 +341,38 @@ namespace StyleSync.Api.Controllers
             quote.Status = QuoteStatus.Accepted;
             quote.UpdatedAt = DateTime.UtcNow;
 
-            Guid resolvedClientId = (Guid.TryParse(clientId, out var parsedGuid) && parsedGuid != Guid.Empty)
-                ? parsedGuid
-                : (quote.ProjectRequestId != Guid.Empty ? quote.ProjectRequestId : Guid.NewGuid());
+            // Transition linked project request to InProgress
+            StyleSync.Api.Modules.ProjectRequests.Models.Entities.ProjectRequest? req = null;
+            if (quote.ProjectRequestId != Guid.Empty)
+            {
+                req = await _db.ProjectRequests.FirstOrDefaultAsync(r => r.Id == quote.ProjectRequestId);
+            }
+
+            if (req == null)
+            {
+                req = await _db.ProjectRequests
+                    .OrderByDescending(r => r.CreatedAt)
+                    .FirstOrDefaultAsync(r => r.Status == StyleSync.Api.Modules.ProjectRequests.Models.Enums.RequestStatus.DesignerAssigned
+                                           || r.Status == StyleSync.Api.Modules.ProjectRequests.Models.Enums.RequestStatus.Approved);
+                if (req != null)
+                {
+                    quote.ProjectRequestId = req.Id;
+                }
+            }
+
+            Guid resolvedClientId = Guid.Empty;
+            if (Guid.TryParse(clientId, out var parsedGuid) && parsedGuid != Guid.Empty)
+            {
+                resolvedClientId = parsedGuid;
+            }
+            else if (req != null && req.ClientId != Guid.Empty)
+            {
+                resolvedClientId = req.ClientId;
+            }
+            else
+            {
+                resolvedClientId = quote.ProjectRequestId != Guid.Empty ? quote.ProjectRequestId : Guid.NewGuid();
+            }
 
             var contract = new Contract
             {
@@ -354,11 +383,48 @@ namespace StyleSync.Api.Controllers
                 ClientId = resolvedClientId,
                 TotalAmount = quote.TotalCost,
                 TermsSummary = string.IsNullOrWhiteSpace(quote.ScopeSummary) ? "Interior Design Contract" : quote.ScopeSummary,
-                Status = ContractStatus.Draft,
+                Status = ContractStatus.Active,
                 Quote = quote
             };
 
             _db.Contracts.Add(contract);
+
+            if (req != null)
+            {
+                if (!req.PreferredDesignerId.HasValue && quote.DesignerId != Guid.Empty)
+                {
+                    req.PreferredDesignerId = quote.DesignerId;
+                }
+
+                if (req.Status == StyleSync.Api.Modules.ProjectRequests.Models.Enums.RequestStatus.DesignerAssigned ||
+                    req.Status == StyleSync.Api.Modules.ProjectRequests.Models.Enums.RequestStatus.Approved)
+                {
+                    var fromStatus = req.Status;
+                    req.Status = StyleSync.Api.Modules.ProjectRequests.Models.Enums.RequestStatus.InProgress;
+                    req.UpdatedAt = DateTime.UtcNow;
+
+                    Guid? validChangedByUserId = null;
+                    if (req.ClientId != Guid.Empty && await _db.Users.AnyAsync(u => u.Id == req.ClientId))
+                    {
+                        validChangedByUserId = req.ClientId;
+                    }
+                    else if (resolvedClientId != Guid.Empty && await _db.Users.AnyAsync(u => u.Id == resolvedClientId))
+                    {
+                        validChangedByUserId = resolvedClientId;
+                    }
+
+                    _db.RequestStatusHistories.Add(new StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestStatusHistory
+                    {
+                        ProjectRequestId = req.Id,
+                        FromStatus = fromStatus,
+                        ToStatus = StyleSync.Api.Modules.ProjectRequests.Models.Enums.RequestStatus.InProgress,
+                        ChangedAt = DateTime.UtcNow,
+                        ChangedByUserId = validChangedByUserId,
+                        Note = "Client accepted quote and contract created; project execution started"
+                    });
+                }
+            }
+
             await _db.SaveChangesAsync();
 
             return CreatedAtAction(

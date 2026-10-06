@@ -77,7 +77,7 @@ builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, Style
 // Domain Services
 builder.Services.AddSingleton(new StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules());
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
-builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.AiWorkflowStarter>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.PaletteService>();
 builder.Services.AddScoped<StyleSync.Api.Common.Storage.IFileStorage, StyleSync.Api.Common.Storage.LocalFileStorageService>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
