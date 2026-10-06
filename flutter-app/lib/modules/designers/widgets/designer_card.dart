@@ -63,7 +63,7 @@ class DesignerCard extends StatelessWidget {
                     height: 165,
                     width: double.infinity,
                     color: isDark ? const Color(0xFF2B241F) : const Color(0xFFF3ECE4),
-                    child: designer.featuredImageUrl != null
+                    child: (designer.featuredImageUrl != null && designer.featuredImageUrl!.trim().isNotEmpty)
                         ? Image.network(
                             designer.featuredImageUrl!,
                             fit: BoxFit.cover,
