@@ -63,3 +63,4 @@ export interface HeroData {
   subtitle: string;
   stats: HeroStat[];
 }
+

@@ -43,6 +43,9 @@ class _MockHttpClient implements HttpClient {
   bool autoUncompress = false;
 
   @override
+  void close({bool force = false}) {}
+
+  @override
   dynamic noSuchMethod(Invocation invocation) {
     if (invocation.memberName == #getUrl || invocation.memberName == #openUrl) {
       return Future.value(_MockHttpClientRequest());

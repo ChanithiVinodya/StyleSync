@@ -54,5 +54,8 @@ Thumbs.db
 *.iws
 *.swp
 devtools_options.yaml
+# ==== Phase Docs / Local Artifacts ====
+AUDIT.md
+INTEGRATION.md
 *.zip
 

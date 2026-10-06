@@ -20,6 +20,7 @@ public class AppUser
         get => Name;
         set => Name = value;
     }
+
     public string Email { get; set; } = default!;
     public string PasswordHash { get; set; } = default!;
     public UserRole Role { get; set; } = UserRole.Client;

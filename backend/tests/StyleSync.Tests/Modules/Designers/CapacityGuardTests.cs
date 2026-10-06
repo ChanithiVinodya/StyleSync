@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.Designers.DTOs;
 using StyleSync.Api.Modules.Designers.Models;
+using StyleSync.Api.Models;
 using StyleSync.Api.Modules.Designers.Services;
 using Xunit;
 
@@ -25,14 +26,17 @@ public class CapacityGuardTests
         var guardService = new CapacityGuardService(context);
 
         var designerId = 1;
-        var otherDesignerId = 2;
+        var designerUserId = Guid.NewGuid();
+        var otherDesignerUserId = Guid.NewGuid();
+
+        context.DesignerProfiles.Add(new DesignerProfile { Id = designerId, UserId = designerUserId, DisplayName = "Test", Bio = "Bio" });
 
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = designerId, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = designerId, Status = ContractStatus.Active },
-            new ContractStub { Id = 3, DesignerId = designerId, Status = ContractStatus.Completed },
-            new ContractStub { Id = 4, DesignerId = designerId, Status = ContractStatus.Cancelled },
-            new ContractStub { Id = 5, DesignerId = otherDesignerId, Status = ContractStatus.Active }
+            new Contract { DesignerId = designerUserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designerUserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designerUserId, Status = ContractStatus.Completed },
+            new Contract { DesignerId = designerUserId, Status = ContractStatus.Cancelled },
+            new Contract { DesignerId = otherDesignerUserId, Status = ContractStatus.Active }
         );
         await context.SaveChangesAsync();
 
@@ -61,9 +65,9 @@ public class CapacityGuardTests
 
         // Exactly 3 active contracts
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = designer.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = designer.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 3, DesignerId = designer.Id, Status = ContractStatus.Active }
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active }
         );
         await context.SaveChangesAsync();
 
@@ -94,9 +98,9 @@ public class CapacityGuardTests
 
         // 2 active contracts (one under the limit of 3)
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = designer.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = designer.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 3, DesignerId = designer.Id, Status = ContractStatus.Completed }
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Completed }
         );
         await context.SaveChangesAsync();
 
@@ -140,8 +144,8 @@ public class CapacityGuardTests
 
         // Designer 1 has 2 active contracts (Max = 2 => At capacity)
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = designerAtCapacity.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = designerAtCapacity.Id, Status = ContractStatus.Active }
+            new Contract { DesignerId = designerAtCapacity.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designerAtCapacity.UserId, Status = ContractStatus.Active }
         );
         await context.SaveChangesAsync();
 
@@ -173,8 +177,8 @@ public class CapacityGuardTests
 
         // 2 active contracts -> initially at capacity (2 of 2)
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = designer.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = designer.Id, Status = ContractStatus.Active }
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active }
         );
         await context.SaveChangesAsync();
 
@@ -235,8 +239,8 @@ public class CapacityGuardTests
         context.DesignerProfiles.Add(designer);
 
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = 42, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = 42, Status = ContractStatus.Completed }
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designer.UserId, Status = ContractStatus.Completed }
         );
         await context.SaveChangesAsync();
 
@@ -249,3 +253,5 @@ public class CapacityGuardTests
         Assert.Equal(3, availability.MaxConcurrentProjects);
     }
 }
+
+

@@ -42,7 +42,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-              <Route
+            <Route
               path="/admin/users"
               element={
                 <ProtectedRoute allowedRoles={['Admin']}>
@@ -112,3 +112,4 @@ export default function App() {
     </ThemeProvider>
   );
 }
+

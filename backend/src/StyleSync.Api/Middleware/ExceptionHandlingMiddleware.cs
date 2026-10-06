@@ -39,7 +39,7 @@ public class ExceptionHandlingMiddleware
             BadHttpRequestException badReq => ((int)HttpStatusCode.BadRequest, badReq.Message),
             InvalidOperationException conflict => ((int)HttpStatusCode.Conflict, conflict.Message),
             KeyNotFoundException notFound => ((int)HttpStatusCode.NotFound, notFound.Message),
-            _ => ((int)HttpStatusCode.InternalServerError, exception.ToString())
+            _ => ((int)HttpStatusCode.InternalServerError, exception.Message ?? "An unexpected error occurred.")
         };
 
         context.Response.StatusCode = statusCode;

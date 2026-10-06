@@ -405,40 +405,5 @@ public static class DesignerDbSeeder
 
         await context.PortfolioItems.AddRangeAsync(portfolioItems);
 
-        // 4. Create Placeholder Contracts (for testing ActiveProjectCount capacity guard)
-        // Designer 1: 1 active contract (Max = 3, Active = 1 => 2 slots remaining)
-        // Designer 2: 2 active contracts (Max = 2, Active = 2 => AT CAPACITY)
-        // Designer 3: 2 active contracts (Max = 4, Active = 2 => 2 slots remaining)
-        // Designer 4: 3 active contracts (Max = 3, Active = 3 => AT CAPACITY)
-        // Designer 5: 0 active contracts (Max = 3, Active = 0 => Free)
-        // Designer 6: 1 active contract (Max = 2, Active = 1 => 1 slot remaining)
-        // Designer 7: 0 active contracts (Max = 3, Active = 0 => Free)
-        var contracts = new List<ContractStub>
-        {
-            // Designer 1 (1 Active, 1 Completed)
-            new() { DesignerId = profile1.Id, Status = ContractStatus.Active },
-            new() { DesignerId = profile1.Id, Status = ContractStatus.Completed },
-
-            // Designer 2 (2 Active -> AT CAPACITY of 2)
-            new() { DesignerId = profile2.Id, Status = ContractStatus.Active },
-            new() { DesignerId = profile2.Id, Status = ContractStatus.Active },
-            new() { DesignerId = profile2.Id, Status = ContractStatus.Completed },
-
-            // Designer 3 (2 Active, 1 Cancelled -> 2 of 4)
-            new() { DesignerId = profile3.Id, Status = ContractStatus.Active },
-            new() { DesignerId = profile3.Id, Status = ContractStatus.Active },
-            new() { DesignerId = profile3.Id, Status = ContractStatus.Cancelled },
-
-            // Designer 4 (3 Active -> AT CAPACITY of 3)
-            new() { DesignerId = profile4.Id, Status = ContractStatus.Active },
-            new() { DesignerId = profile4.Id, Status = ContractStatus.Active },
-            new() { DesignerId = profile4.Id, Status = ContractStatus.Active },
-
-            // Designer 6 (1 Active -> 1 of 2)
-            new() { DesignerId = profile6.Id, Status = ContractStatus.Active }
-        };
-
-        await context.Contracts.AddRangeAsync(contracts);
-        await context.SaveChangesAsync();
     }
 }

@@ -19,6 +19,8 @@ public static class DbSeeder
             await context.Database.MigrateAsync();
         }
 
+
+
         // Check if an Admin already exists (idempotency)
         var adminExists = await context.Users.AnyAsync(u => u.Role == UserRole.Admin);
         if (!adminExists)
@@ -52,3 +54,4 @@ public static class DbSeeder
         await DesignerDbSeeder.SeedAsync(context);
     }
 }
+
