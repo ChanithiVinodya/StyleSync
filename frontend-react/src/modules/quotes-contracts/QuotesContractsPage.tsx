@@ -17,24 +17,18 @@ export const QuotesContractsPage: React.FC = () => {
   const isDesigner = user?.role === 'Designer';
   const isClient = user?.role === 'Client';
 
-  // Determine initial tab: Designers are locked to contracts, Clients to quotes
+  // Determine initial tab
   const isContractsPath = location.pathname.includes('/contracts');
-  const initialTab = isDesigner ? 'contracts' : isClient ? 'quotes' : isContractsPath ? 'contracts' : 'quotes';
+  const initialTab = isContractsPath ? 'contracts' : 'quotes';
   const [activeTab, setActiveTab] = useState<'quotes' | 'contracts'>(initialTab);
 
   useEffect(() => {
-    if (isDesigner) {
-      setActiveTab('contracts');
-    } else if (isClient) {
-      setActiveTab('quotes');
+    if (isClient) {
+      setActiveTab('quotes'); // Clients only see quotes for now, but Designers/Admins see both
     }
-  }, [isDesigner, isClient]);
+  }, [isClient]);
 
   const handleTabChange = (tab: 'quotes' | 'contracts') => {
-    if (isDesigner) {
-      setActiveTab('contracts');
-      return;
-    }
     if (isClient) {
       setActiveTab('quotes');
       return;
@@ -53,13 +47,13 @@ export const QuotesContractsPage: React.FC = () => {
   };
 
   const pageTitle = isDesigner
-    ? 'Contracts Studio'
+    ? 'Designer Studio - Quotes & Contracts'
     : isClient
     ? 'Quotes Portal'
     : 'Quotes & Contracts Portal';
 
   const pageSubtitle = isDesigner
-    ? 'Review binding legal agreements, track signatures, and inspect full submitted quote specifications'
+    ? 'Draft quotes, review legally binding agreements, and track signatures'
     : isClient
     ? 'Review itemized cost breakdowns, scope estimation, and accept or reject quotes'
     : 'Scope estimation, itemized quotes, & binding legal agreements';
@@ -90,13 +84,8 @@ export const QuotesContractsPage: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              {/* Role-specific header badge or Tab Switcher for Admin/Guest */}
-              {isDesigner ? (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#FAF3E8] dark:bg-[#2A231A] text-[#925C18] dark:text-[#E8A849] border border-[#E8DEC8] dark:border-[#423525] rounded-xl text-xs font-semibold">
-                  <FileCheck className="w-4 h-4 text-[#C48A36]" />
-                  <span>Contracts Dashboard</span>
-                </div>
-              ) : isClient ? (
+              {/* Role-specific header badge or Tab Switcher */}
+              {isClient ? (
                 <div className="flex items-center gap-2 px-3 py-1.5 bg-[#FAF3E8] dark:bg-[#2A231A] text-[#925C18] dark:text-[#E8A849] border border-[#E8DEC8] dark:border-[#423525] rounded-xl text-xs font-semibold">
                   <FileText className="w-4 h-4 text-[#C48A36]" />
                   <span>Quotes Dashboard</span>
@@ -134,9 +123,7 @@ export const QuotesContractsPage: React.FC = () => {
 
         {/* Content Body */}
         <main className="max-w-7xl mx-auto p-4 sm:p-8">
-          {isDesigner ? (
-            <ContractsPage />
-          ) : isClient ? (
+          {isClient ? (
             <QuotesPage />
           ) : activeTab === 'quotes' ? (
             <QuotesPage onGoToContracts={() => setActiveTab('contracts')} />

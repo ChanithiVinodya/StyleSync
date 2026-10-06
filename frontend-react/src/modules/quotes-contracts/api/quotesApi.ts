@@ -299,10 +299,16 @@ export async function updateQuote(id: string, payload: QuoteFormPayload): Promis
 
 export async function stage1Decision(id: string, action: "Release" | "SendForRevision" | "Reject", notes?: string): Promise<Quote> {
   try {
-    const res = await fetch(`${API_BASE}/api/quotes/${id}/stage1-decision`, {
-      method: "POST",
+    const statusMap = {
+      Release: "Stage1Released",
+      SendForRevision: "Stage1RevisionRequested",
+      Reject: "Stage1Rejected",
+    };
+    
+    const res = await fetch(`${API_BASE}/api/quotes/${id}/status`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, notes }),
+      body: JSON.stringify({ status: statusMap[action], notes }),
     });
     return await handle<Quote>(res);
   } catch {
@@ -324,12 +330,22 @@ export async function stage1Decision(id: string, action: "Release" | "SendForRev
 
 export async function stage2Decision(id: string, action: "Approve" | "RequestChanges" | "Reject", feedback?: string, clientId?: string): Promise<any> {
   try {
-    const res = await fetch(`${API_BASE}/api/quotes/${id}/stage2-decision`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, feedback, clientId }),
-    });
-    return await handle<any>(res);
+    if (action === "Approve") {
+      const url = clientId ? `${API_BASE}/api/quotes/${id}/accept?clientId=${clientId}` : `${API_BASE}/api/quotes/${id}/accept`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" }
+      });
+      return await handle<any>(res);
+    } else {
+      const status = action === "RequestChanges" ? "Stage2ChangesRequested" : "Stage2Rejected";
+      const res = await fetch(`${API_BASE}/api/quotes/${id}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, notes: feedback }),
+      });
+      return await handle<Quote>(res);
+    }
   } catch (err: any) {
     const quotes = getLocalQuotes();
     const index = quotes.findIndex((q) => q.id === id);

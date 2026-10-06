@@ -169,6 +169,40 @@ export const AdminRequestDetail: React.FC = () => {
                     <AlertTriangle size={14} className={request.isFlagged ? "text-amber-500" : ""} /> 
                     {request.isFlagged ? "Remove flag" : "Flag as invalid"}
                   </button>
+                  {request.status === 'AwaitingApproval' && (
+                    <button 
+                      onClick={async () => { 
+                        setMenuOpen(false);
+                        try {
+                          await requestApi.approveRequest(request.id);
+                          setToast('Request approved successfully');
+                          refetch();
+                        } catch (err) {
+                          alert('Failed to approve request');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition flex items-center gap-2 border-t border-[#E7E1D7] dark:border-[#2E2824] text-green-600 dark:text-green-500"
+                    >
+                      <Check size={14} /> Approve Request
+                    </button>
+                  )}
+                  {(request.status === 'DesignerAssigned' || request.status === 'Approved') && (
+                    <button 
+                      onClick={async () => { 
+                        setMenuOpen(false);
+                        try {
+                          await requestApi.startExecution(request.id);
+                          setToast('Project execution started! Status is now In Progress.');
+                          refetch();
+                        } catch (err) {
+                          alert('Failed to start project execution');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition flex items-center gap-2 border-t border-[#E7E1D7] dark:border-[#2E2824] text-amber-600 dark:text-amber-500 font-semibold"
+                    >
+                      <Check size={14} /> Start Execution (In Progress)
+                    </button>
+                  )}
                   {/* Hide cancel if Completed, Rejected, or Cancelled */}
                   {!['Completed', 'Rejected', 'Cancelled'].includes(request.status) && (
                     <button 
@@ -222,6 +256,33 @@ export const AdminRequestDetail: React.FC = () => {
                     <p className="text-[#78716C] mb-0.5">Description</p>
                     <p className="whitespace-pre-wrap">{request.description}</p>
                   </div>
+                  {request.designerDisplayName && (
+                    <div className="col-span-2 pt-3 border-t border-[#E7E1D7] dark:border-[#2E2824]">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[#78716C] text-xs font-semibold uppercase tracking-wider">
+                          {['DesignerAssigned', 'InProgress', 'Completed'].includes(request.status) 
+                            ? 'Assigned Designer' 
+                            : 'Recommended Designer (AI Match)'}
+                        </p>
+                        {!['DesignerAssigned', 'InProgress', 'Completed'].includes(request.status) && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-medium">
+                            Pending Approval
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#141210] border border-[#E7E1D7] dark:border-[#2E2824]">
+                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold text-xs">
+                          {request.designerDisplayName.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">{request.designerDisplayName}</p>
+                          {request.designerEmail && (
+                            <p className="text-xs text-[#78716C] dark:text-[#A8A29E]">{request.designerEmail}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -293,7 +354,7 @@ export const AdminRequestDetail: React.FC = () => {
                 </span>
                 <span className="text-sm text-[#78716C]">Current stage</span>
               </div>
-              <StatusTimeline history={request.statusHistory} currentStatus={request.status} />
+              <StatusTimeline history={request.statusHistory || (request as any).statusHistories || []} currentStatus={request.status} />
               
               {/* Stored Reasons */}
               {(request.cancelReason || request.flagReason) && (
@@ -330,6 +391,30 @@ export const AdminRequestDetail: React.FC = () => {
                     Stage 1 review is provided by Component 3
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Start Execution Button when Designer is Assigned */}
+            {(request.status === 'DesignerAssigned' || request.status === 'Approved') && (
+              <div className="bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl p-6 shadow-xs text-center space-y-3">
+                <div>
+                  <h3 className="text-md font-bold">Designer Assigned</h3>
+                  <p className="text-xs text-[#78716C] mt-1">Proposal &amp; Quote approved. Start project execution to move this request to In Progress.</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await requestApi.startExecution(request.id);
+                      setToast('Project execution started! Status is now In Progress.');
+                      refetch();
+                    } catch {
+                      alert('Failed to start execution');
+                    }
+                  }}
+                  className="w-full py-2.5 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold rounded-xl shadow-md transition flex items-center justify-center gap-2 text-sm"
+                >
+                  <Check size={16} /> Start Project Execution
+                </button>
               </div>
             )}
           </div>
