@@ -37,13 +37,17 @@ public class RequestStatusService
         request.Status = toStatus;
         request.UpdatedAt = DateTime.UtcNow;
 
+        var validChangedByUserId = (changedByUserId.HasValue && changedByUserId.Value != Guid.Empty) 
+            ? changedByUserId 
+            : null;
+
         var history = new RequestStatusHistory
         {
             ProjectRequestId = requestId,
             FromStatus = fromStatus,
             ToStatus = toStatus,
             ChangedAt = DateTime.UtcNow,
-            ChangedByUserId = changedByUserId,
+            ChangedByUserId = validChangedByUserId,
             Note = note
         };
 

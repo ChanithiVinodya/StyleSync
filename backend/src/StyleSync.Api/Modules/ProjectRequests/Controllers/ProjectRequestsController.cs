@@ -95,6 +95,7 @@ public class ProjectRequestsController : ControllerBase
             Budget = dto.Budget ?? 0m,
             Description = initialDesc,
             RequestedStyleTags = dto.RequestedStyleTags ?? new List<string>(),
+            PreferredDesignerId = dto.PreferredDesignerId,
             Status = RequestStatus.Draft,
             ReferenceCode = $"REQ-{new Random().Next(100000, 999999)}"
         };
@@ -153,6 +154,7 @@ public class ProjectRequestsController : ControllerBase
             .Include(r => r.MoodboardImages)
             .Include(r => r.SuggestedPalettes)
             .Include(r => r.StatusHistories)
+            .Include(r => r.PreferredDesigner)
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (request == null)
@@ -160,6 +162,27 @@ public class ProjectRequestsController : ControllerBase
 
         if (_currentUser.Role == "Client" && request.ClientId != _currentUser.Id)
             return NotFound(new { message = "Request not found." });
+
+        if (request.Status == RequestStatus.DesignerAssigned)
+        {
+            var hasAcceptedQuoteOrContract = await _context.Contracts.AnyAsync(c => c.ProjectRequestId == request.Id)
+                || await _context.Quotes.AnyAsync(q => q.ProjectRequestId == request.Id && q.Status == StyleSync.Api.Models.QuoteStatus.Accepted);
+            
+            if (hasAcceptedQuoteOrContract)
+            {
+                request.Status = RequestStatus.InProgress;
+                request.UpdatedAt = DateTime.UtcNow;
+                _context.RequestStatusHistories.Add(new RequestStatusHistory
+                {
+                    ProjectRequestId = request.Id,
+                    FromStatus = RequestStatus.DesignerAssigned,
+                    ToStatus = RequestStatus.InProgress,
+                    ChangedAt = DateTime.UtcNow,
+                    Note = "Client accepted quote and contract created; project execution started"
+                });
+                await _context.SaveChangesAsync();
+            }
+        }
 
         var detailDto = MapToDetailDto(request);
         return Ok(detailDto);
@@ -194,6 +217,10 @@ public class ProjectRequestsController : ControllerBase
         request.RoomSizeSqFt = dto.RoomSizeSqFt ?? dto.RoomSizeSqM ?? request.RoomSizeSqFt;
         request.Budget = dto.Budget ?? request.Budget;
         request.Description = dto.Description ?? request.Description;
+        if (dto.PreferredDesignerId.HasValue)
+        {
+            request.PreferredDesignerId = dto.PreferredDesignerId.Value;
+        }
         if (dto.RequestedStyleTags != null && dto.RequestedStyleTags.Any())
         {
             request.RequestedStyleTags = dto.RequestedStyleTags;
@@ -445,6 +472,153 @@ public class ProjectRequestsController : ControllerBase
     }
 
     /// <summary>
+    /// Approves a project request. (Admin only)
+    /// </summary>
+    /// <response code="200">If approval is successful.</response>
+    /// <response code="404">If the request is not found.</response>
+    /// <response code="409">If the request is not in AwaitingApproval state.</response>
+    [HttpPost("{id:guid}/approve")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ProblemDetails), 400)]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ApproveRequest(Guid id)
+    {
+        var request = await _context.ProjectRequests.FirstOrDefaultAsync(r => r.Id == id);
+        if (request == null)
+            return NotFound(new { message = "Request not found." });
+
+        if (request.Status != RequestStatus.AwaitingApproval)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = 409,
+                Title = "Conflict",
+                Detail = "Only requests in AwaitingApproval status can be approved."
+            });
+        }
+
+        var actorId = (_currentUser.Id != Guid.Empty) 
+            ? _currentUser.Id 
+            : (await _context.Users.FirstOrDefaultAsync(u => u.Email == "admin@stylesync.com" || u.Role == StyleSync.Api.Common.Identity.UserRole.Admin))?.Id ?? request.ClientId;
+
+        _context.RequestAuditLogs.Add(new RequestAuditLog
+        {
+            ActorId = actorId,
+            Action = "REQUEST_APPROVED",
+            EntityId = request.Id,
+            Reason = "Admin approved the request",
+            Timestamp = DateTime.UtcNow
+        });
+
+        try
+        {
+            var adminUserId = (_currentUser.Id != Guid.Empty) ? (Guid?)_currentUser.Id : (Guid?)actorId;
+            await _statusService.TransitionAsync(request.Id, RequestStatus.Approved, adminUserId, "Admin approved the request");
+
+            // If a designer is assigned (preferred or via AI quote or first available designer), advance to DesignerAssigned
+            var quote = await _context.Quotes.FirstOrDefaultAsync(q => q.ProjectRequestId == request.Id);
+            var assignedDesignerId = request.PreferredDesignerId ?? quote?.DesignerId;
+            if (!assignedDesignerId.HasValue)
+            {
+                var fallbackDesigner = await _context.Users.FirstOrDefaultAsync(u => u.Role == StyleSync.Api.Common.Identity.UserRole.Designer);
+                if (fallbackDesigner != null)
+                {
+                    assignedDesignerId = fallbackDesigner.Id;
+                }
+            }
+
+            if (assignedDesignerId.HasValue)
+            {
+                request.PreferredDesignerId = assignedDesignerId.Value;
+                await _context.SaveChangesAsync();
+                await _statusService.TransitionAsync(request.Id, RequestStatus.DesignerAssigned, adminUserId, "Designer assigned to approved request");
+            }
+        }
+        catch (StyleSync.Api.Modules.ProjectRequests.Services.IllegalStatusTransitionException)
+        {
+            return Conflict(new { message = "Cannot approve from the current state." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "An error occurred while approving the request: " + ex.Message });
+        }
+
+        return Ok(new { message = "Request approved successfully." });
+    }
+
+    /// <summary>
+    /// Assigns a designer to an approved project request. (Admin only)
+    /// </summary>
+    /// <response code="200">If assignment is successful.</response>
+    /// <response code="400">If designer is invalid.</response>
+    /// <response code="404">If request is not found.</response>
+    [HttpPost("{id:guid}/assign-designer")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ProblemDetails), 400)]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AssignDesigner(Guid id, [FromBody] AssignDesignerDto dto)
+    {
+        var request = await _context.ProjectRequests.FirstOrDefaultAsync(r => r.Id == id);
+        if (request == null)
+            return NotFound(new { message = "Request not found." });
+
+        var designer = await _context.Users.FirstOrDefaultAsync(u => u.Id == dto.DesignerId && u.Role == StyleSync.Api.Common.Identity.UserRole.Designer);
+        if (designer == null)
+            return BadRequest(new { message = "Selected user is not a valid designer." });
+
+        request.PreferredDesignerId = designer.Id;
+        await _context.SaveChangesAsync();
+
+        if (request.Status == RequestStatus.Approved)
+        {
+            await _statusService.TransitionAsync(request.Id, RequestStatus.DesignerAssigned, _currentUser.Id, $"Designer {designer.Name} assigned by admin");
+        }
+
+        return Ok(new { message = $"Designer {designer.Name} assigned successfully." });
+    }
+
+    /// <summary>
+    /// Starts project execution (DesignerAssigned -> InProgress).
+    /// </summary>
+    /// <response code="200">If transition is successful.</response>
+    /// <response code="404">If request is not found.</response>
+    /// <response code="409">If request cannot transition to InProgress.</response>
+    [HttpPost("{id:guid}/start-execution")]
+    [HttpPost("{id:guid}/in-progress")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ProblemDetails), 400)]
+    [Authorize]
+    public async Task<IActionResult> StartExecution(Guid id)
+    {
+        var request = await _context.ProjectRequests.FirstOrDefaultAsync(r => r.Id == id);
+        if (request == null)
+            return NotFound(new { message = "Request not found." });
+
+        if (request.Status != RequestStatus.DesignerAssigned && request.Status != RequestStatus.Approved)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = 409,
+                Title = "Conflict",
+                Detail = $"Cannot transition request in {request.Status} status to InProgress."
+            });
+        }
+
+        var actorId = (_currentUser.Id != Guid.Empty) 
+            ? _currentUser.Id 
+            : (await _context.Users.FirstOrDefaultAsync(u => u.Email == "admin@stylesync.com" || u.Role == StyleSync.Api.Common.Identity.UserRole.Admin))?.Id;
+
+        if (request.Status == RequestStatus.Approved)
+        {
+            await _statusService.TransitionAsync(request.Id, RequestStatus.DesignerAssigned, actorId, "Designer assigned to request");
+        }
+
+        await _statusService.TransitionAsync(request.Id, RequestStatus.InProgress, actorId, "Project execution started");
+
+        return Ok(new { message = "Project request is now In Progress." });
+    }
+
+    /// <summary>
     /// Gets aggregated analytics for project requests. (Admin only)
     /// </summary>
     /// <response code="200">Returns the analytics data.</response>
@@ -534,14 +708,17 @@ public class ProjectRequestsController : ControllerBase
             FlagReason: request.FlagReason,
             RoomPhotoUrl: request.RoomPhotoUrl,
             Moodboards: request.MoodboardImages?.Select(m => new MoodboardImageDto(m.Id, m.Url, m.SortOrder)).ToList() ?? new(),
-            Palettes: request.SuggestedPalettes?.Select(p => new SuggestedPaletteDto(p.Id, p.Hex, p.Position, p.Source)).ToList() ?? new(),
-            StatusHistories: request.StatusHistories?.OrderBy(h => h.ChangedAt).Select(h => new RequestStatusHistoryDto(h.Id, h.FromStatus, h.ToStatus, h.ChangedAt, h.Note)).ToList() ?? new(),
+            Palette: request.SuggestedPalettes?.Select(p => new SuggestedPaletteDto(p.Id, p.Hex, p.Position, p.Source)).ToList() ?? new(),
+            StatusHistory: request.StatusHistories?.OrderBy(h => h.ChangedAt).Select(h => new RequestStatusHistoryDto(h.Id, h.FromStatus, h.ToStatus, h.ChangedAt, h.Note)).ToList() ?? new(),
             CreatedAt: request.CreatedAt,
             UpdatedAt: request.UpdatedAt,
             PaletteMode: request.PaletteMode,
             PalettePresetId: request.PalettePresetId,
             PaletteBaseHex: request.PaletteBaseHex,
-            RequestedStyleTags: styles
+            RequestedStyleTags: styles,
+            PreferredDesignerId: request.PreferredDesignerId,
+            DesignerDisplayName: request.PreferredDesigner?.Name ?? (request.PreferredDesignerId.HasValue ? _context.Users.FirstOrDefault(u => u.Id == request.PreferredDesignerId.Value)?.Name : null),
+            DesignerEmail: request.PreferredDesigner?.Email ?? (request.PreferredDesignerId.HasValue ? _context.Users.FirstOrDefault(u => u.Id == request.PreferredDesignerId.Value)?.Email : null)
         );
     }
 

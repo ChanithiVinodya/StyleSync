@@ -85,6 +85,22 @@ export const requestApi = {
     }
   },
 
+  approveRequest: async (id: string): Promise<void> => {
+    try {
+      await apiClient.post(`/requests/${id}/approve`);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
+  startExecution: async (id: string): Promise<void> => {
+    try {
+      await apiClient.post(`/requests/${id}/start-execution`);
+    } catch (error) {
+      return handleApiError(error);
+    }
+  },
+
   getRequestAnalytics: async (query?: AnalyticsQuery): Promise<RequestAnalytics> => {
     try {
       const params = new URLSearchParams();

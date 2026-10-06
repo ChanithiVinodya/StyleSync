@@ -85,6 +85,9 @@ export interface RequestDetail {
   palette: PaletteColour[];
   moodboards: MoodboardImage[];
   statusHistory: StatusHistoryEntry[];
+  preferredDesignerId?: string | null;
+  designerDisplayName?: string | null;
+  designerEmail?: string | null;
 }
 
 export interface PagedResult<T> {

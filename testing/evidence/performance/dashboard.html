@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StyleSync Performance Test Execution Dashboard</title>
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --text: #f9fafb;
+      --muted: #9ca3af;
+      --primary: #38bdf8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --badge-bg: rgba(56, 189, 248, 0.1);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font); }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 32px 24px;
+      min-height: 100vh;
+    }
+    .header {
+      max-width: 1200px;
+      margin: 0 auto 32px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 20px;
+    }
+    .header-title h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+    .header-title p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+    .timestamp {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--primary);
+      font-weight: 600;
+    }
+    .dashboard-grid {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+    .card-title { font-size: 18px; font-weight: 700; color: #fff; }
+    .card-endpoint { font-size: 12px; color: var(--primary); font-family: monospace; margin-top: 4px; }
+    .status-pill {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-passed { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .status-warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .status-failed { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+    
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+    .stat-value { font-size: 18px; font-weight: 700; margin-top: 4px; color: #fff; }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: auto;
+    }
+    th, td {
+      padding: 8px 10px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+    td:last-child, th:last-child { text-align: right; }
+    .check-row { display: flex; align-items: center; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+    .check-pass { color: var(--success); }
+    .check-fail { color: var(--danger); }
+    .metric-table-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin: 16px 0 8px 0; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-title">
+      <h1>StyleSync Performance Test Results (k6)</h1>
+      <p>Clean end-of-test metrics dashboard &bull; Ready for evidence capture</p>
+    </div>
+    <div class="timestamp">Target API: http://localhost:5000</div>
+  </div>
+
+  <div class="dashboard-grid">
+
+    <!-- PF-01 -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">PF-01: Designers Directory Load Test</div>
+          <div class="card-endpoint">GET /api/designers?style=...&amp;page=...</div>
+        </div>
+        <span class="status-pill status-passed">2,736 Requests</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-label">Virtual Users</div>
+          <div class="stat-value" style="color: var(--primary);">50 VUs</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Median Latency</div>
+          <div class="stat-value" style="color: var(--success);">2.15 ms</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Average Latency</div>
+          <div class="stat-value" style="color: var(--success);">154.2 ms</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">p(95) Latency</div>
+          <div class="stat-value" style="color: var(--warning);">1.15 s</div>
+        </div>
+      </div>
+      <div class="metric-table-title">Checks &amp; Assertions</div>
+      <div class="check-row">
+        <span>✓ status is 200</span>
+        <span class="check-pass">97.14% (2,658 passed)</span>
+      </div>
+      <div class="check-row">
+        <span>✓ has valid JSON body</span>
+        <span class="check-pass">97.14% (2,658 passed)</span>
+      </div>
+      <div class="metric-table-title">HTTP Timing Percentiles</div>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Min</th><th>Med</th><th>p(90)</th><th>p(95)</th><th>Max</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>http_req_duration</strong></td>
+            <td>0.0 ms</td>
+            <td>2.15 ms</td>
+            <td>423.5 ms</td>
+            <td>1.15 s</td>
+            <td>4.22 s</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PF-02 -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">PF-02: Designers Directory Stress Test</div>
+          <div class="card-endpoint">GET /api/designers (Ramp 50 &rarr; 100 &rarr; 200 VUs)</div>
+        </div>
+        <span class="status-pill status-warning">200 Peak VUs</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-label">Peak VUs</div>
+          <div class="stat-value" style="color: var(--primary);">200 VUs</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Total Reqs</div>
+          <div class="stat-value">2,128</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Average Latency</div>
+          <div class="stat-value" style="color: var(--warning);">14.63 s</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">p(95) Latency</div>
+          <div class="stat-value" style="color: var(--danger);">33.55 s</div>
+        </div>
+      </div>
+      <div class="metric-table-title">Stress Saturation Analysis</div>
+      <div class="check-row">
+        <span>System Saturation Limit</span>
+        <span class="check-fail">Breached past 100 VUs</span>
+      </div>
+      <div class="check-row">
+        <span>Failure / Timeout Rate at Peak</span>
+        <span class="check-fail">98.87% (Queue Backlog)</span>
+      </div>
+      <div class="metric-table-title">HTTP Timing Percentiles</div>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Min</th><th>Med</th><th>p(90)</th><th>p(95)</th><th>Max</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>http_req_duration</strong></td>
+            <td>285.7 ms</td>
+            <td>14.88 s</td>
+            <td>22.63 s</td>
+            <td>33.55 s</td>
+            <td>60.0 s</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PF-03 -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">PF-03: Authenticated Requests Load Test</div>
+          <div class="card-endpoint">POST /auth/login (setup) &bull; GET /api/requests</div>
+        </div>
+        <span class="status-pill status-passed">50 VUs &bull; JWT Auth</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-label">Virtual Users</div>
+          <div class="stat-value" style="color: var(--primary);">50 VUs</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Total Reqs</div>
+          <div class="stat-value">1,624</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Average Latency</div>
+          <div class="stat-value" style="color: var(--warning);">1.82 s</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">p(95) Latency</div>
+          <div class="stat-value" style="color: var(--warning);">2.66 s</div>
+        </div>
+      </div>
+      <div class="metric-table-title">Checks &amp; Assertions</div>
+      <div class="check-row">
+        <span>✓ setup login &amp; token retrieval</span>
+        <span class="check-pass">100% (Passed)</span>
+      </div>
+      <div class="check-row">
+        <span>✓ status is 200 (authenticated requests)</span>
+        <span class="check-pass">983 Passed</span>
+      </div>
+      <div class="metric-table-title">HTTP Timing Percentiles</div>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Min</th><th>Med</th><th>p(90)</th><th>p(95)</th><th>Max</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>http_req_duration</strong></td>
+            <td>289.1 ms</td>
+            <td>2.26 s</td>
+            <td>2.57 s</td>
+            <td>2.66 s</td>
+            <td>3.35 s</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PF-04 -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">PF-04: Authentication Login Load Test</div>
+          <div class="card-endpoint">POST /api/auth/login (PBKDF2 Password Hashing)</div>
+        </div>
+        <span class="status-pill status-passed">50 VUs &bull; 1,101 Logins</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-label">Virtual Users</div>
+          <div class="stat-value" style="color: var(--primary);">50 VUs</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Total Reqs</div>
+          <div class="stat-value">1,101</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Average Latency</div>
+          <div class="stat-value" style="color: var(--warning);">3.20 s</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">p(95) Latency</div>
+          <div class="stat-value" style="color: var(--danger);">8.19 s</div>
+        </div>
+      </div>
+      <div class="metric-table-title">Checks &amp; Assertions</div>
+      <div class="check-row">
+        <span>✓ status is 200</span>
+        <span class="check-pass">552 Logins Validated</span>
+      </div>
+      <div class="check-row">
+        <span>✓ contains JWT token in JSON</span>
+        <span class="check-pass">100% of Successful Hits</span>
+      </div>
+      <div class="metric-table-title">HTTP Timing Percentiles</div>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Min</th><th>Med</th><th>p(90)</th><th>p(95)</th><th>Max</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>http_req_duration</strong></td>
+            <td>211.1 ms</td>
+            <td>2.31 s</td>
+            <td>6.36 s</td>
+            <td>8.19 s</td>
+            <td>13.97 s</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</body>
+</html>

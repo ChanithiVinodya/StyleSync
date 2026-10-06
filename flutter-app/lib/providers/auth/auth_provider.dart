@@ -16,8 +16,12 @@ final apiClientProvider = Provider<ApiClient>((ref) {
   final client = ApiClient(
     tokenStorage: storage,
     onUnauthorized: () {
-      // Trigger Riverpod auth state reset on 401
-      ref.read(authProvider.notifier).handleUnauthorized();
+      // Defer execution outside Riverpod provider build graph to prevent circular dependency
+      Future.microtask(() {
+        try {
+          ref.read(authProvider.notifier).handleUnauthorized();
+        } catch (_) {}
+      });
     },
   );
   return client;

@@ -69,6 +69,7 @@ builder.Services.AddHttpContextAccessor();
 // Identity & Auth Services
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<StyleSync.Api.Common.Identity.ICurrentUser, StyleSync.Api.Common.Identity.CurrentUser>();
 builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, StyleSync.Api.Integrations.HttpContextUserContext>();
@@ -76,7 +77,7 @@ builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, Style
 // Domain Services
 builder.Services.AddSingleton(new StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules());
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
-builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.AiWorkflowStarter>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.PaletteService>();
 builder.Services.AddScoped<StyleSync.Api.Common.Storage.IFileStorage, StyleSync.Api.Common.Storage.LocalFileStorageService>();
 builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
@@ -148,6 +149,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    await next();
+});
 
 // ---- Middleware pipeline ----
 app.UseMiddleware<ExceptionHandlingMiddleware>();

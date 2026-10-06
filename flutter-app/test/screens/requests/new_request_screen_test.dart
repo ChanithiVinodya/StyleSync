@@ -42,8 +42,9 @@ void main() {
         overrides: [
           requestsRepositoryProvider.overrideWithValue(mockRepo),
         ],
-        child: const MaterialApp(
-          home: NewRequestScreen(),
+        child: MaterialApp(
+          theme: ThemeData(splashFactory: InkRipple.splashFactory),
+          home: const NewRequestScreen(),
         ),
       ),
     );
@@ -81,8 +82,9 @@ void main() {
         overrides: [
           requestsRepositoryProvider.overrideWithValue(mockRepo),
         ],
-        child: const MaterialApp(
-          home: NewRequestScreen(initialRoomType: 'livingRoom'),
+        child: MaterialApp(
+          theme: ThemeData(splashFactory: InkRipple.splashFactory),
+          home: const NewRequestScreen(initialRoomType: 'livingRoom'),
         ),
       ),
     );
@@ -152,6 +154,7 @@ void main() {
           requestsRepositoryProvider.overrideWithValue(mockRepo),
         ],
         child: MaterialApp(
+          theme: ThemeData(splashFactory: InkRipple.splashFactory),
           home: Builder(
             builder: (context) => Scaffold(
               body: Center(

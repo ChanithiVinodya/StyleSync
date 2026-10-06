@@ -380,15 +380,24 @@ class _MyRequestsScreenState extends ConsumerState<MyRequestsScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text(req.referenceNumber, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                        Flexible(
+                          child: Text(
+                            req.referenceNumber,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            // ignore: deprecated_member_use
-                            color: _getStatusColor(req.status).withOpacity(0.1),
+                            color: _getStatusColor(req.status).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Text(req.status.label, style: TextStyle(color: _getStatusColor(req.status), fontSize: 12, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            req.status.label,
+                            style: TextStyle(color: _getStatusColor(req.status), fontSize: 11, fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),

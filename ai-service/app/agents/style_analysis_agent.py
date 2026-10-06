@@ -115,11 +115,16 @@ def analyze_style(state: WorkflowState) -> StyleProfile:
         palette_result = get_style_color_palette(primary_style)
     _record_tool_call(state, "get_style_color_palette", palette_inputs, palette_result)
 
+    tags = [primary_style]
+    if secondary_style and secondary_style not in tags:
+        tags.append(secondary_style)
+
     profile = StyleProfile(
         primary_style=primary_style,
         secondary_style=secondary_style,
         preferred_colours=palette_result,
         confidence=confidence,
+        style_tags=tags,
     )
 
     logger.info("Style Profile derived: %s (Confidence: %.2f)", profile.primary_style, profile.confidence)

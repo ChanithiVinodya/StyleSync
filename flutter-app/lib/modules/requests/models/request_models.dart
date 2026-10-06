@@ -175,6 +175,9 @@ class RequestDetail {
   final String? palettePresetId;
   final String? paletteBaseHex;
   final List<String> requestedStyleTags;
+  final String? preferredDesignerId;
+  final String? designerDisplayName;
+  final String? designerEmail;
   final List<PaletteColour> palette;
   final List<MoodboardImage> moodboard;
   final List<StatusHistoryEntry> statusHistory;
@@ -200,6 +203,9 @@ class RequestDetail {
     this.palettePresetId,
     this.paletteBaseHex,
     this.requestedStyleTags = const [],
+    this.preferredDesignerId,
+    this.designerDisplayName,
+    this.designerEmail,
     required this.palette,
     required this.moodboard,
     required this.statusHistory,
@@ -227,6 +233,9 @@ class RequestDetail {
       palettePresetId: json['palettePresetId'] as String?,
       paletteBaseHex: json['paletteBaseHex'] as String?,
       requestedStyleTags: ((json['requestedStyleTags'] ?? json['RequestedStyleTags']) as List?)?.map((e) => e.toString()).toList() ?? [],
+      preferredDesignerId: json['preferredDesignerId'] as String?,
+      designerDisplayName: json['designerDisplayName'] as String?,
+      designerEmail: json['designerEmail'] as String?,
       palette: ((json['palettes'] ?? json['palette']) as List?)?.map((e) => PaletteColour.fromJson(e as Map<String, dynamic>)).toList() ?? [],
       moodboard: ((json['moodboards'] ?? json['moodboard']) as List?)?.map((e) => MoodboardImage.fromJson(e as Map<String, dynamic>)).toList() ?? [],
       statusHistory: ((json['statusHistories'] ?? json['statusHistory']) as List?)?.map((e) => StatusHistoryEntry.fromJson(e as Map<String, dynamic>)).toList() ?? [],

@@ -1,10 +1,14 @@
 # ==== .NET / Backend ====
 backend/**/bin/
 backend/**/obj/
+backend/**/TestResults/
+TestResults/
 backend/**/*.user
 backend/**/appsettings.*.local.json
 backend/**/uploads/
 *.trx
+backend/**/TestResults/
+**/TestResults/
 
 # ==== Node / React ====
 frontend-react/node_modules/
@@ -58,4 +62,9 @@ devtools_options.yaml
 AUDIT.md
 INTEGRATION.md
 *.zip
+
+# ==== Test Coverage Reports ====
+testing/evidence/backend/coverage/
+testing/**/coverage/
+
 

@@ -17,8 +17,17 @@ public class CurrentUser : ICurrentUser
     {
         get
         {
-            var idClaim = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            return idClaim != null ? Guid.Parse(idClaim) : Guid.Empty;
+            var user = _httpContextAccessor.HttpContext?.User;
+            var idClaim = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                ?? user?.FindFirst("sub")?.Value
+                ?? user?.FindFirst("id")?.Value
+                ?? user?.FindFirst("userId")?.Value;
+
+            if (idClaim != null && Guid.TryParse(idClaim, out var guid))
+            {
+                return guid;
+            }
+            return Guid.Empty;
         }
     }
     
@@ -26,7 +35,10 @@ public class CurrentUser : ICurrentUser
     {
         get
         {
-            return _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+            var user = _httpContextAccessor.HttpContext?.User;
+            return user?.FindFirst(ClaimTypes.Role)?.Value 
+                ?? user?.FindFirst("role")?.Value 
+                ?? string.Empty;
         }
     }
 }

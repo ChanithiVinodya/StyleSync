@@ -730,6 +730,9 @@ namespace StyleSync.Api.Common.Persistence.Migrations
                     b.Property<string>("PalettePresetId")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("PreferredDesignerId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("ReferenceCode")
                         .IsRequired()
                         .HasColumnType("text");
@@ -765,6 +768,8 @@ namespace StyleSync.Api.Common.Persistence.Migrations
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("FlaggedByUserId");
+
+                    b.HasIndex("PreferredDesignerId");
 
                     b.HasIndex("RoomType");
 
@@ -1030,9 +1035,16 @@ namespace StyleSync.Api.Common.Persistence.Migrations
                         .HasForeignKey("FlaggedByUserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("StyleSync.Api.Common.Identity.AppUser", "PreferredDesigner")
+                        .WithMany()
+                        .HasForeignKey("PreferredDesignerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Client");
 
                     b.Navigation("FlaggedByUser");
+
+                    b.Navigation("PreferredDesigner");
                 });
 
             modelBuilder.Entity("StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestStatusHistory", b =>

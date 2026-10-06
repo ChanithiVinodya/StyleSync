@@ -15,6 +15,9 @@ public class ProjectRequest
     public Guid ClientId { get; set; }
     public AppUser Client { get; set; } = null!;
     
+    public Guid? PreferredDesignerId { get; set; }
+    public AppUser? PreferredDesigner { get; set; }
+    
     public RoomType RoomType { get; set; }
     
     public decimal RoomSizeSqFt { get; set; }

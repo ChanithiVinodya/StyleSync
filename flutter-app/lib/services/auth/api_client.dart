@@ -57,7 +57,7 @@ class ApiClient {
         String errorMessage = 'An error occurred. Please try again.';
 
         if (data is Map<String, dynamic>) {
-          if (data['message'] != null) {
+          if (data['message'] != null && data['message'].toString().trim().isNotEmpty) {
             errorMessage = data['message'].toString();
           } else if (data['errors'] != null) {
             final errors = data['errors'];
@@ -72,10 +72,10 @@ class ApiClient {
             } else if (errors is List && errors.isNotEmpty) {
               errorMessage = errors.first.toString();
             }
-          } else if (data['title'] != null) {
+          } else if (data['title'] != null && data['title'].toString().trim().isNotEmpty) {
             errorMessage = data['title'].toString();
           }
-        } else if (data is String && data.isNotEmpty) {
+        } else if (data is String && data.trim().isNotEmpty) {
           errorMessage = data;
         }
 
@@ -83,15 +83,15 @@ class ApiClient {
           return AuthException(
             message: errorMessage.contains('Invalid email or password')
                 ? errorMessage
-                : 'Invalid email or password.',
+                : 'Invalid email or password. Please verify your credentials.',
             statusCode: 401,
             type: AuthErrorType.invalidCredentials,
           );
         } else if (statusCode == 409) {
           return AuthException(
-            message: errorMessage.contains('already')
+            message: errorMessage.toLowerCase().contains('already')
                 ? errorMessage
-                : 'Email address is already in use.',
+                : 'An account with this email address already exists. Please sign in instead.',
             statusCode: 409,
             type: AuthErrorType.emailAlreadyInUse,
           );
@@ -103,7 +103,7 @@ class ApiClient {
           );
         } else if (statusCode != null && statusCode >= 500) {
           return AuthException(
-            message: 'Server error. Please try again later.',
+            message: 'Server error encountered. Please try again later.',
             statusCode: statusCode,
             type: AuthErrorType.serverError,
           );
@@ -117,9 +117,21 @@ class ApiClient {
       } else {
         if (error.type == DioExceptionType.connectionTimeout ||
             error.type == DioExceptionType.receiveTimeout ||
+            error.type == DioExceptionType.sendTimeout ||
             error.type == DioExceptionType.connectionError) {
           return const AuthException(
-            message: 'Unable to connect to the server. Please check your internet connection.',
+            message: 'Unable to connect to the StyleSync server. Please check your network connection.',
+            type: AuthErrorType.networkError,
+          );
+        }
+
+        final errStr = error.error?.toString() ?? error.message ?? '';
+        if (errStr.toLowerCase().contains('socket') ||
+            errStr.toLowerCase().contains('connection') ||
+            errStr.toLowerCase().contains('network') ||
+            errStr.toLowerCase().contains('xmlhttprequest')) {
+          return const AuthException(
+            message: 'Unable to connect to the server. Please verify your internet connection.',
             type: AuthErrorType.networkError,
           );
         }
@@ -130,8 +142,16 @@ class ApiClient {
       return error;
     }
 
+    final raw = error?.toString() ?? '';
+    if (raw.contains('CircularDependencyError') || raw.contains('DioException') || raw.contains('Exception:')) {
+      return const AuthException(
+        message: 'Registration request failed. Please check your connection and try again.',
+        type: AuthErrorType.unknown,
+      );
+    }
+
     return AuthException(
-      message: error?.toString() ?? 'An unexpected error occurred.',
+      message: raw.isNotEmpty ? raw : 'An unexpected error occurred. Please try again.',
       type: AuthErrorType.unknown,
     );
   }
