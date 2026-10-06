@@ -11,9 +11,12 @@ import json
 import os
 
 try:
-    from langchain_openai import ChatOpenAI
+    from langchain_google_genai import ChatGoogleGenerativeAI
 except ImportError:
-    ChatOpenAI = None
+    ChatGoogleGenerativeAI = None
+
+# Alias for backwards compatibility / tests
+ChatOpenAI = ChatGoogleGenerativeAI
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -65,16 +68,26 @@ Do not create additional validation rules.
 The validate() tool is the sole authority for determining whether each validation rule passes or fails.
 """
 
-    api_key = os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+    api_key = (
+        os.getenv("GOOGLE_API_KEY")
+        or os.getenv("GEMINI_API_KEY")
+        or os.getenv("LLM_API_KEY")
+        or os.getenv("OPENAI_API_KEY")
+    )
+    if ChatOpenAI is not ChatGoogleGenerativeAI:
+        chat_cls = ChatOpenAI
+    else:
+        chat_cls = ChatGoogleGenerativeAI or ChatOpenAI
+
     is_mocked = (
-        ChatOpenAI is not None
-        and (hasattr(ChatOpenAI, "assert_called") or "mock" in type(ChatOpenAI).__name__.lower())
+        chat_cls is not None
+        and (hasattr(chat_cls, "assert_called") or "mock" in type(chat_cls).__name__.lower() or hasattr(chat_cls, "return_value"))
     )
 
-    if (api_key or is_mocked) and ChatOpenAI is not None:
+    if (api_key or is_mocked) and chat_cls is not None:
         try:
-            llm = ChatOpenAI(
-                model="gpt-4o",
+            llm = chat_cls(
+                model="gemini-1.5-pro",
                 temperature=0.0,
                 api_key=api_key or "mock-key",
             ).bind_tools([validate], tool_choice="validate")

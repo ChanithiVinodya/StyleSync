@@ -28,7 +28,7 @@ class AnalyzeRoomImageInput(BaseModel):
 
 
 class GetClientPreferencesInput(BaseModel):
-    client_id: int = Field(description="Unique ID of the client")
+    client_id: str | int = Field(description="Unique ID of the client")
 
 
 class GetStyleColorPaletteInput(BaseModel):
@@ -54,7 +54,7 @@ def analyze_room_image(image_url: str, room_type: str) -> dict[str, Any]:
 
 
 @tool("get_client_preferences", args_schema=GetClientPreferencesInput)
-def get_client_preferences(client_id: int) -> dict[str, Any]:
+def get_client_preferences(client_id: str | int) -> dict[str, Any]:
     """Retrieves client design preferences, favorite palettes, and style history."""
     return {
         "client_id": client_id,
@@ -68,15 +68,15 @@ def get_client_preferences(client_id: int) -> dict[str, Any]:
 def get_style_color_palette(style_name: str) -> list[str]:
     """Retrieves the canonical curated color palette for a specified interior design style."""
     palettes = {
-        "scandinavian": ["Warm White", "Soft Grey", "Light Oak", "Muted Sage"],
-        "japandi": ["Sand Beige", "Charcoal", "Natural Cedar", "Off-White"],
-        "industrial": ["Matte Black", "Exposed Brick Red", "Concrete Grey", "Cognac Leather"],
-        "modern minimalist": ["Pure White", "Charcoal", "Monochrome Slate", "Brushed Steel"],
-        "boho chic": ["Terracotta", "Mustard Yellow", "Warm Cream", "Rattan Brown"],
+        "scandinavian": ["#FAFAFA", "#D3D3D3", "#D2B48C", "#879F84"],
+        "japandi": ["#E8DCC4", "#36454F", "#C19A6B", "#F5F5DC"],
+        "industrial": ["#1C1C1C", "#B22222", "#808080", "#834333"],
+        "modern minimalist": ["#FFFFFF", "#36454F", "#708090", "#71797E"],
+        "boho chic": ["#E2725B", "#FFDB58", "#FFFDD0", "#5C4033"],
     }
     return palettes.get(
         style_name.strip().lower(),
-        ["Warm Neutral", "Soft Grey", "Natural Wood", "Off-White"],
+        ["#EEDDCC", "#D3D3D3", "#DEB887", "#F8F8FF"],
     )
 
 

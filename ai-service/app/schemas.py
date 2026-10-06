@@ -49,7 +49,7 @@ class MatchScoreBreakdownDto(BaseModel):
 
 
 class DesignerSearchResultDto(BaseModel):
-    designer_id: int = Field(alias="designerId")
+    designer_id: int | str = Field(alias="designerId")
     match_score: float = Field(alias="matchScore")
     score_breakdown: MatchScoreBreakdownDto = Field(
         default_factory=MatchScoreBreakdownDto, alias="scoreBreakdown"
@@ -67,23 +67,23 @@ class DesignerSearchResultDto(BaseModel):
     remaining_capacity: int = Field(default=0, alias="remainingCapacity")
     is_under_capacity: bool = Field(default=True, alias="isUnderCapacity")
     average_rating: Optional[float] = Field(default=None, alias="averageRating")
-    listing_status: int = Field(default=1, alias="listingStatus")
+    listing_status: int | str = Field(default=1, alias="listingStatus")
     featured_portfolio_image_url: Optional[str] = Field(default=None, alias="featuredPortfolioImageUrl")
 
     model_config = {"populate_by_name": True, "extra": "ignore"}
 
 
 class DesignerAvailabilityResponseDto(BaseModel):
-    is_available: bool = Field(alias="isAvailable")
-    is_under_capacity: bool = Field(alias="isUnderCapacity")
-    active_project_count: int = Field(alias="activeProjectCount")
-    max_concurrent_projects: int = Field(alias="maxConcurrentProjects")
+    is_available: bool = Field(alias="isAvailable", default=True)
+    is_under_capacity: bool = Field(alias="isUnderCapacity", default=True)
+    active_project_count: int = Field(alias="activeProjectCount", default=0)
+    max_concurrent_projects: int = Field(alias="maxConcurrentProjects", default=3)
 
     model_config = {"populate_by_name": True, "extra": "ignore"}
 
 
 class DesignerMatch(BaseModel):
-    designer_id: int = Field(alias="designerId", default=0)
+    designer_id: str | int = Field(alias="designerId", default="")
     designer_name: str = Field(alias="designerName", default="")
     style_match_pct: float = Field(alias="styleMatchPct", default=0.0)
     budget_match: str = Field(alias="budgetMatch", default="Medium")  # "High" | "Medium" | "Low"
@@ -95,13 +95,31 @@ class DesignerMatch(BaseModel):
 
 
 class ScopeItem(BaseModel):
-    name: str
-    estimated_cost: float
+    name: Optional[str] = None
+    description: str = ""
+    category: str = "Other"
+    quantity: int = 1
+    unit_cost: float = 0.0
+    estimated_cost: Optional[float] = None
+
+    def model_post_init(self, __context: Any) -> None:
+        if not self.description and self.name:
+            self.description = self.name
+        if not self.name and self.description:
+            self.name = self.description
+        if self.estimated_cost is not None and self.unit_cost == 0.0:
+            self.unit_cost = self.estimated_cost / (self.quantity if self.quantity > 0 else 1)
+        elif self.estimated_cost is None:
+            self.estimated_cost = self.unit_cost * self.quantity
+
+    model_config = {"populate_by_name": True, "extra": "ignore"}
 
 
 class ProjectScope(BaseModel):
     items: list[ScopeItem] = Field(default_factory=list)
     estimated_total: float = 0.0
+    scope_summary: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class RuleCheck(BaseModel):
@@ -123,8 +141,8 @@ class ValidationResult(BaseModel):
 class WorkflowState(BaseModel):
     """Mirrors the JSON persisted in PostgreSQL by the ASP.NET Core backend."""
 
-    project_request_id: int
-    client_id: int
+    project_request_id: str | int
+    client_id: str | int
     room_type: str
     room_size: float
     budget_min: float
@@ -150,4 +168,5 @@ class WorkflowState(BaseModel):
     retries: int = 0
 
     model_config = {"populate_by_name": True, "extra": "ignore"}
+
 
