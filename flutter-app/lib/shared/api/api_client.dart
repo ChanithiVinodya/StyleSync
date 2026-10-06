@@ -9,10 +9,11 @@ import '../../services/auth/token_storage_service.dart';
 /// through this client rather than duplicating base URL / header logic.
 class ApiClient {
   ApiClient({String? baseUrl, TokenStorageService? tokenStorage})
-      : baseUrl = baseUrl ?? ApiConfig.baseUrl,
+      : _customBaseUrl = baseUrl,
         _tokenStorage = tokenStorage ?? TokenStorageService();
 
-  final String baseUrl;
+  final String? _customBaseUrl;
+  String get baseUrl => _customBaseUrl ?? ApiConfig.baseUrl;
   final TokenStorageService _tokenStorage;
   String? authToken;
 
