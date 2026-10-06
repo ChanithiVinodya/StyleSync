@@ -18,7 +18,14 @@ import { Unauthorized } from './pages/Unauthorized';
 import DesignersPage from './modules/designers/DesignersPage';
 import ProjectRequestsPage from './modules/project-requests/ProjectRequestsPage';
 import QuotesContractsPage from './modules/quotes-contracts/QuotesContractsPage';
-import ProjectExecutionPage from './modules/project-execution/ProjectExecutionPage';
+import ProjectExecutionLayout from './modules/project-execution/pages/ProjectExecutionLayout';
+import ProjectExecutionDashboard from './modules/project-execution/pages/ProjectExecutionDashboard';
+import MilestoneList from './modules/project-execution/pages/MilestoneList';
+import TaskList from './modules/project-execution/pages/TaskList';
+import MaterialList from './modules/project-execution/pages/MaterialList';
+import ProjectTimeline from './modules/project-execution/pages/ProjectTimeline';
+import ProgressPhotos from './modules/project-execution/pages/ProgressPhotos';
+import AnalyticsDashboard from './modules/project-execution/pages/AnalyticsDashboard';
 
 export default function App() {
   return (
