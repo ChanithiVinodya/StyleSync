@@ -8,6 +8,7 @@ import 'screens/splash/splash_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/designers/designer_profile_screen.dart';
 import 'screens/requests/new_request_screen.dart';
+import 'screens/requests/request_detail_screen.dart';
 import 'screens/quotes/quote_detail_screen.dart';
 import 'screens/quotes/contract_status_screen.dart';
 import 'screens/progress/project_timeline_screen.dart';
@@ -65,6 +66,7 @@ class AppRoutes {
   static const String designerProfile = '/designers/:id';
   static const String newRequest = '/requests/new';
   static const String requests = '/requests';
+  static const String requestDetail = '/requests/:id';
   static const String quoteDetail = '/quotes/:id';
   static const String contractStatus = '/contracts/:id';
   static const String progress = '/progress/:projectId';
@@ -74,6 +76,7 @@ class AppRoutes {
 
   /// Helper to generate parameterized route strings
   static String designerProfilePath(String id) => '/designers/$id';
+  static String requestDetailPath(String id) => '/requests/$id';
   static String quoteDetailPath(String id) => '/quotes/$id';
   static String contractStatusPath(String id) => '/contracts/$id';
   static String progressPath(String projectId) => '/progress/$projectId';
@@ -133,6 +136,12 @@ class AppRoutes {
     if (segments.length == 2 && segments[0] == 'quotes') {
       return MaterialPageRoute(
         builder: (_) => AuthGuard(child: QuoteDetailScreen(id: segments[1])),
+        settings: settings,
+      );
+    }
+    if (segments.length == 2 && segments[0] == 'requests') {
+      return MaterialPageRoute(
+        builder: (_) => AuthGuard(child: RequestDetailScreen(id: segments[1])),
         settings: settings,
       );
     }

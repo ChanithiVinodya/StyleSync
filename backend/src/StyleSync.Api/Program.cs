@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,8 +9,10 @@ using StyleSync.Api.Common.Identity;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Configuration;
 using StyleSync.Api.Middleware;
-using StyleSync.Api.Modules.Designers.Services;
 using StyleSync.Api.Services;
+
+// Enable Npgsql legacy timestamp behavior to avoid UTC/Kind=Unspecified mismatches from mobile clients
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +24,7 @@ var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
 
@@ -54,19 +57,34 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-// DbContext
+// DbContexts
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Designer Services
-builder.Services.AddScoped<ICapacityGuardService, CapacityGuardService>();
-builder.Services.AddScoped<IMatchScoreEngine, MatchScoreEngine>();
-builder.Services.AddScoped<IDesignerService, DesignerService>();
+builder.Services.AddHttpContextAccessor();
 
 // Identity & Auth Services
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<StyleSync.Api.Common.Identity.ICurrentUser, StyleSync.Api.Common.Identity.CurrentUser>();
+builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, StyleSync.Api.Integrations.HttpContextUserContext>();
+
+// Domain Services
+builder.Services.AddSingleton(new StyleSync.Api.Modules.ProjectRequests.Configuration.RequestRules());
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestValidationRules>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.IWorkflowStarter, StyleSync.Api.Modules.ProjectRequests.Services.MockWorkflowStarter>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.PaletteService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestQueryService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.ProjectRequests.Services.RequestStatusService>();
+
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.ICapacityGuardService, StyleSync.Api.Modules.Designers.Services.CapacityGuardService>();
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.IMatchScoreEngine, StyleSync.Api.Modules.Designers.Services.MatchScoreEngine>();
+builder.Services.AddScoped<StyleSync.Api.Modules.Designers.Services.IDesignerService, StyleSync.Api.Modules.Designers.Services.DesignerService>();
+
+builder.Services.AddScoped<StyleSync.Api.Services.IBudgetGuard, StyleSync.Api.Services.BudgetGuard>();
+builder.Services.AddScoped<StyleSync.Api.Services.IQuotationEngine, StyleSync.Api.Services.QuotationEngine>();
+builder.Services.AddScoped<StyleSync.Api.Services.IQuoteExportService, StyleSync.Api.Services.QuoteExportService>();
 
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
@@ -91,26 +109,24 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
+// AI Service Client (Quotes & Contracts)
+builder.Services.AddHttpClient("AiService", client =>
+{
+    var baseUrl = builder.Configuration["AiService:BaseUrl"] ?? "http://localhost:8000";
+    client.BaseAddress = new Uri(baseUrl);
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.SetIsOriginAllowed(_ => true)
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        }
-        else
-        {
-            policy.WithOrigins(
-                    builder.Configuration["Cors:ReactAppUrl"] ?? "http://localhost:5173")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
-                .AllowCredentials();
-        }
+        policy.WithOrigins(
+                builder.Configuration["Cors:ReactAppUrl"] ?? "http://localhost:5173")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -124,11 +140,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-else
+
+if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

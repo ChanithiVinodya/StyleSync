@@ -9,6 +9,8 @@ import { Register } from './pages/Register';
 import { AdminLogin } from './pages/AdminLogin';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminRequests } from './pages/admin/AdminRequests';
+import { AdminRequestDetail } from './pages/admin/AdminRequestDetail';
 import { DesignerDashboard } from './pages/designer/DesignerDashboard';
 import { ClientDashboard } from './pages/client/ClientDashboard';
 import { Unauthorized } from './pages/Unauthorized';
@@ -45,6 +47,22 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['Admin']}>
                   <AdminUsers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/requests"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AdminRequests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/requests/:id"
+              element={
+                <ProtectedRoute allowedRoles={['Admin']}>
+                  <AdminRequestDetail />
                 </ProtectedRoute>
               }
             />
@@ -94,3 +112,4 @@ export default function App() {
     </ThemeProvider>
   );
 }
+

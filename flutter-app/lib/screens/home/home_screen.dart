@@ -8,8 +8,8 @@ import '../../config/style_constants.dart';
 import '../../modules/designers/models/designer_summary.dart';
 import '../../routes.dart';
 import '../designers/browse_designers_screen.dart';
-import '../requests/request_history_screen.dart';
-import '../quotes/quote_detail_screen.dart';
+import '../requests/my_requests_screen.dart';
+import '../../modules/quotes_contracts/quotes_contracts_page.dart';
 import '../progress/project_timeline_screen.dart';
 import '../splash/splash_screen.dart';
 
@@ -313,10 +313,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   _buildTabWrapper(const BrowseDesignersScreen()),
 
                   // Tab 2: Requests Screen
-                  _buildTabWrapper(const RequestHistoryScreen()),
+                  _buildTabWrapper(const MyRequestsScreen()),
 
                   // Tab 3: Quotes Screen
-                  _buildTabWrapper(const QuoteDetailScreen(id: 'q-804')),
+                  _buildTabWrapper(const QuotesContractsPage()),
 
                   // Tab 4: Progress Screen
                   _buildTabWrapper(const ProjectTimelineScreen(projectId: 'proj-101')),
@@ -329,7 +329,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
               left: 0,
               right: 0,
               bottom: 0,
-              child: _buildFloatingBottomNav(isDark, terracotta),
+              child: _buildFloatingBottomNav(isDark, terracotta, ref.watch(authProvider).isDesigner),
             ),
           ],
         ),
@@ -1726,7 +1726,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
   // ==========================================
   // SECTION 9: FLOATING BOTTOM NAVIGATION BAR
   // ==========================================
-  Widget _buildFloatingBottomNav(bool isDark, Color terracotta) {
+  Widget _buildFloatingBottomNav(bool isDark, Color terracotta, bool isDesigner) {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
       height: 66,
@@ -1753,7 +1753,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
           _buildNavItem(0, Icons.home_rounded, Icons.home_outlined, 'Home', isDark, terracotta),
           _buildNavItem(1, Icons.explore_rounded, Icons.explore_outlined, 'Designers', isDark, terracotta),
           _buildNavItem(2, Icons.assignment_rounded, Icons.assignment_outlined, 'Requests', isDark, terracotta),
-          _buildNavItem(3, Icons.receipt_long_rounded, Icons.receipt_long_outlined, 'Quotes', isDark, terracotta),
+          _buildNavItem(3, Icons.receipt_long_rounded, Icons.receipt_long_outlined, isDesigner ? 'Contracts' : 'Quotes', isDark, terracotta),
           _buildNavItem(4, Icons.account_tree_rounded, Icons.account_tree_outlined, 'Progress', isDark, terracotta),
         ],
       ),

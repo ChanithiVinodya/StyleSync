@@ -44,7 +44,19 @@ export const Register: React.FC = () => {
 
       navigate('/login');
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Registration failed. Please check your inputs.';
+      let message = 'Registration failed. Please check your inputs.';
+      if (err.response?.data) {
+        if (typeof err.response.data.message === 'string' && err.response.data.message) {
+          message = err.response.data.message;
+        } else if (err.response.data.errors) {
+          const firstError = Object.values(err.response.data.errors).flat()[0];
+          if (firstError) message = String(firstError);
+        } else if (err.response.data.title) {
+          message = err.response.data.title;
+        }
+      } else if (err.message) {
+        message = `Unable to connect to backend server (${err.message}). Please verify the backend API is running.`;
+      }
       setError(message);
     } finally {
       setLoading(false);

@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
-import { ShieldCheck, Users, LogOut } from 'lucide-react';
+import { ShieldCheck, Users, LogOut, FileText } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { GlassThemeToggle } from '../../components/GlassThemeToggle';
+import { RequestAnalyticsPanel } from '../../features/requests/components/RequestAnalyticsPanel';
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -26,6 +27,13 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <GlassThemeToggle />
+            <Link
+              to="/quotes-contracts"
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition shadow-2xs"
+            >
+              <FileText className="w-4 h-4 text-[#C48A36]" />
+              <span>Quotes & Contracts Oversight</span>
+            </Link>
             <Link
               to="/admin/users"
               className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition shadow-2xs"
@@ -63,7 +71,16 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* Project requests analytics section */}
+        <div className="pt-6 border-t border-[#E7E1D7] dark:border-[#2E2824]">
+          <h2 className="text-xl font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5] mb-6">
+            Project requests
+          </h2>
+          <RequestAnalyticsPanel />
+        </div>
       </div>
     </div>
   );
 };
+

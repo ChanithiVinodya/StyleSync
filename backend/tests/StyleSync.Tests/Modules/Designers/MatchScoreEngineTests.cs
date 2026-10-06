@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.Designers.DTOs;
 using StyleSync.Api.Modules.Designers.Models;
+using StyleSync.Api.Models;
 using StyleSync.Api.Modules.Designers.Services;
 using Xunit;
 
@@ -208,14 +209,14 @@ public class MatchScoreEngineTests
 
         // Designer A has 3 active contracts (at limit 3)
         context.Contracts.AddRange(
-            new ContractStub { Id = 1, DesignerId = designerA.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 2, DesignerId = designerA.Id, Status = ContractStatus.Active },
-            new ContractStub { Id = 3, DesignerId = designerA.Id, Status = ContractStatus.Active }
+            new Contract { DesignerId = designerA.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designerA.UserId, Status = ContractStatus.Active },
+            new Contract { DesignerId = designerA.UserId, Status = ContractStatus.Active }
         );
 
         // Designer B has 1 active contract (limit 3 -> under capacity)
         context.Contracts.Add(
-            new ContractStub { Id = 4, DesignerId = designerB.Id, Status = ContractStatus.Active }
+            new Contract { DesignerId = designerB.UserId, Status = ContractStatus.Active }
         );
 
         await context.SaveChangesAsync();
@@ -261,7 +262,7 @@ public class MatchScoreEngineTests
         context.DesignerProfiles.Add(designer);
 
         // 1 active project out of 3 -> IsUnderCapacity = true
-        context.Contracts.Add(new ContractStub { Id = 1, DesignerId = designer.Id, Status = ContractStatus.Active });
+        context.Contracts.Add(new Contract { DesignerId = designer.UserId, Status = ContractStatus.Active });
         await context.SaveChangesAsync();
 
         var searchRequest = new DesignerSearchRequest
@@ -314,4 +315,8 @@ public class MatchScoreEngineTests
         Assert.Null(result);
     }
 }
+
+
+
+
 

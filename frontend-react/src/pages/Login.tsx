@@ -35,7 +35,16 @@ export const Login: React.FC = () => {
         navigate('/client');
       }
     } catch (err: any) {
-      const message = err.response?.data?.message || 'Invalid email or password.';
+      let message = 'Invalid email or password.';
+      if (err.response?.data) {
+        if (typeof err.response.data.message === 'string' && err.response.data.message) {
+          message = err.response.data.message;
+        } else if (err.response.data.title) {
+          message = err.response.data.title;
+        }
+      } else if (err.message) {
+        message = `Unable to connect to backend server (${err.message}). Please verify the backend API is running.`;
+      }
       setError(message);
     } finally {
       setLoading(false);

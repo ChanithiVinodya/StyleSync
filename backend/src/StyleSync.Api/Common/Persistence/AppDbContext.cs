@@ -30,11 +30,19 @@ public class AppDbContext : DbContext
     public DbSet<PortfolioItem> PortfolioItems => Set<PortfolioItem>();
 
     // ---- Module: Project Requests (Student 2) ----
-    // TODO: add your first DbSet here, e.g.
-    // public DbSet<ProjectRequest> ProjectRequests => Set<ProjectRequest>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.ProjectRequest> ProjectRequests => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.ProjectRequest>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.MoodboardImage> MoodboardImages => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.MoodboardImage>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.SuggestedPalette> SuggestedPalettes => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.SuggestedPalette>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestStatusHistory> RequestStatusHistories => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestStatusHistory>();
+    public DbSet<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestAuditLog> RequestAuditLogs => Set<StyleSync.Api.Modules.ProjectRequests.Models.Entities.RequestAuditLog>();
 
     // ---- Module: Quotes & Contracts (Student 3) ----
-    public DbSet<ContractStub> Contracts => Set<ContractStub>();
+    public DbSet<StyleSync.Api.Models.Quote> Quotes => Set<StyleSync.Api.Models.Quote>();
+    public DbSet<StyleSync.Api.Models.QuoteItem> QuoteItems => Set<StyleSync.Api.Models.QuoteItem>();
+    public DbSet<StyleSync.Api.Models.QuoteVersion> QuoteVersions => Set<StyleSync.Api.Models.QuoteVersion>();
+    public DbSet<StyleSync.Api.Models.QuoteVersionItem> QuoteVersionItems => Set<StyleSync.Api.Models.QuoteVersionItem>();
+    public DbSet<StyleSync.Api.Models.Contract> Contracts => Set<StyleSync.Api.Models.Contract>();
+
 
     // ---- Module: Project Execution (Student 4) ----
     // TODO: add your first DbSet here, e.g.

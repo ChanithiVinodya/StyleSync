@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { api } from '../../auth/authService';
-import { Home, LogOut } from 'lucide-react';
+import { Home, LogOut, FileText } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { GlassThemeToggle } from '../../components/GlassThemeToggle';
 
@@ -11,8 +12,8 @@ export const ClientDashboard: React.FC = () => {
 
   useEffect(() => {
     api.get('/client/requests')
-      .then((res) => setRequests(res.data))
-      .catch((err) => console.error('Failed to load client requests', err));
+      .then((res: any) => setRequests(res.data))
+      .catch((err: any) => console.error('Failed to load client requests', err));
   }, []);
 
   return (
@@ -42,6 +43,23 @@ export const ClientDashboard: React.FC = () => {
             </button>
           </div>
         </header>
+
+        {/* Quick Navigation Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Link
+            to="/quotes-contracts"
+            className="p-5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl hover:border-[#C48A36] transition shadow-2xs group flex items-center justify-between"
+          >
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <FileText className="w-5 h-5 text-[#C48A36]" />
+                <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">Quotes Portal</h3>
+              </div>
+              <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">Review itemized cost breakdowns, scope estimation, and accept or reject quotes</p>
+            </div>
+            <span className="px-3 py-1.5 text-xs font-semibold bg-[#1C1917] dark:bg-[#FAF8F5] text-[#FAF8F5] dark:text-[#1C1917] rounded-xl group-hover:scale-105 transition">View Quotes &rarr;</span>
+          </Link>
+        </div>
 
         <div className="bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">
           <div className="flex items-center gap-2">
