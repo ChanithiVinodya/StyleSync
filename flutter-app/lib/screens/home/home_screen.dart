@@ -6,7 +6,6 @@ import '../../providers/auth/auth_provider.dart';
 import '../../providers/designers/designer_filter_provider.dart';
 import '../../config/style_constants.dart';
 import '../../shared/widgets/main_bottom_nav_bar.dart';
-import '../../modules/designers/models/designer_summary.dart';
 import '../../routes.dart';
 import '../designers/browse_designers_screen.dart';
 import '../requests/my_requests_screen.dart';
@@ -1699,83 +1698,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
     );
   }
 
-  // ==========================================
-  // SECTION 9: FLOATING BOTTOM NAVIGATION BAR
-  // ==========================================
-  Widget _buildFloatingBottomNav(bool isDark, Color terracotta, bool isDesigner) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-      height: 66,
-      decoration: BoxDecoration(
-        color: isDark
-            ? const Color(0xFF1A1715).withValues(alpha: 0.95)
-            : const Color(0xFFFAF7F2).withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(33),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2E2824) : const Color(0xFFE8DFD5),
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.45 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildNavItem(0, Icons.home_rounded, Icons.home_outlined, 'Home', isDark, terracotta),
-          _buildNavItem(1, Icons.explore_rounded, Icons.explore_outlined, 'Designers', isDark, terracotta),
-          _buildNavItem(2, Icons.assignment_rounded, Icons.assignment_outlined, 'Requests', isDark, terracotta),
-          _buildNavItem(3, Icons.receipt_long_rounded, Icons.receipt_long_outlined, isDesigner ? 'Contracts' : 'Quotes', isDark, terracotta),
-          _buildNavItem(4, Icons.account_tree_rounded, Icons.account_tree_outlined, 'Progress', isDark, terracotta),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildNavItem(int index, IconData activeIcon, IconData inactiveIcon, String label, bool isDark, Color terracotta) {
-    final isSelected = _currentIndex == index;
-
-    return GestureDetector(
-      onTap: () => _onBottomNavTapped(index),
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? (isDark ? const Color(0xFF2E2824) : const Color(0xFFF3E7DC))
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(22),
-          border: isSelected
-              ? Border.all(color: terracotta.withValues(alpha: 0.3), width: 1)
-              : null,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isSelected ? activeIcon : inactiveIcon,
-              size: 20,
-              color: isSelected ? terracotta : const Color(0xFF8A7973),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? terracotta : const Color(0xFF8A7973),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   // ==========================================
   // SECTION 10: 1:1 SHIMMER SKELETON ENGINE
