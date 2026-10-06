@@ -1,5 +1,5 @@
-// TODO(Student 4): implement this screen — see PRD Section 4.1
 import 'package:flutter/material.dart';
+import 'package:stylesync/modules/project_execution/project_execution_page.dart';
 
 class ProjectTimelineScreen extends StatelessWidget {
   final String? projectId;
@@ -7,11 +7,7 @@ class ProjectTimelineScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Project Timeline & Progress')),
-      body: const Center(
-        child: Text('Coming soon — build owned by Student 4'),
-      ),
-    );
+    // Render the fully fleshed out ProjectExecutionPage from the student's module
+    return ProjectExecutionPage(projectId: projectId ?? '123e4567-e89b-12d3-a456-426614174000');
   }
 }

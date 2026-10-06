@@ -319,7 +319,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
                   _buildTabWrapper(const QuotesContractsPage()),
 
                   // Tab 4: Progress Screen
-                  _buildTabWrapper(const ProjectTimelineScreen(projectId: 'proj-101')),
+                  _buildTabWrapper(const ProjectTimelineScreen(projectId: '123e4567-e89b-12d3-a456-426614174000')),
                 ],
               ),
             ),
