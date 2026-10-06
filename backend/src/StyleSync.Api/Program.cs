@@ -10,6 +10,9 @@ using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Configuration;
 using StyleSync.Api.Middleware;
 using StyleSync.Api.Services;
+using StyleSync.Api.Modules.ProjectExecution.Interfaces;
+using StyleSync.Api.Modules.ProjectExecution.Services;
+using StyleSync.Api.Modules.Designers.Services;
 
 // Enable Npgsql legacy timestamp behavior to avoid UTC/Kind=Unspecified mismatches from mobile clients
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -86,6 +89,20 @@ builder.Services.AddScoped<StyleSync.Api.Services.IBudgetGuard, StyleSync.Api.Se
 builder.Services.AddScoped<StyleSync.Api.Services.IQuotationEngine, StyleSync.Api.Services.QuotationEngine>();
 builder.Services.AddScoped<StyleSync.Api.Services.IQuoteExportService, StyleSync.Api.Services.QuoteExportService>();
 
+// Project Execution Services
+builder.Services.AddScoped<IMilestoneService, MilestoneService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<ITaskDependencyService, TaskDependencyService>();
+builder.Services.AddScoped<IDelayService, DelayService>();
+builder.Services.AddScoped<IMaterialService, MaterialService>();
+builder.Services.AddScoped<IProgressPhotoService, ProgressPhotoService>();
+builder.Services.AddScoped<IFileStorageService, LocalFileStorageService>();
+builder.Services.AddScoped<IProjectTimelineService, ProjectTimelineService>();
+builder.Services.AddScoped<IProjectAnalyticsService, ProjectAnalyticsService>();
+
+// Designers Services
+builder.Services.AddScoped<IDesignerProfileService, DesignerProfileService>();
+
 // JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
@@ -122,8 +139,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-                builder.Configuration["Cors:ReactAppUrl"] ?? "http://localhost:5173")
+        policy.SetIsOriginAllowed(origin => true)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -146,6 +162,11 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 app.UseCors("AllowFrontend");
+app.UseStaticFiles();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();

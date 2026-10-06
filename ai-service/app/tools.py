@@ -252,65 +252,134 @@ BUDGET_SCOPE_TOOLS = [calculate_scope_estimate, get_material_rate_card]
 # 4. Validation & Governance Tools (Agent 4)
 # ============================================================================
 
-class ValidateBudgetBoundaryInput(BaseModel):
-    estimated_total: float = Field(description="Estimated total cost from Budget Agent")
-    budget_min: float = Field(description="Client minimum budget")
-    budget_max: float = Field(description="Client maximum budget")
+import os
+from math import isclose
 
+class ValidateProposalInput(BaseModel):
+    proposal: dict[str, Any] = Field(description="The complete current proposal data to validate")
 
-class ValidateScopeSumInput(BaseModel):
-    items: list[dict[str, Any]] = Field(description="List of ScopeItem dicts")
-    stated_total: float = Field(description="Stated estimated_total in ProjectScope")
+@tool("validate", args_schema=ValidateProposalInput)
+def validate(proposal: dict[str, Any]) -> dict[str, Any]:
+    """Deterministically validates the proposal against business rules."""
+    checks = []
+    errors = []
 
+    # Safe access helpers
+    def get_float(key, default=None):
+        val = proposal.get(key)
+        if val is None:
+            return default
+        try:
+            return float(val)
+        except (ValueError, TypeError):
+            return default
 
-class ValidateDesignerMatchScoreInput(BaseModel):
-    matches: list[dict[str, Any]] = Field(description="List of DesignerMatch dicts")
-    min_threshold: float = Field(default=70.0, description="Minimum acceptable match percentage")
+    estimated_cost = get_float("estimated_cost")
+    budget_max = get_float("budget_max")
+    room_size = get_float("room_size")
+    
+    # 1. Budget Compliance
+    budget_errors = []
+    budget_passed = False
+    if estimated_cost is None:
+        budget_errors.append("Estimated cost is missing.")
+    elif budget_max is None:
+        budget_errors.append("Client maximum budget is missing.")
+    elif estimated_cost > budget_max:
+        budget_errors.append(f"Estimated cost {estimated_cost} exceeds client max budget {budget_max}.")
+    else:
+        budget_passed = True
 
+    checks.append({
+        "rule": "BudgetCompliance",
+        "passed": budget_passed,
+        "errors": budget_errors
+    })
+    errors.extend(budget_errors)
 
-@tool("validate_budget_boundary", args_schema=ValidateBudgetBoundaryInput)
-def validate_budget_boundary(estimated_total: float, budget_min: float, budget_max: float) -> dict[str, Any]:
-    """Deterministically verifies that the estimated cost does not exceed the client's maximum budget."""
-    if estimated_total <= 0:
-        return {"status": "FAIL", "message": "Estimated total cost must be greater than zero"}
-    if estimated_total > budget_max:
-        excess = estimated_total - budget_max
-        return {"status": "FAIL", "message": f"Estimated total exceeds maximum budget by {excess:,.2f}"}
-    return {"status": "PASS", "message": "Estimated total is within acceptable budget bounds"}
+    # 2. Room Size
+    size_errors = []
+    size_passed = False
+    if room_size is None:
+        size_errors.append("Room size is missing or invalid.")
+    elif room_size <= 0 or room_size != room_size or room_size == float('inf'): # NaN or Inf
+        size_errors.append("Room size must be a positive number.")
+    else:
+        size_passed = True
 
+    checks.append({
+        "rule": "RoomSize",
+        "passed": size_passed,
+        "errors": size_errors
+    })
+    errors.extend(size_errors)
 
-@tool("validate_scope_sum", args_schema=ValidateScopeSumInput)
-def validate_scope_sum(items: list[dict[str, Any]], stated_total: float) -> dict[str, Any]:
-    """Verifies that the arithmetic sum of individual scope items strictly matches the stated total."""
-    calculated_sum = round(sum(float(item.get("estimated_cost", 0.0)) for item in items), 2)
-    stated_rounded = round(stated_total, 2)
-    difference = abs(calculated_sum - stated_rounded)
+    # 3. Designer Match and Capacity
+    designer_errors = []
+    designer_passed = False
+    shortlist = proposal.get("designer_shortlist")
+    
+    try:
+        min_score = float(os.getenv("Validation:MinimumDesignerMatchScore", "70.0"))
+    except ValueError:
+        min_score = 70.0
 
-    if difference > 0.05:
-        return {
-            "status": "FAIL",
-            "message": f"Scope items sum ({calculated_sum}) does not match stated total ({stated_rounded})",
-        }
-    return {"status": "PASS", "message": "Scope item arithmetic consistency confirmed"}
+    if not shortlist or not isinstance(shortlist, list):
+        designer_errors.append("Designer shortlist is missing or empty.")
+    else:
+        for d in shortlist:
+            score = d.get("style_match_pct", 0)
+            capacity = d.get("capacity_available", False)
+            if score >= min_score and capacity:
+                designer_passed = True
+                break
+        
+        if not designer_passed:
+            designer_errors.append("No shortlisted designer meets the minimum match score and has available capacity.")
 
+    checks.append({
+        "rule": "DesignerMatchAndCapacity",
+        "passed": designer_passed,
+        "errors": designer_errors
+    })
+    errors.extend(designer_errors)
 
-@tool("validate_designer_match_score", args_schema=ValidateDesignerMatchScoreInput)
-def validate_designer_match_score(
-    matches: list[dict[str, Any]],
-    min_threshold: float = 70.0,
-) -> dict[str, Any]:
-    """Verifies that at least one shortlisted designer meets the minimum match score threshold."""
-    if not matches:
-        return {"status": "FAIL", "message": "Designer shortlist is empty"}
+    # 4. Cost Calculation
+    cost_errors = []
+    cost_passed = False
+    scope = proposal.get("project_scope", {})
+    if not isinstance(scope, dict):
+        scope = {}
+    
+    items = scope.get("items", [])
+    
+    if estimated_cost is None:
+        cost_errors.append("Cannot calculate cost, estimated cost is missing.")
+    elif not items or not isinstance(items, list):
+        cost_errors.append("Line items are missing.")
+    else:
+        calculated_total = 0.0
+        for item in items:
+            calculated_total += float(item.get("estimated_cost", 0.0))
+        
+        if not isclose(calculated_total, estimated_cost, abs_tol=0.01):
+            cost_errors.append(f"Cost estimate does not match the sum of its line items.")
+        else:
+            cost_passed = True
 
-    cleared = [m for m in matches if float(m.get("style_match_pct", 0.0)) >= min_threshold]
-    if not cleared:
-        return {
-            "status": "FAIL",
-            "message": f"No designer cleared the minimum {min_threshold}% match threshold",
-        }
+    checks.append({
+        "rule": "CostCalculation",
+        "passed": cost_passed,
+        "errors": cost_errors
+    })
+    errors.extend(cost_errors)
 
-    return {"status": "PASS", "message": f"{len(cleared)} designer(s) cleared the match threshold"}
+    is_valid = budget_passed and size_passed and designer_passed and cost_passed
 
+    return {
+        "valid": is_valid,
+        "checks": checks,
+        "errors": errors
+    }
 
-VALIDATION_TOOLS = [validate_budget_boundary, validate_scope_sum, validate_designer_match_score]
+VALIDATION_TOOLS = [validate]
