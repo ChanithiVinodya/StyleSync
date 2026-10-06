@@ -1,9 +1,7 @@
+import { AdminRequests } from '../../pages/admin/AdminRequests';
+
 // OWNED BY: Student 2 - Project Requests & Room Uploads
+// Temporarily using AdminRequests as the global requests list for all roles
 export default function ProjectRequestsPage() {
-  return (
-    <section>
-      <h2>Project Requests</h2>
-      <p>TODO: request list, status filters, AI workflow status view.</p>
-    </section>
-  )
+  return <AdminRequests />;
 }

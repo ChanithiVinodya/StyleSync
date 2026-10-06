@@ -7,10 +7,10 @@ namespace StyleSync.Api.Modules.Designers.Services;
 
 public interface IDesignerProfileService
 {
-    Task<IEnumerable<DesignerProfileDto>> GetAllAsync();
-    Task<DesignerProfileDto?> GetByIdAsync(Guid id);
-    Task<DesignerProfileDto?> GetByUserIdAsync(Guid userId);
-    Task<DesignerProfileDto> CreateAsync(CreateDesignerProfileDto dto);
-    Task<DesignerProfileDto?> UpdateAsync(Guid id, UpdateDesignerProfileDto dto);
-    Task<bool> DeleteAsync(Guid id);
+    Task<IEnumerable<DesignerProfileResponse>> GetAllAsync();
+    Task<DesignerProfileResponse?> GetByIdAsync(int id);
+    Task<DesignerProfileResponse?> GetByUserIdAsync(Guid userId);
+    Task<DesignerProfileResponse> CreateAsync(CreateDesignerProfileRequest dto);
+    Task<DesignerProfileResponse?> UpdateAsync(int id, UpdateDesignerProfileRequest dto);
+    Task<bool> DeleteAsync(int id);
 }

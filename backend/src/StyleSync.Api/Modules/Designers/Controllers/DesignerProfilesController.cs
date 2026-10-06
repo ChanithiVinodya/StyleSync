@@ -20,17 +20,17 @@ public class DesignerProfilesController : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<DesignerProfileDto>), 200)]
+    [ProducesResponseType(typeof(IEnumerable<DesignerProfileResponse>), 200)]
     public async Task<IActionResult> GetAll()
     {
         var profiles = await _service.GetAllAsync();
         return Ok(profiles);
     }
 
-    [HttpGet("{id:guid}")]
-    [ProducesResponseType(typeof(DesignerProfileDto), 200)]
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(DesignerProfileResponse), 200)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> GetById(Guid id)
+    public async Task<IActionResult> GetById(int id)
     {
         var profile = await _service.GetByIdAsync(id);
         if (profile == null) return NotFound();
@@ -39,29 +39,29 @@ public class DesignerProfilesController : ControllerBase
 
     [HttpPost]
     [Authorize(Roles = "Admin,Designer")]
-    [ProducesResponseType(typeof(DesignerProfileDto), 201)]
-    public async Task<IActionResult> Create([FromBody] CreateDesignerProfileDto dto)
+    [ProducesResponseType(typeof(DesignerProfileResponse), 201)]
+    public async Task<IActionResult> Create([FromBody] CreateDesignerProfileRequest dto)
     {
         var profile = await _service.CreateAsync(dto);
         return CreatedAtAction(nameof(GetById), new { id = profile.Id }, profile);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{id:int}")]
     [Authorize(Roles = "Admin,Designer")]
-    [ProducesResponseType(typeof(DesignerProfileDto), 200)]
+    [ProducesResponseType(typeof(DesignerProfileResponse), 200)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateDesignerProfileDto dto)
+    public async Task<IActionResult> Update(int id, [FromBody] UpdateDesignerProfileRequest dto)
     {
         var profile = await _service.UpdateAsync(id, dto);
         if (profile == null) return NotFound();
         return Ok(profile);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id:int}")]
     [Authorize(Roles = "Admin")]
     [ProducesResponseType(204)]
     [ProducesResponseType(404)]
-    public async Task<IActionResult> Delete(Guid id)
+    public async Task<IActionResult> Delete(int id)
     {
         var success = await _service.DeleteAsync(id);
         if (!success) return NotFound();

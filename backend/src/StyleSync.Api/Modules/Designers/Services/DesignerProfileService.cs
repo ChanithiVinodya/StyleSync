@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using StyleSync.Api.Common.Identity;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.Designers.DTOs;
 using StyleSync.Api.Modules.Designers.Models;
@@ -12,47 +13,51 @@ namespace StyleSync.Api.Modules.Designers.Services;
 public class DesignerProfileService : IDesignerProfileService
 {
     private readonly AppDbContext _context;
+    private readonly ICurrentUser _currentUser;
 
-    public DesignerProfileService(AppDbContext context)
+    public DesignerProfileService(AppDbContext context, ICurrentUser currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
-    public async Task<IEnumerable<DesignerProfileDto>> GetAllAsync()
+    public async Task<IEnumerable<DesignerProfileResponse>> GetAllAsync()
     {
         var profiles = await _context.DesignerProfiles.ToListAsync();
         return profiles.Select(MapToDto);
     }
 
-    public async Task<DesignerProfileDto?> GetByIdAsync(Guid id)
+    public async Task<DesignerProfileResponse?> GetByIdAsync(int id)
     {
         var profile = await _context.DesignerProfiles.FindAsync(id);
         return profile == null ? null : MapToDto(profile);
     }
 
-    public async Task<DesignerProfileDto?> GetByUserIdAsync(Guid userId)
+    public async Task<DesignerProfileResponse?> GetByUserIdAsync(Guid userId)
     {
         var profile = await _context.DesignerProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
         return profile == null ? null : MapToDto(profile);
     }
 
-    public async Task<DesignerProfileDto> CreateAsync(CreateDesignerProfileDto dto)
+    public async Task<DesignerProfileResponse> CreateAsync(CreateDesignerProfileRequest dto)
     {
+        var userId = _currentUser.Id;
+
         var profile = new DesignerProfile
         {
-            Id = Guid.NewGuid(),
-            UserId = dto.UserId,
-            Name = dto.Name,
-            Specialty = dto.Specialty,
-            Location = dto.Location,
-            About = dto.About,
-            AvatarUrl = dto.AvatarUrl,
-            CoverUrl = dto.CoverUrl,
-            MatchRate = 100m, // default
-            Rating = 5.0m, // default
-            Reviews = 0,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UserId = userId,
+            DisplayName = dto.DisplayName,
+            Bio = dto.Bio,
+            StyleTags = dto.StyleTags ?? new List<string>(),
+            ServiceCategories = dto.ServiceCategories ?? new List<string>(),
+            PriceRangeMin = dto.PriceRangeMin,
+            PriceRangeMax = dto.PriceRangeMax,
+            RatePerSqFt = dto.RatePerSqFt,
+            IsAvailable = dto.IsAvailable,
+            MaxConcurrentProjects = dto.MaxConcurrentProjects ?? 3,
+            ListingStatus = ListingStatus.Draft,
+            CreatedAtUtc = DateTime.UtcNow,
+            UpdatedAtUtc = DateTime.UtcNow
         };
 
         _context.DesignerProfiles.Add(profile);
@@ -61,24 +66,34 @@ public class DesignerProfileService : IDesignerProfileService
         return MapToDto(profile);
     }
 
-    public async Task<DesignerProfileDto?> UpdateAsync(Guid id, UpdateDesignerProfileDto dto)
+    public async Task<DesignerProfileResponse?> UpdateAsync(int id, UpdateDesignerProfileRequest dto)
     {
         var profile = await _context.DesignerProfiles.FindAsync(id);
         if (profile == null) return null;
 
-        profile.Name = dto.Name;
-        profile.Specialty = dto.Specialty;
-        profile.Location = dto.Location;
-        profile.About = dto.About;
-        profile.AvatarUrl = dto.AvatarUrl;
-        profile.CoverUrl = dto.CoverUrl;
-        profile.UpdatedAt = DateTime.UtcNow;
+        profile.DisplayName = dto.DisplayName;
+        profile.Bio = dto.Bio;
+        profile.StyleTags = dto.StyleTags ?? new List<string>();
+        profile.ServiceCategories = dto.ServiceCategories ?? new List<string>();
+        profile.PriceRangeMin = dto.PriceRangeMin;
+        profile.PriceRangeMax = dto.PriceRangeMax;
+        profile.RatePerSqFt = dto.RatePerSqFt;
+        profile.IsAvailable = dto.IsAvailable;
+        if (dto.MaxConcurrentProjects.HasValue)
+        {
+            profile.MaxConcurrentProjects = dto.MaxConcurrentProjects.Value;
+        }
+        if (dto.ListingStatus.HasValue)
+        {
+            profile.ListingStatus = dto.ListingStatus.Value;
+        }
+        profile.UpdatedAtUtc = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
         return MapToDto(profile);
     }
 
-    public async Task<bool> DeleteAsync(Guid id)
+    public async Task<bool> DeleteAsync(int id)
     {
         var profile = await _context.DesignerProfiles.FindAsync(id);
         if (profile == null) return false;
@@ -88,20 +103,25 @@ public class DesignerProfileService : IDesignerProfileService
         return true;
     }
 
-    private static DesignerProfileDto MapToDto(DesignerProfile profile)
+    private static DesignerProfileResponse MapToDto(DesignerProfile profile)
     {
-        return new DesignerProfileDto(
-            profile.Id,
-            profile.UserId,
-            profile.Name,
-            profile.Specialty,
-            profile.Location,
-            profile.MatchRate,
-            profile.Rating,
-            profile.Reviews,
-            profile.About,
-            profile.AvatarUrl,
-            profile.CoverUrl
-        );
+        return new DesignerProfileResponse
+        {
+            Id = profile.Id,
+            UserId = profile.UserId,
+            DisplayName = profile.DisplayName,
+            Bio = profile.Bio,
+            StyleTags = profile.StyleTags ?? new List<string>(),
+            ServiceCategories = profile.ServiceCategories ?? new List<string>(),
+            PriceRangeMin = profile.PriceRangeMin,
+            PriceRangeMax = profile.PriceRangeMax,
+            RatePerSqFt = profile.RatePerSqFt,
+            IsAvailable = profile.IsAvailable,
+            MaxConcurrentProjects = profile.MaxConcurrentProjects,
+            AverageRating = profile.AverageRating,
+            ListingStatus = profile.ListingStatus,
+            CreatedAtUtc = profile.CreatedAtUtc,
+            UpdatedAtUtc = profile.UpdatedAtUtc ?? profile.CreatedAtUtc
+        };
     }
 }

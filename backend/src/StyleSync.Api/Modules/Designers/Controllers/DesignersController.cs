@@ -35,7 +35,7 @@ public class DesignersController : ControllerBase
     }
 
     /// <summary>
-    /// AI Matching Agent Contract & Search Tool: searches and ranks published candidate designers using deterministic match scoring.
+    /// AI Matching Agent Contract &amp; Search Tool: searches and ranks published candidate designers using deterministic match scoring.
     /// Capacity-excluded designers (IsUnderCapacity = false) and unpublished listings are strictly filtered out.
     /// </summary>
     /// <param name="request">Search parameters including style tags and client budget range.</param>

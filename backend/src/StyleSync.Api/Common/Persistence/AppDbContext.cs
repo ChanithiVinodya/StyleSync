@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using StyleSync.Api.Modules.ProjectExecution.Models;
 using StyleSync.Api.Modules.Designers.Models;
 
-using StyleSync.Api.Modules.Designers.Models;
+
 
 namespace StyleSync.Api.Common.Persistence;
 

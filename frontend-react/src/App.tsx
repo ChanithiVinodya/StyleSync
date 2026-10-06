@@ -109,7 +109,15 @@ export default function App() {
             <Route path="/quotes-contracts" element={<QuotesContractsPage />} />
 
             {/* Student 4: Project Execution Module */}
-            <Route path="/project-execution" element={<ProjectExecutionPage />} />
+            <Route path="/projects/:projectId/execution" element={<ProjectExecutionLayout />}>
+              <Route index element={<ProjectExecutionDashboard />} />
+              <Route path="milestones" element={<MilestoneList />} />
+              <Route path="tasks" element={<TaskList />} />
+              <Route path="materials" element={<MaterialList />} />
+              <Route path="timeline" element={<ProjectTimeline />} />
+              <Route path="photos" element={<ProgressPhotos />} />
+              <Route path="analytics" element={<AnalyticsDashboard />} />
+            </Route>
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

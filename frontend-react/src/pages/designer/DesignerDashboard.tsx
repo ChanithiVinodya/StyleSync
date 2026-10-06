@@ -51,21 +51,56 @@ export const DesignerDashboard: React.FC = () => {
           </div>
         </header>
 
-        {/* Quick Navigation Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Link
-            to="/quotes-contracts"
-            className="p-5 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-2xl hover:border-[#C48A36] transition shadow-2xs group flex items-center justify-between"
-          >
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-[#C48A36]" />
-                <h3 className="font-semibold text-sm text-[#1C1917] dark:text-[#FAF8F5]">Contracts Studio</h3>
+        {/* Module Navigation Section */}
+        <div className="pt-2">
+          <h2 className="text-xl font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5] mb-6">
+            Module Navigation
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Student 1: Designers */}
+            <Link to="/designers/studio" className="group p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs hover:shadow-md hover:border-[#C48A36] transition-all flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849] group-hover:scale-110 transition-transform">
+                <Palette className="w-6 h-6" />
               </div>
-              <p className="text-xs text-[#57534E] dark:text-[#A8A29E]">Review binding legal agreements, signed contracts, and submitted quote specifications</p>
-            </div>
-            <span className="px-3 py-1.5 text-xs font-semibold bg-[#1C1917] dark:bg-[#FAF8F5] text-[#FAF8F5] dark:text-[#1C1917] rounded-xl group-hover:scale-105 transition">View Contracts &rarr;</span>
-          </Link>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">My Studio</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1">Manage your portfolio and profile</p>
+              </div>
+            </Link>
+
+            {/* Student 2: Project Requests */}
+            <Link to="/project-requests" className="group p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs hover:shadow-md hover:border-[#C48A36] transition-all flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849] group-hover:scale-110 transition-transform">
+                <FileCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">Project Requests</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1">View incoming client requests</p>
+              </div>
+            </Link>
+
+            {/* Student 3: Quotes & Contracts */}
+            <Link to="/quotes-contracts" className="group p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs hover:shadow-md hover:border-[#C48A36] transition-all flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849] group-hover:scale-110 transition-transform">
+                <FileCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">Contracts Studio</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1">Submit quotes & sign agreements</p>
+              </div>
+            </Link>
+
+            {/* Student 4: Project Execution */}
+            <Link to="/projects/123e4567-e89b-12d3-a456-426614174000/execution" className="group p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs hover:shadow-md hover:border-[#C48A36] transition-all flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849] group-hover:scale-110 transition-transform">
+                <Palette className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">Project Execution</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1">Track active project progress</p>
+              </div>
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl p-6 sm:p-8 shadow-xs space-y-4">

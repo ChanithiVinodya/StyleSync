@@ -13,7 +13,7 @@ using StyleSync.Api.Common.Persistence;
 namespace StyleSync.Api.Common.Persistence.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20261006020657_InitialCreate")]
+    [Migration("20261006040326_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -414,6 +414,253 @@ namespace StyleSync.Api.Common.Persistence.Migrations
                     b.ToTable("PortfolioItems", (string)null);
                 });
 
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProgressPhoto", b =>
+                {
+                    b.Property<Guid>("ProgressPhotoId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("MilestoneId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("UploadedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ProgressPhotoId");
+
+                    b.HasIndex("MilestoneId");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UploadedBy");
+
+                    b.ToTable("ProgressPhotos");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectMaterial", b =>
+                {
+                    b.Property<Guid>("MaterialId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<DateTime?>("DeliveredDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("MilestoneId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("OrderedDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RequiredDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("MaterialId");
+
+                    b.HasIndex("MilestoneId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("ProjectMaterials");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectMilestone", b =>
+                {
+                    b.Property<Guid>("MilestoneId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("MilestoneId");
+
+                    b.ToTable("ProjectMilestones");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTask", b =>
+                {
+                    b.Property<Guid>("TaskId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("CascadedDelay")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("MilestoneId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.HasKey("TaskId");
+
+                    b.HasIndex("MilestoneId");
+
+                    b.ToTable("ProjectTasks");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTimelineEvent", b =>
+                {
+                    b.Property<Guid>("TimelineEventId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.HasKey("TimelineEventId");
+
+                    b.ToTable("ProjectTimelineEvents");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.TaskDependency", b =>
+                {
+                    b.Property<Guid>("TaskDependencyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<Guid>("PrerequisiteTaskId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("TaskDependencyId");
+
+                    b.HasIndex("PrerequisiteTaskId");
+
+                    b.HasIndex("TaskId", "PrerequisiteTaskId")
+                        .IsUnique();
+
+                    b.ToTable("TaskDependencies");
+                });
+
             modelBuilder.Entity("StyleSync.Api.Modules.ProjectRequests.Models.Entities.MoodboardImage", b =>
                 {
                     b.Property<Guid>("Id")
@@ -692,6 +939,77 @@ namespace StyleSync.Api.Common.Persistence.Migrations
                     b.Navigation("DesignerProfile");
                 });
 
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProgressPhoto", b =>
+                {
+                    b.HasOne("StyleSync.Api.Modules.ProjectExecution.Models.ProjectMilestone", "Milestone")
+                        .WithMany("ProgressPhotos")
+                        .HasForeignKey("MilestoneId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTask", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId");
+
+                    b.HasOne("StyleSync.Api.Common.Identity.AppUser", "Uploader")
+                        .WithMany()
+                        .HasForeignKey("UploadedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Milestone");
+
+                    b.Navigation("Task");
+
+                    b.Navigation("Uploader");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectMaterial", b =>
+                {
+                    b.HasOne("StyleSync.Api.Modules.ProjectExecution.Models.ProjectMilestone", "Milestone")
+                        .WithMany("Materials")
+                        .HasForeignKey("MilestoneId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTask", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Milestone");
+
+                    b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTask", b =>
+                {
+                    b.HasOne("StyleSync.Api.Modules.ProjectExecution.Models.ProjectMilestone", "Milestone")
+                        .WithMany("Tasks")
+                        .HasForeignKey("MilestoneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Milestone");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.TaskDependency", b =>
+                {
+                    b.HasOne("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTask", "PrerequisiteTask")
+                        .WithMany("Dependents")
+                        .HasForeignKey("PrerequisiteTaskId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTask", "Task")
+                        .WithMany("Prerequisites")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PrerequisiteTask");
+
+                    b.Navigation("Task");
+                });
+
             modelBuilder.Entity("StyleSync.Api.Modules.ProjectRequests.Models.Entities.MoodboardImage", b =>
                 {
                     b.HasOne("StyleSync.Api.Modules.ProjectRequests.Models.Entities.ProjectRequest", "ProjectRequest")
@@ -767,6 +1085,22 @@ namespace StyleSync.Api.Common.Persistence.Migrations
             modelBuilder.Entity("StyleSync.Api.Modules.Designers.Models.DesignerProfile", b =>
                 {
                     b.Navigation("PortfolioItems");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectMilestone", b =>
+                {
+                    b.Navigation("Materials");
+
+                    b.Navigation("ProgressPhotos");
+
+                    b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("StyleSync.Api.Modules.ProjectExecution.Models.ProjectTask", b =>
+                {
+                    b.Navigation("Dependents");
+
+                    b.Navigation("Prerequisites");
                 });
 
             modelBuilder.Entity("StyleSync.Api.Modules.ProjectRequests.Models.Entities.ProjectRequest", b =>
