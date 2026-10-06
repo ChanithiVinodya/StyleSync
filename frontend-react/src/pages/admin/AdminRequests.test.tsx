@@ -5,6 +5,16 @@ import { AdminRequests } from './AdminRequests';
 import { requestApi, ApiError } from '../../features/requests/api';
 import { ThemeProvider } from '../../context/ThemeContext';
 
+vi.mock('../../auth/AuthContext', () => ({
+  useAuth: () => ({
+    user: { id: 'admin-1', role: 'Admin', name: 'Admin', email: 'admin@stylesync.com' },
+    token: 'mock-token',
+    login: vi.fn(),
+    logout: vi.fn(),
+    isLoading: false,
+  }),
+}));
+
 vi.mock('../../features/requests/api', () => {
   return {
     requestApi: {
