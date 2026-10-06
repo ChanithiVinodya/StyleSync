@@ -88,8 +88,8 @@ namespace StyleSync.Api.Controllers
                 return BadRequest(new { message = $"A {contract.Status} contract cannot be modified." });
 
             if (dto.Status.HasValue) contract.Status = dto.Status.Value;
-            if (dto.StartDate.HasValue) contract.StartDate = dto.StartDate;
-            if (dto.EndDate.HasValue) contract.EndDate = dto.EndDate;
+            if (dto.StartDate.HasValue) contract.StartDate = DateTime.SpecifyKind(dto.StartDate.Value, DateTimeKind.Utc);
+            if (dto.EndDate.HasValue) contract.EndDate = DateTime.SpecifyKind(dto.EndDate.Value, DateTimeKind.Utc);
             if (dto.TermsSummary is not null) contract.TermsSummary = dto.TermsSummary;
 
             contract.UpdatedAt = DateTime.UtcNow;
@@ -112,7 +112,7 @@ namespace StyleSync.Api.Controllers
             if (contract.Status is ContractStatus.Completed or ContractStatus.Cancelled)
                 return BadRequest(new { message = $"A {contract.Status} contract cannot be signed." });
 
-            contract.SignedAt = dto.SignedAt;
+            contract.SignedAt = DateTime.SpecifyKind(dto.SignedAt, DateTimeKind.Utc);
             contract.Status = ContractStatus.Active;
             contract.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();

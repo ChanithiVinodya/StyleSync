@@ -35,7 +35,7 @@ namespace StyleSync.Api.Controllers
             page = Math.Max(page, 1);
             pageSize = Math.Clamp(pageSize, 1, 100);
 
-            var query = _db.Quotes.Include(q => q.Items).AsQueryable();
+            var query = _db.Quotes.Include(q => q.Items).Include(q => q.Contract).AsQueryable();
 
             if (status.HasValue) query = query.Where(q => q.Status == status.Value);
             if (designerId.HasValue) query = query.Where(q => q.DesignerId == designerId.Value);
@@ -85,11 +85,19 @@ namespace StyleSync.Api.Controllers
             if (dto.Items.Count == 0)
                 return BadRequest(new { message = "A quote needs at least one line item." });
 
+            var projectRequestId = dto.ProjectRequestId.HasValue && dto.ProjectRequestId.Value != Guid.Empty
+                ? dto.ProjectRequestId.Value
+                : Guid.NewGuid();
+
+            var designerId = dto.DesignerId.HasValue && dto.DesignerId.Value != Guid.Empty
+                ? dto.DesignerId.Value
+                : Guid.NewGuid();
+
             var quote = new Quote
             {
                 Id = Guid.NewGuid(),
-                ProjectRequestId = dto.ProjectRequestId,
-                DesignerId = dto.DesignerId,
+                ProjectRequestId = projectRequestId,
+                DesignerId = designerId,
                 ScopeSummary = dto.ScopeSummary,
                 Notes = dto.Notes,
                 IsAiGenerated = dto.IsAiGenerated,
@@ -122,8 +130,13 @@ namespace StyleSync.Api.Controllers
             DraftQuoteFromAgentDto dto,
             [FromServices] IHttpClientFactory httpClientFactory)
         {
-            if (dto.ProjectRequestId == Guid.Empty) dto.ProjectRequestId = Guid.NewGuid();
-            if (dto.DesignerId == Guid.Empty) dto.DesignerId = Guid.NewGuid();
+            var projectRequestId = dto.ProjectRequestId.HasValue && dto.ProjectRequestId.Value != Guid.Empty
+                ? dto.ProjectRequestId.Value
+                : Guid.NewGuid();
+
+            var designerId = dto.DesignerId.HasValue && dto.DesignerId.Value != Guid.Empty
+                ? dto.DesignerId.Value
+                : Guid.NewGuid();
 
             var client = httpClientFactory.CreateClient("AiService");
 
@@ -162,8 +175,8 @@ namespace StyleSync.Api.Controllers
             var quote = new Quote
             {
                 Id = quoteId,
-                ProjectRequestId = dto.ProjectRequestId,
-                DesignerId = dto.DesignerId,
+                ProjectRequestId = projectRequestId,
+                DesignerId = designerId,
                 Status = QuoteStatus.Draft,
                 IsAiGenerated = true,
                 ScopeSummary = agentResult.ScopeSummary,

@@ -295,6 +295,197 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
     }
   }
 
+  void _openServerSettingsDialog() {
+    final urlController = TextEditingController(text: _service.baseUrl);
+    bool isTesting = false;
+    String? testResult;
+    bool? isSuccess;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModalState) {
+          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+          return Container(
+            padding: EdgeInsets.only(top: 16, left: 20, right: 20, bottom: bottomInset + 20),
+            decoration: const BoxDecoration(
+              color: QcTheme.surface,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(top: BorderSide(color: QcTheme.border, width: 1.5)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 14),
+                    decoration: BoxDecoration(
+                      color: QcTheme.borderLight,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Backend Connection',
+                      style: TextStyle(color: QcTheme.textMain, fontSize: 18, fontWeight: FontWeight.w700),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: QcTheme.textMuted, size: 20),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Set the API base URL matching your current run target (emulator, web, or physical device).',
+                  style: TextStyle(color: QcTheme.textSubtle, fontSize: 12),
+                ),
+                const SizedBox(height: 16),
+                const Text('QUICK PRESETS', style: TextStyle(color: QcTheme.textSubtle, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ActionChip(
+                      backgroundColor: const Color(0xFF2E2721),
+                      label: const Text('Android Emulator', style: TextStyle(color: QcTheme.gold, fontSize: 11)),
+                      onPressed: () {
+                        setModalState(() {
+                          urlController.text = QuotesContractsService.emulatorBaseUrl;
+                          testResult = null;
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      backgroundColor: const Color(0xFF2E2721),
+                      label: const Text('Localhost (Web/Desktop)', style: TextStyle(color: QcTheme.gold, fontSize: 11)),
+                      onPressed: () {
+                        setModalState(() {
+                          urlController.text = QuotesContractsService.localhostBaseUrl;
+                          testResult = null;
+                        });
+                      },
+                    ),
+                    ActionChip(
+                      backgroundColor: const Color(0xFF2E2721),
+                      label: const Text('Wi-Fi LAN (Physical Phone)', style: TextStyle(color: QcTheme.gold, fontSize: 11)),
+                      onPressed: () {
+                        setModalState(() {
+                          urlController.text = QuotesContractsService.lanBaseUrl;
+                          testResult = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Text('API BASE URL', style: TextStyle(color: QcTheme.textSubtle, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: urlController,
+                  style: const TextStyle(color: QcTheme.textMain, fontSize: 13, fontFamily: 'monospace'),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: QcTheme.surfaceSunken,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: QcTheme.border)),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: QcTheme.border)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: QcTheme.primary)),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                if (testResult != null) ...[
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: isSuccess == true ? const Color(0x1F10B981) : const Color(0x1FEF4444),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: isSuccess == true ? const Color(0x6610B981) : const Color(0x66EF4444)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(isSuccess == true ? Icons.check_circle : Icons.error, color: isSuccess == true ? const Color(0xFF34D399) : const Color(0xFFF87171), size: 16),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(testResult!, style: TextStyle(color: isSuccess == true ? const Color(0xFF34D399) : const Color(0xFFF87171), fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: isTesting ? null : () async {
+                          setModalState(() {
+                            isTesting = true;
+                            testResult = 'Testing connection...';
+                            isSuccess = null;
+                          });
+                          _service.setBaseUrl(urlController.text);
+                          final ok = await _service.checkConnection();
+                          setModalState(() {
+                            isTesting = false;
+                            isSuccess = ok;
+                            testResult = ok
+                                ? 'Connected to backend successfully!'
+                                : 'Failed to reach backend. Make sure "dotnet run" is started.';
+                          });
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: QcTheme.gold,
+                          side: const BorderSide(color: QcTheme.borderLight),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: Text(isTesting ? 'Testing...' : 'Test Ping'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          _service.setBaseUrl(urlController.text);
+                          Navigator.of(ctx).pop();
+                          _loadQuotes();
+                          _loadContracts();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Connected to: ${_service.baseUrl}'),
+                              backgroundColor: QcTheme.primary,
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: QcTheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Save & Reload', style: TextStyle(fontWeight: FontWeight.w700)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -380,11 +571,21 @@ class _QuotesContractsPageState extends State<QuotesContractsPage> with SingleTi
             ],
           ),
 
-          // Moon / Theme toggle
-          IconButton(
-            icon: const Icon(Icons.nightlight_round, color: QcTheme.gold, size: 20),
-            onPressed: () {},
-            tooltip: 'Theme: Dark',
+          // Top right actions: Server Settings & Theme
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.dns_outlined, color: QcTheme.gold, size: 20),
+                onPressed: _openServerSettingsDialog,
+                tooltip: 'Backend Connection Settings',
+              ),
+              IconButton(
+                icon: const Icon(Icons.nightlight_round, color: QcTheme.gold, size: 20),
+                onPressed: () {},
+                tooltip: 'Theme: Dark',
+              ),
+            ],
           ),
         ],
       ),

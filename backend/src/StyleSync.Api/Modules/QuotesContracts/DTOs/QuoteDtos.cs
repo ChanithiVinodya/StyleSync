@@ -23,11 +23,8 @@ namespace StyleSync.Api.DTOs
     // Designer creating/revising a quote by hand.
     public class CreateQuoteDto
     {
-        [Required]
-        public Guid ProjectRequestId { get; set; }
-
-        [Required]
-        public Guid DesignerId { get; set; }
+        public Guid? ProjectRequestId { get; set; }
+        public Guid? DesignerId { get; set; }
 
         public string? ScopeSummary { get; set; }
         public string? Notes { get; set; }

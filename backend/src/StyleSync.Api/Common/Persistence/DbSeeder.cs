@@ -18,6 +18,12 @@ public static class DbSeeder
             await context.Database.MigrateAsync();
         }
 
+        var qcContext = scope.ServiceProvider.GetService<StyleSync.Api.Data.AppDbContext>();
+        if (qcContext != null && qcContext.Database.IsNpgsql())
+        {
+            await qcContext.Database.MigrateAsync();
+        }
+
         // Check if an Admin already exists (idempotency)
         var adminExists = await context.Users.AnyAsync(u => u.Role == UserRole.Admin);
         if (!adminExists)

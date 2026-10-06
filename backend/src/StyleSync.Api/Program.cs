@@ -11,6 +11,9 @@ using StyleSync.Api.Configuration;
 using StyleSync.Api.Middleware;
 using StyleSync.Api.Services;
 
+// Enable Npgsql legacy timestamp behavior to avoid UTC/Kind=Unspecified mismatches from mobile clients
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ---- Configuration ----
@@ -120,7 +123,10 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();

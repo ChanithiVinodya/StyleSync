@@ -28,6 +28,11 @@ namespace StyleSync.Api.Models
         Labor,
         Materials,
         Furniture,
+        Carpentry,
+        Electrical,
+        Painting,
+        Plumbing,
+        Textiles,
         Other
     }
 }
