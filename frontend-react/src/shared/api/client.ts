@@ -11,9 +11,22 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken')
+  // Use the same key as authStorage
+  const token = localStorage.getItem('stylesync_jwt_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('stylesync_jwt_token')
+      localStorage.removeItem('stylesync_user_info')
+      window.location.href = '/' // Force a reload to trigger AuthContext state clear
+    }
+    return Promise.reject(error)
+  }
+)

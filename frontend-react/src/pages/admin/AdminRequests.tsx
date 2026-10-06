@@ -5,8 +5,10 @@ import { REQUEST_STATUSES, ROOM_TYPES, RequestListQuery, RequestStatus, RoomType
 import { Search, ChevronUp, ChevronDown, Flag, X, ArrowRight, AlertCircle, RefreshCw, LayoutDashboard } from 'lucide-react';
 import { Logo } from '../../components/Logo';
 import { GlassThemeToggle } from '../../components/GlassThemeToggle';
+import { useAuth } from '../../auth/AuthContext';
 
 export const AdminRequests: React.FC = () => {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -100,13 +102,13 @@ export const AdminRequests: React.FC = () => {
           <div className="flex items-center gap-4">
             <Logo variant="auto" size="md" />
             <div>
-              <h1 className="font-serif text-2xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">All Requests</h1>
-              <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-0.5">Admin Project Requests Governance</p>
+              <h1 className="font-serif text-2xl font-bold text-[#1C1917] dark:text-[#FAF8F5]">Project Requests</h1>
+              <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-0.5">Manage and track makeover requests</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <GlassThemeToggle />
-            <Link to="/admin/dashboard" className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition">
+            <Link to={user?.role === 'Admin' ? '/admin/dashboard' : user?.role === 'Designer' ? '/designer' : '/client'} className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-[#1C1917] dark:text-[#FAF8F5] bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-xl hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition">
               <LayoutDashboard size={14} /> Back to Dashboard
             </Link>
           </div>

@@ -15,7 +15,7 @@ public interface ICapacityGuardService
     Task<Dictionary<int, int>> GetActiveProjectCountsAsync(IEnumerable<int> designerIds, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Determines if a designer is under capacity: GetActiveProjectCount(designerId) < designer.MaxConcurrentProjects.
+    /// Determines if a designer is under capacity: GetActiveProjectCount(designerId) &lt; designer.MaxConcurrentProjects.
     /// </summary>
     Task<bool> IsUnderCapacityAsync(int designerId, CancellationToken cancellationToken = default);
 

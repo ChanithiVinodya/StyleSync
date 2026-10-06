@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/AuthContext';
 import { ShieldCheck, Users, LogOut, FileText } from 'lucide-react';
 import { Logo } from '../../components/Logo';
@@ -8,6 +8,34 @@ import { RequestAnalyticsPanel } from '../../features/requests/components/Reques
 
 export const AdminDashboard: React.FC = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [designers, setDesigners] = useState<User[]>([]);
+  const [selectedDesignerId, setSelectedDesignerId] = useState<string>('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
+  // Mock projects since the Project Request module is not yet built
+  const mockProjects = [
+    { id: '123e4567-e89b-12d3-a456-426614174000', name: 'Luxury Villa Renovation' },
+    { id: '223e4567-e89b-12d3-a456-426614174001', name: 'Downtown Penthouse Remodel' }
+  ];
+
+  useEffect(() => {
+    const fetchDesigners = async () => {
+      try {
+        const res = await api.get<User[]>('/admin/users');
+        setDesigners(res.data.filter(u => u.role === 'Designer'));
+      } catch (err) {
+        console.error('Failed to fetch designers', err);
+      }
+    };
+    fetchDesigners();
+  }, []);
+
+  const handleNavigate = () => {
+    if (selectedProjectId) {
+      navigate(`/projects/${selectedProjectId}/execution`);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#12100E] text-[#1C1917] dark:text-[#FAF8F5] p-6 sm:p-10">
@@ -69,6 +97,79 @@ export const AdminDashboard: React.FC = () => {
             <p className="text-xs text-[#57534E] dark:text-[#A8A29E] leading-relaxed">
               Enforced server-side via ASP.NET Core JWT Middleware & <code>[Authorize(Roles = "Admin")]</code>.
             </p>
+          </div>
+        </div>
+
+        {/* Module Navigation Section */}
+        <div className="pt-6 border-t border-[#E7E1D7] dark:border-[#2E2824]">
+          <h2 className="text-xl font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5] mb-6">
+            Module Navigation
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Student 1: Designers */}
+            <Link to="/admin/designers" className="group p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs hover:shadow-md hover:border-[#C48A36] transition-all flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849] group-hover:scale-110 transition-transform">
+                <Users className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">Designers</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1">Manage designer profiles and matching</p>
+              </div>
+            </Link>
+
+            {/* Student 2: Project Requests */}
+            <Link to="/admin/requests" className="group p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs hover:shadow-md hover:border-[#C48A36] transition-all flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849] group-hover:scale-110 transition-transform">
+                <ShieldCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">Project Requests</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1">Review and manage client requests</p>
+              </div>
+            </Link>
+
+            {/* Student 3: Quotes & Contracts */}
+            <Link to="/quotes-contracts" className="group p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs hover:shadow-md hover:border-[#C48A36] transition-all flex flex-col gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849] group-hover:scale-110 transition-transform">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">Quotes & Contracts</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1">Manage project quotes and agreements</p>
+              </div>
+            </Link>
+
+            {/* Student 4: Project Execution */}
+            <div className="p-6 bg-white dark:bg-[#1A1715] border border-[#E7E1D7] dark:border-[#2E2824] rounded-3xl shadow-xs flex flex-col gap-4 relative">
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 rounded-2xl bg-[#FAF3E8] dark:bg-[#2A231A] flex items-center justify-center text-[#925C18] dark:text-[#E8A849]">
+                  <FileText className="w-6 h-6" />
+                </div>
+              </div>
+              <div>
+                <h3 className="font-serif font-bold text-[#1C1917] dark:text-[#FAF8F5]">Project Execution</h3>
+                <p className="text-xs text-[#57534E] dark:text-[#A8A29E] mt-1 mb-3">Track progress and milestones</p>
+                <div className="flex gap-2">
+                  <select 
+                    className="flex-1 text-xs bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E7E1D7] dark:border-[#423525] rounded-xl px-2 py-2"
+                    value={selectedProjectId}
+                    onChange={(e) => setSelectedProjectId(e.target.value)}
+                  >
+                    <option value="">Select Project...</option>
+                    {mockProjects.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                  <button 
+                    onClick={handleNavigate}
+                    disabled={!selectedProjectId}
+                    className="px-3 py-2 bg-[#1C1917] dark:bg-[#FAF8F5] text-white dark:text-[#1C1917] text-xs font-bold rounded-xl disabled:opacity-50"
+                  >
+                    Go
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
