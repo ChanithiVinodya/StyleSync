@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AdminRequestDetail } from './AdminRequestDetail';
@@ -117,7 +117,9 @@ describe('AdminRequestDetail', () => {
       
       const copyBtn = await screen.findByText('#ABCDEF');
       // Click the parent button since the span text is inside it
-      fireEvent.click(copyBtn.closest('button')!);
+      await act(async () => {
+        fireEvent.click(copyBtn.closest('button')!);
+      });
       
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith('#ABCDEF');
     });
