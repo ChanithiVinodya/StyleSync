@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../config/api_config.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../providers/auth/auth_state.dart';
 import '../../routes.dart';
@@ -69,6 +70,87 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  void _showServerConfigDialog() {
+    final controller = TextEditingController(text: ApiConfig.baseUrl);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.dns_rounded, size: 22),
+            SizedBox(width: 8),
+            Text('Server Configuration', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Enter the backend API Base URL (cloud host, public tunnel, or local IP):',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'e.g. http://10.253.20.14:5000/api',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text('Presets:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                ActionChip(
+                  label: const Text('Cloud (Render)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  onPressed: () => controller.text = ApiConfig.cloudBackendUrl,
+                ),
+                ActionChip(
+                  label: const Text('Wi-Fi PC (10.253.20.14)', style: TextStyle(fontSize: 11)),
+                  onPressed: () => controller.text = 'http://10.253.20.14:5000/api',
+                ),
+                ActionChip(
+                  label: const Text('Emulator (10.0.2.2)', style: TextStyle(fontSize: 11)),
+                  onPressed: () => controller.text = 'http://10.0.2.2:5000/api',
+                ),
+                ActionChip(
+                  label: const Text('Localhost (5000)', style: TextStyle(fontSize: 11)),
+                  onPressed: () => controller.text = 'http://localhost:5000/api',
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newUrl = controller.text.trim();
+              if (newUrl.isNotEmpty) {
+                await ApiConfig.updateBaseUrl(newUrl);
+                if (mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Server updated to: ${ApiConfig.baseUrl}')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save & Apply'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
@@ -124,6 +206,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     'assets/images/splash_silk_bg.jpg',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                ),
+              ),
+
+              // Gear / Server Settings Button (Top Right)
+              Positioned(
+                top: 40,
+                right: 16,
+                child: SafeArea(
+                  child: IconButton(
+                    icon: Icon(Icons.settings_outlined, color: subtitleColor, size: 24),
+                    tooltip: 'Configure Server URL',
+                    onPressed: _showServerConfigDialog,
                   ),
                 ),
               ),
