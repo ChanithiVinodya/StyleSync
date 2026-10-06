@@ -8,8 +8,8 @@ class ApiConfig {
   static const String _storageKey = 'stylesync_custom_base_url';
   static const _storage = FlutterSecureStorage();
 
-  // Default to the live cloud backend so APK runs out-of-the-box on any device
-  static String get defaultBaseUrl => cloudBackendUrl;
+  // Default to localhost on Web, and cloud on mobile APK so it works out-of-the-box
+  static String get defaultBaseUrl => kIsWeb ? 'http://localhost:5000/api' : cloudBackendUrl;
 
   static String baseUrl = defaultBaseUrl;
 

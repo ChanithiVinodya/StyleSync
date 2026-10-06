@@ -81,6 +81,7 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
   }
 
   Future<void> _fetchDetail() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -88,11 +89,13 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
     try {
       final repo = ref.read(requestsRepositoryProvider);
       final res = await repo.getRequest(widget.id);
+      if (!mounted) return;
       setState(() {
         _detail = res;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = 'Failed to load request details.';
         _isLoading = false;
