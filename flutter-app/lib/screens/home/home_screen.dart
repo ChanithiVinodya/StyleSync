@@ -981,48 +981,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> with SingleTickerProvid
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Section Header
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Categories',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Curated furniture and spaces for every room',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: isDark ? const Color(0xFF9B8B82) : const Color(0xFF8A7973),
-                  ),
-                ),
-              ],
+            Text(
+              'Categories',
+              style: GoogleFonts.playfairDisplay(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: isDark ? const Color(0xFFFAF5F0) : textEspresso,
+              ),
             ),
-            GestureDetector(
-              onTap: () {
-                Navigator.of(context).pushNamed(AppRoutes.newRequest);
-              },
-              child: Row(
-                children: [
-                  Text(
-                    'Start request',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: terracotta,
-                    ),
-                  ),
-                  const SizedBox(width: 3),
-                  Icon(Icons.chevron_right_rounded, size: 16, color: terracotta),
-                ],
+            const SizedBox(height: 2),
+            Text(
+              'Curated furniture and spaces for every room',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? const Color(0xFF9B8B82) : const Color(0xFF8A7973),
               ),
             ),
           ],
