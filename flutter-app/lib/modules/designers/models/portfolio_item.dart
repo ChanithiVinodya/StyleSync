@@ -25,15 +25,14 @@ class PortfolioItem {
 
   factory PortfolioItem.fromJson(Map<String, dynamic> json) {
     return PortfolioItem(
-      id: (json['id'] as num).toInt(),
-      designerProfileId: (json['designerProfileId'] as num?)?.toInt() ?? 0,
+      id: (json['id'] as num?)?.toInt() ?? int.tryParse(json['id']?.toString() ?? '0') ?? 0,
+      designerProfileId: (json['designerProfileId'] as num?)?.toInt() ?? int.tryParse(json['designerProfileId']?.toString() ?? '0') ?? 0,
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       imageUrl: json['imageUrl'] as String? ?? '',
       budgetRangeLabel: json['budgetRangeLabel'] as String? ?? '',
       clientInitials: json['clientInitials'] as String? ?? '',
-      completionStatusBadge: ListingStatus.fromValue(
-          (json['completionStatusBadge'] as num?)?.toInt() ?? 1),
+      completionStatusBadge: ListingStatus.fromJson(json['completionStatusBadge']),
       createdAtUtc: json['createdAtUtc'] != null
           ? DateTime.tryParse(json['createdAtUtc'].toString()) ??
               DateTime.now()

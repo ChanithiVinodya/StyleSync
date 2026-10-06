@@ -13,6 +13,24 @@ enum ListingStatus {
       orElse: () => ListingStatus.draft,
     );
   }
+
+  static ListingStatus fromJson(dynamic val) {
+    if (val == null) return ListingStatus.published;
+    if (val is int) return fromValue(val);
+    if (val is num) return fromValue(val.toInt());
+    if (val is String) {
+      final str = val.trim().toLowerCase();
+      return ListingStatus.values.firstWhere(
+        (e) => e.name.toLowerCase() == str,
+        orElse: () {
+          final parsed = int.tryParse(str);
+          if (parsed != null) return fromValue(parsed);
+          return ListingStatus.published;
+        },
+      );
+    }
+    return ListingStatus.published;
+  }
 }
 
 class DesignerSummary {
@@ -60,7 +78,7 @@ class DesignerSummary {
 
   factory DesignerSummary.fromJson(Map<String, dynamic> json) {
     return DesignerSummary(
-      id: (json['id'] as num).toInt(),
+      id: (json['id'] as num?)?.toInt() ?? int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       displayName: json['displayName'] as String? ?? '',
       bio: json['bio'] as String? ?? '',
       styleTags: (json['styleTags'] as List<dynamic>?)
@@ -71,9 +89,9 @@ class DesignerSummary {
               ?.map((e) => e.toString())
               .toList() ??
           const [],
-      priceRangeMin: (json['priceRangeMin'] as num?)?.toDouble() ?? 0.0,
-      priceRangeMax: (json['priceRangeMax'] as num?)?.toDouble() ?? 0.0,
-      ratePerSqFt: (json['ratePerSqFt'] as num?)?.toDouble() ?? 0.0,
+      priceRangeMin: (json['priceRangeMin'] as num?)?.toDouble() ?? double.tryParse(json['priceRangeMin']?.toString() ?? '0') ?? 0.0,
+      priceRangeMax: (json['priceRangeMax'] as num?)?.toDouble() ?? double.tryParse(json['priceRangeMax']?.toString() ?? '0') ?? 0.0,
+      ratePerSqFt: (json['ratePerSqFt'] as num?)?.toDouble() ?? double.tryParse(json['ratePerSqFt']?.toString() ?? '0') ?? 0.0,
       isAvailable: json['isAvailable'] as bool? ?? true,
       maxConcurrentProjects:
           (json['maxConcurrentProjects'] as num?)?.toInt() ?? 3,
@@ -83,11 +101,10 @@ class DesignerSummary {
           (json['remainingCapacity'] as num?)?.toInt() ?? 3,
       isUnderCapacity: json['isUnderCapacity'] as bool? ?? true,
       isAtCapacity: json['isAtCapacity'] as bool? ?? false,
-      averageRating: (json['averageRating'] as num?)?.toDouble(),
-      listingStatus: ListingStatus.fromValue(
-          (json['listingStatus'] as num?)?.toInt() ?? 1),
+      averageRating: (json['averageRating'] as num?)?.toDouble() ?? (json['averageRating'] != null ? double.tryParse(json['averageRating'].toString()) : null),
+      listingStatus: ListingStatus.fromJson(json['listingStatus']),
       publishedPortfolioCount:
-          (json['publishedPortfolioCount'] as num?)?.toInt() ?? 0,
+          (json['publishedPortfolioCount'] as num?)?.toInt() ?? int.tryParse(json['publishedPortfolioCount']?.toString() ?? '0') ?? 0,
       featuredImageUrl: json['featuredImageUrl'] as String?,
       createdAtUtc: json['createdAtUtc'] != null
           ? DateTime.tryParse(json['createdAtUtc'].toString()) ??

@@ -47,8 +47,9 @@ class _DesignerProfileScreenState extends State<DesignerProfileScreen> {
 
     final profile = results[0] as DesignerProfile;
     final portfolio = results[1] as List<PortfolioItem>;
+    final effectivePortfolio = portfolio.isNotEmpty ? portfolio : profile.portfolioItems;
 
-    return (profile: profile, portfolio: portfolio);
+    return (profile: profile, portfolio: effectivePortfolio);
   }
 
   String _formatCurrency(double amount) {
