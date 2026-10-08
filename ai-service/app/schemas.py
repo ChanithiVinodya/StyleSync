@@ -83,7 +83,7 @@ class DesignerAvailabilityResponseDto(BaseModel):
 
 
 class DesignerMatch(BaseModel):
-    designer_id: int = Field(alias="designerId", default=0)
+    designer_id: str = Field(alias="designerId", default="")
     designer_name: str = Field(alias="designerName", default="")
     style_match_pct: float = Field(alias="styleMatchPct", default=0.0)
     budget_match: str = Field(alias="budgetMatch", default="Medium")  # "High" | "Medium" | "Low"
@@ -94,13 +94,17 @@ class DesignerMatch(BaseModel):
 
 
 class ScopeItem(BaseModel):
-    name: str
-    estimated_cost: float
+    description: str
+    category: str
+    quantity: int
+    unit_cost: float
 
 
 class ProjectScope(BaseModel):
     items: list[ScopeItem] = Field(default_factory=list)
     estimated_total: float = 0.0
+    scope_summary: Optional[str] = None
+    notes: Optional[str] = None
 
 
 class RuleCheck(BaseModel):

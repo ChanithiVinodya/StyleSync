@@ -810,6 +810,11 @@ class _QuotesContractsPageState extends ConsumerState<QuotesContractsPage> with 
               onTap: () => QuoteDetailBottomSheet.show(
                 context,
                 quote: quote,
+                onStage2Decision: (action, feedback) {
+                  if (action == 'Approve') {
+                    _handleAcceptQuote(quote);
+                  }
+                },
               ),
               onEdit: () => _openNewQuote(quoteToEdit: quote),
               onSubmit: () => _handleAdvanceQuote(quote),

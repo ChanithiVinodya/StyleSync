@@ -12,6 +12,7 @@ import 'widgets/room_photo_picker.dart';
 import 'widgets/moodboard_picker.dart';
 import 'widgets/style_picker.dart';
 import 'request_detail_screen.dart';
+import '../../providers/auth/auth_provider.dart';
 
 class NewRequestScreen extends ConsumerStatefulWidget {
   final String? editId;
@@ -44,6 +45,8 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   List<MoodboardImage> _moodboardImages = [];
   List<String> _selectedStyleTags = [];
   String? _styleError;
+  String? _preferredDesignerId;
+  List<dynamic> _designers = [];
   
   bool _isLoading = false;
   bool _isSubmitting = false;
@@ -115,10 +118,27 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
   }
 
   Future<void> _loadDraft() async {
-    if (widget.editId == null || _isInit) return;
+    if (_isInit) return;
     
     setState(() => _isLoading = true);
     try {
+      final apiClient = ref.read(apiClientProvider);
+      try {
+        final res = await apiClient.dio.get('/DesignerProfiles');
+        if (res.data != null && res.data is List) {
+          _designers = res.data as List;
+        }
+      } catch (e) {
+        debugPrint('Failed to load designers: $e');
+      }
+
+      if (widget.editId == null) {
+        _hasUnsavedChanges = false;
+        _isInit = true;
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
       final repo = ref.read(requestsRepositoryProvider);
       final draft = await repo.getRequest(widget.editId!);
       
@@ -224,6 +244,7 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
       }
 
       data['requestedStyleTags'] = _selectedStyleTags;
+      data['preferredDesignerId'] = _preferredDesignerId;
 
       final repo = ref.read(requestsRepositoryProvider);
       if (_currentId != null) {
@@ -488,6 +509,30 @@ class _NewRequestScreenState extends ConsumerState<NewRequestScreen> {
                           _markChanged();
                         },
                         validator: _validateRoomType,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      DropdownButtonFormField<String?>(
+                        value: _preferredDesignerId,
+                        decoration: const InputDecoration(labelText: 'Preferred Designer (Optional)'),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            value: null,
+                            child: Text('-- Let AI Decide --'),
+                          ),
+                          ..._designers.map((d) {
+                            final name = d['displayName'] ?? 'Unknown';
+                            final tags = (d['styleTags'] as List?)?.join(', ') ?? 'Various';
+                            return DropdownMenuItem<String?>(
+                              value: d['userId']?.toString(),
+                              child: Text('$name ($tags)'),
+                            );
+                          }).toList(),
+                        ],
+                        onChanged: (val) {
+                          setState(() => _preferredDesignerId = val);
+                          _markChanged();
+                        },
                       ),
                       const SizedBox(height: 16),
                       

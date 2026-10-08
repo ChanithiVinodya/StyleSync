@@ -13,7 +13,8 @@ public record CreateRequestDto(
     string? Description,
     PaletteSelectionDto? Palette,
     decimal? RoomSizeSqM = null,
-    List<string>? RequestedStyleTags = null
+    List<string>? RequestedStyleTags = null,
+    Guid? PreferredDesignerId = null
 );
 
 public record UpdateRequestDto(
@@ -23,7 +24,8 @@ public record UpdateRequestDto(
     string? Description,
     PaletteSelectionDto? Palette,
     decimal? RoomSizeSqM = null,
-    List<string>? RequestedStyleTags = null
+    List<string>? RequestedStyleTags = null,
+    Guid? PreferredDesignerId = null
 );
 
 public record RequestSummaryDto(
@@ -56,14 +58,15 @@ public record RequestDetailDto(
     string? FlagReason,
     string? RoomPhotoUrl,
     List<MoodboardImageDto> Moodboards,
-    List<SuggestedPaletteDto> Palettes,
-    List<RequestStatusHistoryDto> StatusHistories,
+    List<SuggestedPaletteDto> Palette,
+    List<RequestStatusHistoryDto> StatusHistory,
     DateTime CreatedAt,
     DateTime UpdatedAt,
     string? PaletteMode,
     string? PalettePresetId,
     string? PaletteBaseHex,
-    List<string> RequestedStyleTags
+    List<string> RequestedStyleTags,
+    Guid? PreferredDesignerId
 );
 
 public record PagedResult<T>(

@@ -393,7 +393,12 @@ class _RequestDetailScreenState extends ConsumerState<RequestDetailScreen> {
               spacing: 8,
               runSpacing: 8,
               children: _detail!.palette.map((c) {
-                final color = Color(int.parse(c.hexValue.replaceAll('#', '0xff')));
+                Color color;
+                try {
+                  color = Color(int.parse(c.hexValue.replaceAll('#', '0xff')));
+                } catch (e) {
+                  color = Colors.grey; // Fallback for invalid hex strings like 'Brushed Steel'
+                }
                 final tc = _getLuminanceContrast(color);
                 return InkWell(
                   onTap: () => _copyToClipboard(c.hexValue),

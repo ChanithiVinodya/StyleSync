@@ -1,0 +1,2 @@
+DEBUG:urllib3.connectionpool:Starting new HTTP connection (1): localhost:8000
+DEBUG:urllib3.connectionpool:http://localhost:8000 "POST /workflow/run HTTP/1.1" 500 21

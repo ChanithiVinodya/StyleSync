@@ -169,6 +169,22 @@ export const AdminRequestDetail: React.FC = () => {
                     <AlertTriangle size={14} className={request.isFlagged ? "text-amber-500" : ""} /> 
                     {request.isFlagged ? "Remove flag" : "Flag as invalid"}
                   </button>
+                  {request.status === 'AwaitingApproval' && (
+                    <button 
+                      onClick={async () => { 
+                        setMenuOpen(false);
+                        try {
+                          await requestApi.approveRequest(request.id);
+                          refetch();
+                        } catch (err) {
+                          alert('Failed to approve request');
+                        }
+                      }}
+                      className="w-full text-left px-4 py-3 hover:bg-[#EFEAE1] dark:hover:bg-[#25201C] transition flex items-center gap-2 border-t border-[#E7E1D7] dark:border-[#2E2824] text-green-600 dark:text-green-500"
+                    >
+                      <Check size={14} /> Approve Request
+                    </button>
+                  )}
                   {/* Hide cancel if Completed, Rejected, or Cancelled */}
                   {!['Completed', 'Rejected', 'Cancelled'].includes(request.status) && (
                     <button 
@@ -293,7 +309,7 @@ export const AdminRequestDetail: React.FC = () => {
                 </span>
                 <span className="text-sm text-[#78716C]">Current stage</span>
               </div>
-              <StatusTimeline history={request.statusHistory} currentStatus={request.status} />
+              <StatusTimeline history={request.statusHistory || (request as any).statusHistories || []} currentStatus={request.status} />
               
               {/* Stored Reasons */}
               {(request.cancelReason || request.flagReason) && (

@@ -1,14 +1,17 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.ProjectRequests.Models.Entities;
 using StyleSync.Api.Modules.ProjectRequests.Models.Enums;
+using StyleSync.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace StyleSync.Api.Modules.ProjectRequests.Services;
 
@@ -74,7 +77,12 @@ public class AiWorkflowStarter : IWorkflowStarter
                 return;
             }
 
-            var aiResult = await response.Content.ReadFromJsonAsync<AiWorkflowResponse>();
+            var options = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+                PropertyNameCaseInsensitive = true
+            };
+            var aiResult = await response.Content.ReadFromJsonAsync<AiWorkflowResponse>(options);
 
             // 5. Save the output to DB (Palettes, Style tags, etc)
             if (aiResult?.StyleProfile != null)
@@ -96,12 +104,54 @@ public class AiWorkflowStarter : IWorkflowStarter
                 }
             }
 
+            // 6. Automatically Create Quote Version 1 (From Budget/Scope Agent)
+            if (aiResult?.ProjectScope != null && aiResult.ProjectScope.Items != null && aiResult.ProjectScope.Items.Count > 0)
+            {
+                var quoteId = Guid.NewGuid();
+                var fallbackDesigner = await db.Users.FirstOrDefaultAsync(u => u.Role == StyleSync.Api.Common.Identity.UserRole.Designer);
+                var selectedDesignerId = fallbackDesigner?.Id ?? Guid.NewGuid();
+                if (aiResult.DesignerMatches != null && aiResult.DesignerMatches.Count > 0)
+                {
+                    if (Guid.TryParse(aiResult.DesignerMatches[0].DesignerId, out var parsedId))
+                    {
+                        selectedDesignerId = parsedId;
+                    }
+                }
+                if (request.PreferredDesignerId.HasValue)
+                {
+                    selectedDesignerId = request.PreferredDesignerId.Value;
+                }
+
+                var quote = new Quote
+                {
+                    Id = quoteId,
+                    ProjectRequestId = request.Id,
+                    DesignerId = selectedDesignerId, // Uses top matched designer from AI
+                    Status = QuoteStatus.Stage1Released, // Released to the client automatically by the Validation Agent
+                    IsAiGenerated = true,
+                    ScopeSummary = aiResult.ProjectScope.ScopeSummary ?? "Interior Design & Makeover (AI Generated)",
+                    Notes = aiResult.ProjectScope.Notes ?? "Drafted by AI Agent",
+                    Items = aiResult.ProjectScope.Items.Select(i => new QuoteItem
+                    {
+                        Id = Guid.NewGuid(),
+                        QuoteId = quoteId,
+                        Description = i.Description ?? "Item",
+                        Category = Enum.TryParse<QuoteItemCategory>(i.Category, true, out var cat) ? cat : QuoteItemCategory.Other,
+                        Quantity = i.Quantity,
+                        UnitCost = i.UnitCost,
+                        LineTotal = i.Quantity * i.UnitCost
+                    }).ToList()
+                };
+                quote.TotalCost = quote.Items.Sum(i => i.LineTotal);
+                db.Quotes.Add(quote);
+            }
+
             // Move to ProposalReady -> AwaitingApproval
             await statusService.TransitionAsync(requestId, RequestStatus.ProposalReady, null, "AI workflow completed successfully");
             await statusService.TransitionAsync(requestId, RequestStatus.AwaitingApproval, null, "Proposal awaits admin approval");
             
             await db.SaveChangesAsync();
-            _logger.LogInformation("Successfully completed AI workflow for {id}", requestId);
+            _logger.LogInformation("Successfully completed AI workflow and generated Quote for {id}", requestId);
         }
         catch (Exception ex)
         {
@@ -113,10 +163,35 @@ public class AiWorkflowStarter : IWorkflowStarter
 public class AiWorkflowResponse
 {
     public StyleProfileResponse? StyleProfile { get; set; }
+    public ProjectScopeResponse? ProjectScope { get; set; }
+    public List<DesignerMatchResponse>? DesignerMatches { get; set; }
+}
+
+public class DesignerMatchResponse
+{
+    public string? DesignerId { get; set; }
+    public string? DesignerName { get; set; }
+    public float MatchScore { get; set; }
 }
 
 public class StyleProfileResponse
 {
     public List<string>? PreferredColours { get; set; }
     public List<string>? StyleTags { get; set; }
+}
+
+public class ProjectScopeResponse
+{
+    public List<ScopeItemResponse>? Items { get; set; }
+    public decimal EstimatedTotal { get; set; }
+    public string? ScopeSummary { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class ScopeItemResponse
+{
+    public string? Description { get; set; }
+    public string? Category { get; set; }
+    public int Quantity { get; set; }
+    public decimal UnitCost { get; set; }
 }

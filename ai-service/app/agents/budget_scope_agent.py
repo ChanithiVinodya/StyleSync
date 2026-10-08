@@ -231,6 +231,15 @@ def build_scope(state: WorkflowState, style_profile: StyleProfile) -> ProjectSco
     )
     result = run_budget_scope_agent(req)
     return ProjectScope(
-        items=[ScopeItem(name=i.description, estimated_cost=i.unit_cost * i.quantity) for i in result.items],
+        items=[
+            ScopeItem(
+                description=i.description,
+                category=i.category,
+                quantity=i.quantity,
+                unit_cost=i.unit_cost
+            ) for i in result.items
+        ],
         estimated_total=result.estimated_total,
+        scope_summary=result.scope_summary,
+        notes=result.notes
     )

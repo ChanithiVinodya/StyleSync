@@ -44,6 +44,11 @@ public class ProjectRequestConfigurations : IEntityTypeConfiguration<ProjectRequ
             .HasForeignKey(x => x.FlaggedByUserId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.HasOne(x => x.PreferredDesigner)
+            .WithMany()
+            .HasForeignKey(x => x.PreferredDesignerId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.HasMany(x => x.MoodboardImages)
             .WithOne(x => x.ProjectRequest)
             .HasForeignKey(x => x.ProjectRequestId)

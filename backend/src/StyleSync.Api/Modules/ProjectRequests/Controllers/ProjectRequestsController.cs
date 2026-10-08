@@ -95,6 +95,7 @@ public class ProjectRequestsController : ControllerBase
             Budget = dto.Budget ?? 0m,
             Description = initialDesc,
             RequestedStyleTags = dto.RequestedStyleTags ?? new List<string>(),
+            PreferredDesignerId = dto.PreferredDesignerId,
             Status = RequestStatus.Draft,
             ReferenceCode = $"REQ-{new Random().Next(100000, 999999)}"
         };
@@ -194,6 +195,10 @@ public class ProjectRequestsController : ControllerBase
         request.RoomSizeSqFt = dto.RoomSizeSqFt ?? dto.RoomSizeSqM ?? request.RoomSizeSqFt;
         request.Budget = dto.Budget ?? request.Budget;
         request.Description = dto.Description ?? request.Description;
+        if (dto.PreferredDesignerId.HasValue)
+        {
+            request.PreferredDesignerId = dto.PreferredDesignerId.Value;
+        }
         if (dto.RequestedStyleTags != null && dto.RequestedStyleTags.Any())
         {
             request.RequestedStyleTags = dto.RequestedStyleTags;
@@ -445,6 +450,53 @@ public class ProjectRequestsController : ControllerBase
     }
 
     /// <summary>
+    /// Approves a project request. (Admin only)
+    /// </summary>
+    /// <response code="200">If approval is successful.</response>
+    /// <response code="404">If the request is not found.</response>
+    /// <response code="409">If the request is not in AwaitingApproval state.</response>
+    [HttpPost("{id:guid}/approve")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(typeof(ProblemDetails), 400)]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ApproveRequest(Guid id)
+    {
+        var request = await _context.ProjectRequests.FirstOrDefaultAsync(r => r.Id == id);
+        if (request == null)
+            return NotFound(new { message = "Request not found." });
+
+        if (request.Status != RequestStatus.AwaitingApproval)
+        {
+            return Conflict(new ProblemDetails
+            {
+                Status = 409,
+                Title = "Conflict",
+                Detail = "Only requests in AwaitingApproval status can be approved."
+            });
+        }
+
+        _context.RequestAuditLogs.Add(new RequestAuditLog
+        {
+            ActorId = _currentUser.Id,
+            Action = "REQUEST_APPROVED",
+            EntityId = request.Id,
+            Reason = "Admin approved the request",
+            Timestamp = DateTime.UtcNow
+        });
+
+        try
+        {
+            await _statusService.TransitionAsync(request.Id, RequestStatus.Approved, _currentUser.Id, "Admin approved the request");
+        }
+        catch (StyleSync.Api.Modules.ProjectRequests.Services.IllegalStatusTransitionException)
+        {
+            return Conflict(new { message = "Cannot approve from the current state." });
+        }
+
+        return Ok(new { message = "Request approved successfully." });
+    }
+
+    /// <summary>
     /// Gets aggregated analytics for project requests. (Admin only)
     /// </summary>
     /// <response code="200">Returns the analytics data.</response>
@@ -534,14 +586,15 @@ public class ProjectRequestsController : ControllerBase
             FlagReason: request.FlagReason,
             RoomPhotoUrl: request.RoomPhotoUrl,
             Moodboards: request.MoodboardImages?.Select(m => new MoodboardImageDto(m.Id, m.Url, m.SortOrder)).ToList() ?? new(),
-            Palettes: request.SuggestedPalettes?.Select(p => new SuggestedPaletteDto(p.Id, p.Hex, p.Position, p.Source)).ToList() ?? new(),
-            StatusHistories: request.StatusHistories?.OrderBy(h => h.ChangedAt).Select(h => new RequestStatusHistoryDto(h.Id, h.FromStatus, h.ToStatus, h.ChangedAt, h.Note)).ToList() ?? new(),
+            Palette: request.SuggestedPalettes?.Select(p => new SuggestedPaletteDto(p.Id, p.Hex, p.Position, p.Source)).ToList() ?? new(),
+            StatusHistory: request.StatusHistories?.OrderBy(h => h.ChangedAt).Select(h => new RequestStatusHistoryDto(h.Id, h.FromStatus, h.ToStatus, h.ChangedAt, h.Note)).ToList() ?? new(),
             CreatedAt: request.CreatedAt,
             UpdatedAt: request.UpdatedAt,
             PaletteMode: request.PaletteMode,
             PalettePresetId: request.PalettePresetId,
             PaletteBaseHex: request.PaletteBaseHex,
-            RequestedStyleTags: styles
+            RequestedStyleTags: styles,
+            PreferredDesignerId: request.PreferredDesignerId
         );
     }
 

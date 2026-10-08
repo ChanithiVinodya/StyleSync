@@ -185,7 +185,7 @@ def run_designer_matching_node(state: WorkflowState) -> WorkflowState:
 
             shortlisted_matches.append(
                 DesignerMatch(
-                    designer_id=int(candidate["designerId"]),
+                    designer_id=str(candidate["designerId"]),
                     designer_name=candidate.get("displayName", f"Designer #{candidate['designerId']}"),
                     style_match_pct=style_pct,
                     budget_match=budget_match,
