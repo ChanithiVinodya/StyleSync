@@ -46,5 +46,7 @@ export default function () {
     },
   });
 
+  if (response.status !== 200) console.log(`status=${response.status} error=${response.error}`);
+
   sleep(1);
 }
