@@ -62,5 +62,8 @@ public class DesignerProfileConfiguration : IEntityTypeConfiguration<DesignerPro
             .WithOne(p => p.DesignerProfile)
             .HasForeignKey(p => p.DesignerProfileId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(d => new { d.ListingStatus, d.IsAvailable, d.AverageRating });
+        builder.HasIndex(d => d.CreatedAtUtc);
     }
 }
