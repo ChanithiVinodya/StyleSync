@@ -19,6 +19,8 @@ BEGIN
     RAISE NOTICE 'Starting dev seeding for 1000 designer profiles into %...', current_database();
 END $$;
 
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- ----------------------------------------------------------------------------
 -- STEP 1: Insert 1000 Designer Users (if not already present)
 -- ----------------------------------------------------------------------------

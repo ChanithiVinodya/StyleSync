@@ -2,7 +2,7 @@
 # StyleSync Local Designer Seeding Runner
 # ==============================================================================
 param(
-    [string]$Host = "localhost",
+    [string]$DbHost = "localhost",
     [int]$Port = 5433,
     [string]$Database = "stylesync_db",
     [string]$Username = "postgres",
@@ -11,7 +11,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "Checking local PostgreSQL connection at ${Host}:${Port}/${Database}..." -ForegroundColor Cyan
+Write-Host "Checking local PostgreSQL connection at ${DbHost}:${Port}/${Database}..." -ForegroundColor Cyan
 
 $scriptPath = Join-Path $PSScriptRoot "seed_dev_designers.sql"
 if (-not (Test-Path $scriptPath)) {
@@ -39,7 +39,7 @@ if ($dockerRunning) {
 if (Get-Command psql -ErrorAction SilentlyContinue) {
     Write-Host "Executing SQL via local psql..." -ForegroundColor Green
     $env:PGPASSWORD = $Password
-    psql -h $Host -p $Port -U $Username -d $Database -f $scriptPath
+    psql -h $DbHost -p $Port -U $Username -d $Database -f $scriptPath
     Write-Host "Seeding completed successfully via psql!" -ForegroundColor Green
     exit 0
 }
