@@ -14,6 +14,8 @@ class FakeDesignersApiService extends DesignersApiService {
   }
 }
 
+final testTheme = ThemeData(splashFactory: InkRipple.splashFactory);
+
 void main() {
   group('Designer Models & DTO Deserialization', () {
     test('DesignerSummary deserializes backend JSON response correctly', () {
@@ -125,6 +127,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: testTheme,
           home: Scaffold(
             body: DesignerCard(
               designer: designer,
@@ -169,6 +172,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: testTheme,
           home: Scaffold(
             body: DesignerCard(
               designer: designer,
@@ -191,6 +195,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            theme: testTheme,
             home: DesignerListingScreen(apiService: service),
           ),
         ),
@@ -215,6 +220,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           child: MaterialApp(
+            theme: testTheme,
             home: DesignerListingScreen(
               apiService: service,
               initialStyle: 'Scandinavian',

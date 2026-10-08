@@ -191,6 +191,7 @@ def run_designer_matching_node(state: WorkflowState) -> WorkflowState:
                     budget_match=budget_match,
                     match_score=round(float(candidate.get("matchScore", 0.0)), 3),
                     explanation=explanation,
+                    capacity_available=True,
                 )
             )
 

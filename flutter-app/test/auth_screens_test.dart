@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stylesync/screens/auth/login_screen.dart';
 import 'package:stylesync/screens/auth/register_screen.dart';
 
+final testTheme = ThemeData(splashFactory: InkRipple.splashFactory);
+
 void main() {
   group('Auth Screens Widget Tests', () {
     testWidgets('LoginScreen renders email, password, and log in button', (tester) async {
@@ -12,9 +14,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        const ProviderScope(
+        ProviderScope(
           child: MaterialApp(
-            home: LoginScreen(),
+            theme: testTheme,
+            home: const LoginScreen(),
           ),
         ),
       );
@@ -33,9 +36,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        const ProviderScope(
+        ProviderScope(
           child: MaterialApp(
-            home: LoginScreen(),
+            theme: testTheme,
+            home: const LoginScreen(),
           ),
         ),
       );
@@ -53,9 +57,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        const ProviderScope(
+        ProviderScope(
           child: MaterialApp(
-            home: RegisterScreen(),
+            theme: testTheme,
+            home: const RegisterScreen(),
           ),
         ),
       );
@@ -80,9 +85,10 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
 
       await tester.pumpWidget(
-        const ProviderScope(
+        ProviderScope(
           child: MaterialApp(
-            home: RegisterScreen(),
+            theme: testTheme,
+            home: const RegisterScreen(),
           ),
         ),
       );

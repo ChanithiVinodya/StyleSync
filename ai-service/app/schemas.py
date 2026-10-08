@@ -89,6 +89,7 @@ class DesignerMatch(BaseModel):
     budget_match: str = Field(alias="budgetMatch", default="Medium")  # "High" | "Medium" | "Low"
     match_score: float = Field(alias="matchScore", default=0.0)
     explanation: str = Field(alias="explanation", default="")
+    capacity_available: bool = Field(alias="capacityAvailable", default=True)
 
     model_config = {"populate_by_name": True, "extra": "ignore"}
 

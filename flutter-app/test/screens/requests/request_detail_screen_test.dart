@@ -66,13 +66,16 @@ void main() {
     mockRepo = MockRequestsRepository();
   });
 
+  final testTheme = ThemeData(splashFactory: InkRipple.splashFactory);
+
   Widget buildScreen() {
     return ProviderScope(
       overrides: [
         requestsRepositoryProvider.overrideWithValue(mockRepo as dynamic),
       ],
-      child: const MaterialApp(
-        home: RequestDetailScreen(id: 'draft_1'),
+      child: MaterialApp(
+        theme: testTheme,
+        home: const RequestDetailScreen(id: 'draft_1'),
       ),
     );
   }

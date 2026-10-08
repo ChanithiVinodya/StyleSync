@@ -9,6 +9,7 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
+        theme: ThemeData(splashFactory: InkRipple.splashFactory),
         home: Scaffold(
           body: StatefulBuilder(
             builder: (context, setState) {
@@ -64,8 +65,9 @@ void main() {
 
   testWidgets('StylePicker displays error message when errorText is provided', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
+      MaterialApp(
+        theme: ThemeData(splashFactory: InkRipple.splashFactory),
+        home: const Scaffold(
           body: SingleChildScrollView(
             child: StylePicker(
               selectedStyles: [],

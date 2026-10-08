@@ -95,6 +95,7 @@ class StyleSyncApp extends StatelessWidget {
       // Light Theme
       theme: ThemeData(
         useMaterial3: true,
+        splashFactory: InkRipple.splashFactory,
         brightness: Brightness.light,
         scaffoldBackgroundColor: canvasCream,
         colorScheme: ColorScheme.fromSeed(
@@ -128,6 +129,7 @@ class StyleSyncApp extends StatelessWidget {
       // Dark Theme (Matches StyleSync Web App Dark Mode)
       darkTheme: ThemeData(
         useMaterial3: true,
+        splashFactory: InkRipple.splashFactory,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: darkBg,
         colorScheme: ColorScheme.fromSeed(

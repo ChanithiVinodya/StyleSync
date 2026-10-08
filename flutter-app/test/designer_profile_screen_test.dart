@@ -21,6 +21,8 @@ class FakeDesignerProfileApiService extends DesignersApiService {
   }
 }
 
+final testTheme = ThemeData(splashFactory: InkRipple.splashFactory);
+
 void main() {
   group('DesignerProfileScreen Tests', () {
     testWidgets('Renders full profile details, rating, and portfolio gallery grid',
@@ -29,6 +31,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: testTheme,
           home: DesignerProfileScreen(designerId: 1, apiService: service),
         ),
       );
@@ -67,6 +70,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: testTheme,
           home: DesignerProfileScreen(designerId: 7, apiService: service),
         ),
       );
@@ -85,6 +89,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: testTheme,
           home: DesignerProfileScreen(designerId: 1, apiService: service),
         ),
       );
