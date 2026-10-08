@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using StyleSync.Api.DTOs;
 using StyleSync.Api.Services;
 
+using Microsoft.Extensions.Logging;
+
 namespace StyleSync.Api.Controllers;
 
 [ApiController]
@@ -11,10 +13,12 @@ namespace StyleSync.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ILogger<AuthController> _logger;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, ILogger<AuthController> logger)
     {
         _authService = authService;
+        _logger = logger;
     }
 
     /// <summary>
@@ -38,8 +42,24 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var result = await _authService.LoginAsync(request);
-        return Ok(result);
+        try
+        {
+            var result = await _authService.LoginAsync(request);
+            return Ok(result);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Expected normal 401 for incorrect credentials
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[DIAG-PERF] POST /api/auth/login FAILED! Type={ex.GetType().FullName}, Message={ex.Message}, InnerType={ex.InnerException?.GetType().FullName}, InnerMessage={ex.InnerException?.Message}");
+            Console.ResetColor();
+            _logger.LogError(ex, "[DIAG-PERF] POST /api/auth/login failed: {Type}: {Message}", ex.GetType().FullName, ex.Message);
+            throw;
+        }
     }
 
     /// <summary>

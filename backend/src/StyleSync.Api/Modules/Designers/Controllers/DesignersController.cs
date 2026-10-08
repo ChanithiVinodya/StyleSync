@@ -4,6 +4,8 @@ using StyleSync.Api.Common.Identity;
 using StyleSync.Api.Modules.Designers.DTOs;
 using StyleSync.Api.Modules.Designers.Services;
 
+using Microsoft.Extensions.Logging;
+
 namespace StyleSync.Api.Modules.Designers.Controllers;
 
 [ApiController]
@@ -12,11 +14,16 @@ public class DesignersController : ControllerBase
 {
     private readonly IDesignerService _designerService;
     private readonly IMatchScoreEngine _matchScoreEngine;
+    private readonly ILogger<DesignersController> _logger;
 
-    public DesignersController(IDesignerService designerService, IMatchScoreEngine matchScoreEngine)
+    public DesignersController(
+        IDesignerService designerService, 
+        IMatchScoreEngine matchScoreEngine,
+        ILogger<DesignersController> logger)
     {
         _designerService = designerService;
         _matchScoreEngine = matchScoreEngine;
+        _logger = logger;
     }
 
     /// <summary>
@@ -30,8 +37,19 @@ public class DesignersController : ControllerBase
     [ProducesResponseType(typeof(PagedResult<DesignerListingItemResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetListings([FromQuery] DesignerQueryParameters query)
     {
-        var result = await _designerService.GetPublicListingsAsync(query);
-        return Ok(result);
+        try
+        {
+            var result = await _designerService.GetPublicListingsAsync(query);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"[DIAG-PERF] GET /api/designers FAILED! Type={ex.GetType().FullName}, Message={ex.Message}, InnerType={ex.InnerException?.GetType().FullName}, InnerMessage={ex.InnerException?.Message}");
+            Console.ResetColor();
+            _logger.LogError(ex, "[DIAG-PERF] GET /api/designers failed: {Type}: {Message}", ex.GetType().FullName, ex.Message);
+            throw;
+        }
     }
 
     /// <summary>
