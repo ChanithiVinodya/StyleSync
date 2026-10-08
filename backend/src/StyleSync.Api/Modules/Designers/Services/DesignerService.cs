@@ -8,6 +8,9 @@ namespace StyleSync.Api.Modules.Designers.Services;
 
 public class DesignerService : IDesignerService
 {
+    private static readonly SemaphoreSlim _designerCacheLock = new(1, 1);
+    private const string PublishedDesignersCacheKey = "all_published_designers";
+
     private readonly AppDbContext _context;
     private readonly ICapacityGuardService _capacityGuard;
     private readonly IMemoryCache? _cache;
@@ -26,15 +29,27 @@ public class DesignerService : IDesignerService
         List<DesignerProfile> allPublished;
         if (_cache != null)
         {
-            allPublished = await _cache.GetOrCreateAsync("all_published_designers", async entry =>
+            if (!_cache.TryGetValue(PublishedDesignersCacheKey, out allPublished!) || allPublished == null)
             {
-                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(15);
-                return await _context.DesignerProfiles
-                    .AsNoTracking()
-                    .Include(d => d.PortfolioItems)
-                    .Where(d => d.ListingStatus == ListingStatus.Published)
-                    .ToListAsync(cancellationToken);
-            }) ?? new List<DesignerProfile>();
+                await _designerCacheLock.WaitAsync(cancellationToken);
+                try
+                {
+                    if (!_cache.TryGetValue(PublishedDesignersCacheKey, out allPublished!) || allPublished == null)
+                    {
+                        allPublished = await _context.DesignerProfiles
+                            .AsNoTracking()
+                            .Include(d => d.PortfolioItems)
+                            .Where(d => d.ListingStatus == ListingStatus.Published)
+                            .ToListAsync(cancellationToken);
+
+                        _cache.Set(PublishedDesignersCacheKey, allPublished, TimeSpan.FromSeconds(15));
+                    }
+                }
+                finally
+                {
+                    _designerCacheLock.Release();
+                }
+            }
         }
         else
         {
