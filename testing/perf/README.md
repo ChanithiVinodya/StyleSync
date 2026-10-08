@@ -31,18 +31,20 @@ Each script supports dynamic configuration via environment variables:
 1. Ensure the StyleSync API backend is running (`dotnet run --project backend/src/StyleSync.Api`).
 2. Ensure [k6](https://k6.io/) is installed.
 
-### Run Individual Tests
+### Run & Save Evidence Reports
+
+The performance test outputs and summary json files can be saved directly to [testing/evidence/performance/](file:///c:/Users/Chani/Desktop/stylesync-skeleton/testing/evidence/performance/):
 
 ```powershell
-# 1. Designers Directory Load Test
-k6 run -e BASE_URL="http://localhost:5000" testing/perf/designers-load.js
+# 1. Designers Directory Load Test (PF-01)
+k6 run -e BASE_URL="http://localhost:5000" --summary-export=testing/evidence/performance/pf-01-summary.json testing/perf/designers-load.js | Tee-Object -FilePath testing/evidence/performance/pf-01-summary.txt
 
-# 2. Designers Directory Stress Test
-k6 run -e BASE_URL="http://localhost:5000" testing/perf/designers-stress.js
+# 2. Designers Directory Stress Test (PF-02)
+k6 run -e BASE_URL="http://localhost:5000" --summary-export=testing/evidence/performance/pf-02-summary.json testing/perf/designers-stress.js | Tee-Object -FilePath testing/evidence/performance/pf-02-summary.txt
 
-# 3. Authenticated Project Requests Load Test
-k6 run -e BASE_URL="http://localhost:5000" -e LOGIN_EMAIL="admin@stylesync.com" -e LOGIN_PASSWORD="Admin@StyleSync2026!" testing/perf/requests-load.js
+# 3. Authenticated Project Requests Load Test (PF-03)
+k6 run -e BASE_URL="http://localhost:5000" -e LOGIN_EMAIL="admin@stylesync.com" -e LOGIN_PASSWORD="Admin@StyleSync2026!" --summary-export=testing/evidence/performance/pf-03-summary.json testing/perf/requests-load.js | Tee-Object -FilePath testing/evidence/performance/pf-03-summary.txt
 
-# 4. Authentication Login Load Test
-k6 run -e BASE_URL="http://localhost:5000" testing/perf/login-load.js
+# 4. Authentication Login Load Test (PF-04)
+k6 run -e BASE_URL="http://localhost:5000" --summary-export=testing/evidence/performance/pf-04-summary.json testing/perf/login-load.js | Tee-Object -FilePath testing/evidence/performance/pf-04-summary.txt
 ```
