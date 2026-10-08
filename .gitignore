@@ -1,6 +1,8 @@
 # ==== .NET / Backend ====
 backend/**/bin/
 backend/**/obj/
+backend/**/TestResults/
+TestResults/
 backend/**/*.user
 backend/**/appsettings.*.local.json
 backend/**/uploads/
