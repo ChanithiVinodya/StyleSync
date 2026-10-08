@@ -151,9 +151,14 @@ def _fallback_estimate(req: BudgetScopeRequest) -> BudgetScopeResponse:
 
 
 def _call_llm(req: BudgetScopeRequest) -> BudgetScopeResponse:
-    import anthropic
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.messages import SystemMessage, HumanMessage
 
-    client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-1.5-pro",
+        temperature=0.0,
+        api_key=os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY")
+    )
 
     user_message = f"""Room type: {req.room_type}
 Room size: {req.room_size_sqft} sq ft
@@ -162,14 +167,16 @@ Detected style: {req.style_profile} (confidence: {req.style_confidence if req.st
 Client preferences: {req.preferences or "none given"}
 """
 
-    response = client.messages.create(
-        model="claude-sonnet-5",
-        max_tokens=1000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
-    )
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=user_message)
+    ]
+    response = llm.invoke(messages)
+    text = response.content
 
-    text = "".join(block.text for block in response.content if block.type == "text").strip()
+    if text.startswith("```"):
+        text = text.strip("`").removeprefix("json").strip()
+
     data = json.loads(text)
 
     items = []
@@ -199,7 +206,7 @@ Client preferences: {req.preferences or "none given"}
 def run_budget_scope_agent(req: BudgetScopeRequest) -> BudgetScopeResponse:
     """Entry point. Tries the LLM if a key is configured, falls back cleanly
     on any error so a flaky API call never breaks the workflow."""
-    if os.environ.get("ANTHROPIC_API_KEY"):
+    if os.environ.get("GOOGLE_API_KEY") or os.environ.get("GEMINI_API_KEY"):
         try:
             return _call_llm(req)
         except Exception as exc:  # noqa: BLE001 — deliberately broad: any

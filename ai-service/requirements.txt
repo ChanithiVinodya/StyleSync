@@ -7,6 +7,7 @@ python-dotenv>=1.0.1
 # Agentic AI & Persistence
 langgraph
 langchain-core
+langchain-google-genai
 langgraph-checkpoint-postgres   # lets LangGraph persist state directly to Postgres
 psycopg[binary]                  # needed by the Postgres checkpointer
 

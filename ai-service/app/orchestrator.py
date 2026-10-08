@@ -211,8 +211,13 @@ def validation_approval_node(state: WorkflowState) -> dict[str, Any]:
             "estimated_total": state.project_scope.estimated_total,
         })
 
-        if decision and str(decision).strip().lower() in ("approved", "true", "yes", "accept"):
+        decision_str = str(decision).strip().lower() if decision else ""
+        if decision_str in ("approved", "true", "yes", "accept", "release"):
             approval_status = "Approved"
+        elif decision_str in ("revise", "revision", "changes", "send for revision", "request changes"):
+            approval_status = "RevisionRequested"
+        elif decision_str in ("reject", "rejected", "false", "no"):
+            approval_status = "Rejected"
         else:
             approval_status = "AwaitingClientApproval"
     else:
@@ -228,6 +233,7 @@ def validation_approval_node(state: WorkflowState) -> dict[str, Any]:
         "validation_result": validation,
         "approval_status": approval_status,
         "plan": plan,
+        "retries": state.retries + 1 if not validation.is_valid else state.retries,
     }
 
 
@@ -278,7 +284,12 @@ def build_workflow_graph() -> StateGraph:
     builder.add_edge("style_analysis", "designer_matching")
     builder.add_edge("designer_matching", "budget_scope")
     builder.add_edge("budget_scope", "validation_approval")
-    builder.add_edge("validation_approval", END)
+    def route_after_validation(state: WorkflowState) -> str:
+        if state.approval_status == "RevisionRequested" and state.retries < 3:
+            return "budget_scope"
+        return END
+
+    builder.add_conditional_edges("validation_approval", route_after_validation)
 
     return builder
 

@@ -10,9 +10,9 @@ See app/schemas.py for the expected ValidationResult output shape.
 import os
 import json
 try:
-    from langchain_openai import ChatOpenAI
+    from langchain_google_genai import ChatGoogleGenerativeAI
 except ImportError:
-    ChatOpenAI = None
+    ChatGoogleGenerativeAI = None
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from app.schemas import DesignerMatch, ProjectScope, ValidationResult, RuleCheck, WorkflowState
@@ -61,12 +61,12 @@ Do not create additional validation rules.
 The validate() tool is the sole authority for determining whether each validation rule passes or fails.
 """
 
-    if ChatOpenAI is not None:
+    if ChatGoogleGenerativeAI is not None:
         try:
-            llm = ChatOpenAI(
-                model="gpt-4o",
+            llm = ChatGoogleGenerativeAI(
+                model="gemini-1.5-pro",
                 temperature=0.0,
-                api_key=os.getenv("LLM_API_KEY") or os.getenv("OPENAI_API_KEY")
+                api_key=os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
             ).bind_tools([validate], tool_choice="validate")
 
             messages = [

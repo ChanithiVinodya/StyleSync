@@ -59,7 +59,8 @@ def test_fallback_estimate_zero_budget():
 
 def test_run_budget_scope_agent_without_api_key(monkeypatch):
     """Ensure run_budget_scope_agent degrades gracefully to fallback when no API key."""
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
 
     req = BudgetScopeRequest(
         room_type="Master Suite",
@@ -77,8 +78,8 @@ def test_run_budget_scope_agent_without_api_key(monkeypatch):
 
 
 def test_run_budget_scope_agent_handles_llm_failure(monkeypatch):
-    """Ensure that if ANTHROPIC_API_KEY is present but the call throws, fallback is used."""
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "dummy-key-for-test")
+    """Ensure that if GOOGLE_API_KEY is present but the call throws, fallback is used."""
+    monkeypatch.setenv("GOOGLE_API_KEY", "dummy-key-for-test")
 
     def mock_call_llm(req):
         raise RuntimeError("API timeout simulation")

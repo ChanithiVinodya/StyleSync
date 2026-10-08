@@ -122,8 +122,8 @@ class ValidationResult(BaseModel):
 class WorkflowState(BaseModel):
     """Mirrors the JSON persisted in PostgreSQL by the ASP.NET Core backend."""
 
-    project_request_id: int
-    client_id: int
+    project_request_id: str
+    client_id: str
     room_type: str
     room_size: float
     budget_min: float
