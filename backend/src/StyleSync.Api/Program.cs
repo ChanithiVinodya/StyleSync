@@ -69,6 +69,7 @@ builder.Services.AddHttpContextAccessor();
 // Identity & Auth Services
 builder.Services.AddScoped<IPasswordHasher<AppUser>, PasswordHasher<AppUser>>();
 builder.Services.AddScoped<IJwtService, JwtService>();
+builder.Services.AddMemoryCache();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<StyleSync.Api.Common.Identity.ICurrentUser, StyleSync.Api.Common.Identity.CurrentUser>();
 builder.Services.AddScoped<StyleSync.Api.Integrations.ICurrentUserContext, StyleSync.Api.Integrations.HttpContextUserContext>();

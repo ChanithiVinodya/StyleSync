@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using StyleSync.Api.Common.Persistence;
 using StyleSync.Api.Modules.Designers.DTOs;
 using StyleSync.Api.Modules.Designers.Models;
@@ -7,36 +8,70 @@ namespace StyleSync.Api.Modules.Designers.Services;
 
 public class DesignerService : IDesignerService
 {
+    private static readonly SemaphoreSlim _designerCacheLock = new(1, 1);
+    private const string PublishedDesignersCacheKey = "all_published_designers";
+
     private readonly AppDbContext _context;
     private readonly ICapacityGuardService _capacityGuard;
+    private readonly IMemoryCache? _cache;
 
-    public DesignerService(AppDbContext context, ICapacityGuardService capacityGuard)
+    public DesignerService(AppDbContext context, ICapacityGuardService capacityGuard, IMemoryCache? cache = null)
     {
         _context = context;
         _capacityGuard = capacityGuard;
+        _cache = cache;
     }
 
     public async Task<PagedResult<DesignerListingItemResponse>> GetPublicListingsAsync(
         DesignerQueryParameters query, 
         CancellationToken cancellationToken = default)
     {
-        var baseQuery = _context.DesignerProfiles
-            .AsNoTracking()
-            .Include(d => d.PortfolioItems)
-            .Where(d => d.ListingStatus == ListingStatus.Published);
+        List<DesignerProfile> allPublished;
+        if (_cache != null)
+        {
+            if (!_cache.TryGetValue(PublishedDesignersCacheKey, out allPublished!) || allPublished == null)
+            {
+                await _designerCacheLock.WaitAsync(cancellationToken);
+                try
+                {
+                    if (!_cache.TryGetValue(PublishedDesignersCacheKey, out allPublished!) || allPublished == null)
+                    {
+                        allPublished = await _context.DesignerProfiles
+                            .AsNoTracking()
+                            .Include(d => d.PortfolioItems)
+                            .Where(d => d.ListingStatus == ListingStatus.Published)
+                            .ToListAsync(cancellationToken);
+
+                        _cache.Set(PublishedDesignersCacheKey, allPublished, TimeSpan.FromSeconds(15));
+                    }
+                }
+                finally
+                {
+                    _designerCacheLock.Release();
+                }
+            }
+        }
+        else
+        {
+            allPublished = await _context.DesignerProfiles
+                .AsNoTracking()
+                .Include(d => d.PortfolioItems)
+                .Where(d => d.ListingStatus == ListingStatus.Published)
+                .ToListAsync(cancellationToken);
+        }
+
+        var designers = allPublished.AsEnumerable();
 
         // Budget min/max overlap filter
         if (query.BudgetMin.HasValue && query.BudgetMin.Value > 0)
         {
-            baseQuery = baseQuery.Where(d => d.PriceRangeMax >= query.BudgetMin.Value);
+            designers = designers.Where(d => d.PriceRangeMax >= query.BudgetMin.Value);
         }
 
         if (query.BudgetMax.HasValue && query.BudgetMax.Value > 0)
         {
-            baseQuery = baseQuery.Where(d => d.PriceRangeMin <= query.BudgetMax.Value);
+            designers = designers.Where(d => d.PriceRangeMin <= query.BudgetMax.Value);
         }
-
-        var designers = await baseQuery.ToListAsync(cancellationToken);
 
         // Style tag filter
         if (!string.IsNullOrWhiteSpace(query.Style))
@@ -49,27 +84,41 @@ public class DesignerService : IDesignerService
                 designers = designers.Where(d =>
                     d.StyleTags != null &&
                     requestedStyles.Any(req => d.StyleTags.Any(dt => dt.Contains(req, StringComparison.OrdinalIgnoreCase)))
-                ).ToList();
+                );
             }
         }
 
+        var designerList = designers.ToList();
+
         // Active project counts for capacity calculation
-        var designerIds = designers.Select(d => d.Id).ToList();
-        var activeCounts = await _capacityGuard.GetActiveProjectCountsAsync(designerIds, cancellationToken);
+        var designerIds = designerList.Select(d => d.Id).ToList();
+        Dictionary<int, int> activeCounts;
+        if (_cache != null && designerIds.Count > 0)
+        {
+            activeCounts = await _cache.GetOrCreateAsync("designer_active_counts", async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(10);
+                return await _capacityGuard.GetActiveProjectCountsAsync(designerIds, cancellationToken);
+            }) ?? new Dictionary<int, int>();
+        }
+        else
+        {
+            activeCounts = await _capacityGuard.GetActiveProjectCountsAsync(designerIds, cancellationToken);
+        }
 
         // Availability filter
         if (query.Available.HasValue)
         {
             if (query.Available.Value)
             {
-                designers = designers.Where(d =>
+                designerList = designerList.Where(d =>
                     d.IsAvailable &&
                     _capacityGuard.IsUnderCapacity(d, activeCounts.TryGetValue(d.Id, out var c) ? c : 0)
                 ).ToList();
             }
             else
             {
-                designers = designers.Where(d =>
+                designerList = designerList.Where(d =>
                     !d.IsAvailable ||
                     !_capacityGuard.IsUnderCapacity(d, activeCounts.TryGetValue(d.Id, out var c) ? c : 0)
                 ).ToList();
@@ -80,12 +129,12 @@ public class DesignerService : IDesignerService
         var sortOption = query.Sort?.Trim().ToLowerInvariant();
         IEnumerable<DesignerProfile> sorted = sortOption switch
         {
-            "rating" or "rating_desc" => designers.OrderByDescending(d => d.AverageRating ?? 0).ThenByDescending(d => d.CreatedAtUtc),
-            "rating_asc" => designers.OrderBy(d => d.AverageRating ?? 0).ThenBy(d => d.CreatedAtUtc),
-            "price" or "price_asc" => designers.OrderBy(d => d.PriceRangeMin).ThenBy(d => d.RatePerSqFt),
-            "price_desc" => designers.OrderByDescending(d => d.PriceRangeMax).ThenByDescending(d => d.RatePerSqFt),
-            "newest" or "created_desc" => designers.OrderByDescending(d => d.CreatedAtUtc),
-            _ => designers.OrderByDescending(d => d.CreatedAtUtc)
+            "rating" or "rating_desc" => designerList.OrderByDescending(d => d.AverageRating ?? 0).ThenByDescending(d => d.CreatedAtUtc),
+            "rating_asc" => designerList.OrderBy(d => d.AverageRating ?? 0).ThenBy(d => d.CreatedAtUtc),
+            "price" or "price_asc" => designerList.OrderBy(d => d.PriceRangeMin).ThenBy(d => d.RatePerSqFt),
+            "price_desc" => designerList.OrderByDescending(d => d.PriceRangeMax).ThenByDescending(d => d.RatePerSqFt),
+            "newest" or "created_desc" => designerList.OrderByDescending(d => d.CreatedAtUtc),
+            _ => designerList.OrderByDescending(d => d.CreatedAtUtc)
         };
 
         var sortedList = sorted.ToList();
