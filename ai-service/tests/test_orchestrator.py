@@ -95,5 +95,9 @@ def test_orchestrator_runs_full_workflow(monkeypatch):
     assert result.designer_shortlist is not None
     assert len(result.designer_shortlist) > 0
     assert result.project_scope is not None
-    assert result.validation_result is not None
-    assert len(result.plan) == 4
+    
+    # Validation passes, so the graph pauses for human approval. We must resume it.
+    final_result = run_workflow(state, resume_decision="approved")
+    
+    assert final_result.validation_result is not None
+    assert len(final_result.plan) == 4

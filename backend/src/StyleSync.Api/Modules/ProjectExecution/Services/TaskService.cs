@@ -104,6 +104,16 @@ public class TaskService : ITaskService
             }
         }
 
+        if (request.Status == Models.TaskStatus.Completed && task.Status != Models.TaskStatus.Completed)
+        {
+            var today = DateTime.UtcNow.Date;
+            if (today > task.DueDate.Date)
+            {
+                int delayDays = (today - task.DueDate.Date).Days;
+                await ShiftDependentsAsync(id, delayDays);
+            }
+        }
+
         task.Name = request.Name;
         task.Description = request.Description;
         task.StartDate = request.StartDate;
@@ -114,6 +124,22 @@ public class TaskService : ITaskService
         await _context.SaveChangesAsync();
 
         return MapToDto(task);
+    }
+
+    private async Task ShiftDependentsAsync(Guid taskId, int delayDays)
+    {
+        var dependents = await _taskDependencyService.GetDependentsAsync(taskId);
+        foreach (var depDto in dependents)
+        {
+            var dependentTask = await _context.ProjectTasks.FindAsync(depDto.TaskId);
+            if (dependentTask != null && dependentTask.Status != Models.TaskStatus.Completed)
+            {
+                dependentTask.StartDate = dependentTask.StartDate.AddDays(delayDays);
+                dependentTask.DueDate = dependentTask.DueDate.AddDays(delayDays);
+                
+                await ShiftDependentsAsync(dependentTask.TaskId, delayDays);
+            }
+        }
     }
 
     public async Task<bool> DeleteAsync(Guid id)
