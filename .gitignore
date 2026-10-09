@@ -61,3 +61,8 @@ AUDIT.md
 INTEGRATION.md
 *.zip
 
+# ==== Test Coverage Reports ====
+testing/evidence/backend/coverage/
+testing/**/coverage/
+
+
