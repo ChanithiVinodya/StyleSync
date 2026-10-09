@@ -5,6 +5,7 @@ import 'package:stylesync/screens/requests/my_requests_screen.dart';
 import 'package:stylesync/modules/requests/providers/requests_provider.dart';
 import 'package:stylesync/modules/requests/repositories/requests_repository.dart';
 import 'package:stylesync/modules/requests/models/request_models.dart';
+import 'package:stylesync/screens/requests/request_detail_screen.dart';
 
 class MockRequestsRepository implements RequestsRepository {
   bool failList = false;
@@ -50,8 +51,9 @@ void main() {
       overrides: [
         requestsRepositoryProvider.overrideWithValue(mockRepo as dynamic),
       ],
-      child: const MaterialApp(
-        home: MyRequestsScreen(),
+      child: MaterialApp(
+        theme: ThemeData(splashFactory: InkRipple.splashFactory),
+        home: const MyRequestsScreen(),
       ),
     );
   }

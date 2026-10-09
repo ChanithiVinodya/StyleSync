@@ -68,7 +68,12 @@ exact shape:
 {
   "scope_summary": "one sentence describing the overall scope",
   "items": [
-    {"description": "...", "category": "Design|Labor|Materials|Furniture|Other", "quantity": 1, "unit_cost": 12345.00}
+    {
+      "description": "...",
+      "category": "Design|Labor|Materials|Furniture|Other",
+      "quantity": 1,
+      "unit_cost": 12345.00
+    }
   ],
   "notes": "one or two sentences of reasoning a designer would find useful"
 }
@@ -155,10 +160,11 @@ def _call_llm(req: BudgetScopeRequest) -> BudgetScopeResponse:
 
     client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from env
 
+    confidence_str = str(req.style_confidence) if req.style_confidence is not None else "n/a"
     user_message = f"""Room type: {req.room_type}
 Room size: {req.room_size_sqft} sq ft
 Client budget: LKR {req.budget_min:,.0f} - {req.budget_max:,.0f}
-Detected style: {req.style_profile} (confidence: {req.style_confidence if req.style_confidence is not None else "n/a"})
+Detected style: {req.style_profile} (confidence: {confidence_str})
 Client preferences: {req.preferences or "none given"}
 """
 

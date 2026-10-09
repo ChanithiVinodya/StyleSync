@@ -118,9 +118,10 @@ void main() {
             providers: [
               legacy_provider.ChangeNotifierProvider(create: (_) => AppStateProvider()),
             ],
-            child: const ProviderScope(
+            child: ProviderScope(
               child: MaterialApp(
-                home: HomeScreen(),
+                theme: ThemeData(splashFactory: InkRipple.splashFactory),
+                home: const HomeScreen(),
               ),
             ),
           ),
@@ -168,9 +169,10 @@ void main() {
               overrides: [
                 authProvider.overrideWith(() => _FakeAuthNotifier()),
               ],
-              child: const MaterialApp(
+              child: MaterialApp(
+                theme: ThemeData(splashFactory: InkRipple.splashFactory),
                 onGenerateRoute: AppRoutes.onGenerateRoute,
-                home: HomeScreen(),
+                home: const HomeScreen(),
               ),
             ),
           ),
@@ -211,9 +213,10 @@ void main() {
               overrides: [
                 authProvider.overrideWith(() => _FakeAuthNotifier()),
               ],
-              child: const MaterialApp(
+              child: MaterialApp(
+                theme: ThemeData(splashFactory: InkRipple.splashFactory),
                 onGenerateRoute: AppRoutes.onGenerateRoute,
-                home: HomeScreen(),
+                home: const HomeScreen(),
               ),
             ),
           ),

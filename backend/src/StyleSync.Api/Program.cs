@@ -149,6 +149,11 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    await next();
+});
 
 // ---- Middleware pipeline ----
 app.UseMiddleware<ExceptionHandlingMiddleware>();
